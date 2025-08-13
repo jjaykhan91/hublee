@@ -48,6 +48,10 @@ dependencies:
   json_annotation: ^4.9.0
   riverpod: ^2.6.1
   connectivity_plus: ^6.1.5
+  collection: ^1.18.0
+  flutter_dotenv: ^5.1.0
+  args: ^2.6.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
@@ -75,9 +79,11 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/quran/manifest.json
+    - assets/quran/chapters.min.json
+    - assets/quran/ar/
+    - assets/quran/en.clearquran/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

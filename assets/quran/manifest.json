@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "ar_path": "assets/quran/ar/{surah}.json",
+  "en_clearquran_path": "assets/quran/en.clearquran/{surah}.json",
+  "chapters_path": "assets/quran/chapters.min.json"
+}

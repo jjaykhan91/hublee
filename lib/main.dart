@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
-import 'core/cache.dart';
-import 'app.dart';
+import 'ui/surah_list_page.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await JsonCache.init();
+void main() {
   runApp(const HubleeApp());
+}
+
+class HubleeApp extends StatelessWidget {
+  const HubleeApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Hublee',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.teal,
+      ),
+      home: const SurahListPage(),
+    );
+  }
 }
