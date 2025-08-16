@@ -1,0 +1,56 @@
+[
+  {
+    "id": 4,
+    "file": "abudawud.json",
+    "bookName": "Sunan Abi Dawud",
+    "length": 5276
+  },
+  {
+    "id": 8,
+    "file": "ahmed.json",
+    "bookName": "Musnad Ahmad ibn Hanbal",
+    "length": 1374
+  },
+  {
+    "id": 1,
+    "file": "bukhari.json",
+    "bookName": "Sahih al-Bukhari",
+    "length": 7277
+  },
+  {
+    "id": 9,
+    "file": "darimi.json",
+    "bookName": "Sunan al-Darimi",
+    "length": 3406
+  },
+  {
+    "id": 6,
+    "file": "ibnmajah.json",
+    "bookName": "Sunan Ibn Majah",
+    "length": 4345
+  },
+  {
+    "id": 7,
+    "file": "malik.json",
+    "bookName": "Muwatta Malik",
+    "length": 1985
+  },
+  {
+    "id": 2,
+    "file": "muslim.json",
+    "bookName": "Sahih Muslim",
+    "length": 7459
+  },
+  {
+    "id": 3,
+    "file": "nasai.json",
+    "bookName": "Sunan al-Nasa'i",
+    "length": 5768
+  },
+  {
+    "id": 5,
+    "file": "tirmidhi.json",
+    "bookName": "Jami' al-Tirmidhi",
+    "length": 4053
+  }
+]

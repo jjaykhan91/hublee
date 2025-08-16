@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "collections_path": "assets/hadith/collections.json",
+  "collection_path": "assets/hadith/{collection}/index.json",
+  "book_path": "assets/hadith/{collection}/books/{file}"
+}
