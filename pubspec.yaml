@@ -52,6 +52,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   args: ^2.6.0
   path: ^1.9.0
+  google_fonts: ^6.2.1
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:
@@ -84,7 +86,11 @@ flutter:
     - assets/quran/chapters.min.json
     - assets/quran/ar/
     - assets/quran/en.clearquran/
-
+    - assets/hadith/manifest.json
+    - assets/hadith/collections.json
+    - assets/hadith/forties/
+    - assets/hadith/other_books/
+    - assets/hadith/the_9_books/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
@@ -107,6 +113,11 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
-  #
+
+  fonts:
+    - family: UthmanicHafs
+      fonts:
+        - asset: assets/fonts/UthmanicHafs.otf
+
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

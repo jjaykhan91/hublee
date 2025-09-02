@@ -1,0 +1,32 @@
+[
+  {
+    "id": 15,
+    "file": "aladab_almufrad.json",
+    "bookName": "Al-Adab Al-Mufrad",
+    "length": 1326
+  },
+  {
+    "id": 17,
+    "file": "bulugh_almaram.json",
+    "bookName": "Bulugh al-Maram",
+    "length": 1767
+  },
+  {
+    "id": 14,
+    "file": "mishkat_almasabih.json",
+    "bookName": "Mishkat al-Masabih",
+    "length": 4428
+  },
+  {
+    "id": 13,
+    "file": "riyad_assalihin.json",
+    "bookName": "Riyad as-Salihin",
+    "length": 1896
+  },
+  {
+    "id": 16,
+    "file": "shamail_muhammadiyah.json",
+    "bookName": "Shama'il Muhammadiyah",
+    "length": 402
+  }
+]

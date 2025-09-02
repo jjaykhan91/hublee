@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'ui/surah_list_page.dart';
+import 'theme/app_theme.dart';
+import 'ui/home_page.dart';
 
 void main() {
   runApp(const HubleeApp());
@@ -12,11 +13,11 @@ class HubleeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Hublee',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-      ),
-      home: const SurahListPage(),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      home: const HomePage(),   // ✅ back to HomePage
     );
   }
 }
