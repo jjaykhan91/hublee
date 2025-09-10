@@ -210,9 +210,18 @@ class _HadithTile extends StatelessWidget {
                     if (hit.snippet != null && hit.snippet!.isNotEmpty)
                       ArabicText(
                         hit.snippet!,
-                        fontSize: 28,
-                        weight: FontWeight.bold,
+                        fontSize: 38,
+                        weight: FontWeight.w800,
                         tajweed: true,
+                        style: const TextStyle(
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2,
+                              color: Colors.black54,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),

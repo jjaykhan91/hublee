@@ -142,8 +142,17 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                 ArabicText(
                                   arabicText,
                                   tajweed: true, // color rules on
-                                  fontSize: 34,
-                                  weight: FontWeight.bold, // bold Arabic
+                                  fontSize: 38, // larger for visibility
+                                  weight: FontWeight.normal, // extra bold
+                                  style: const TextStyle(
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 2,
+                                        color: Colors.black54,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
                                 ),
 
                               if (arabicText != null && arabicText.isNotEmpty)

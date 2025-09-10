@@ -96,9 +96,18 @@ class _HadithBookPageState extends State<HadithBookPage> {
                         if (h.arabic?.isNotEmpty == true)
                           ArabicText(
                             h.arabic!,
-                            fontSize: 28, // match SurahDetailPage for clarity
-                            weight: FontWeight.bold,
+                            fontSize: 38, // match SurahDetailPage for clarity
+                            weight: FontWeight.w800,
                             tajweed: true,
+                            style: const TextStyle(
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 2,
+                                  color: Colors.black54,
+                                  offset: Offset(1, 1),
+                                ),
+                              ],
+                            ),
                           ),
                         if (h.arabic?.isNotEmpty == true) const SizedBox(height: 8),
                         if (h.english?.isNotEmpty == true)
