@@ -27,12 +27,6 @@ const _ikhfa = {
 bool _isSpaceLike(String ch) =>
     ch.trim().isEmpty || RegExp(r'[،؛؟,.!:؛—\-–\(\)\[\]{}…]').hasMatch(ch);
 
-bool _isTanween(String ch) =>
-    ch == _fathatan || ch == _dammatan || ch == _kasratan;
-
-/// Treat as **combining** (attach to base):
-/// - canonical harakāt (064B–0652) + superscript alef (0670)
-/// - small-high Qur’anic marks commonly used above letters
 bool _isCombiningMark(String ch) {
   final cp = ch.codeUnitAt(0);
   if (cp == 0x0670 || (cp >= 0x064B && cp <= 0x0652)) return true;
@@ -54,7 +48,7 @@ bool _isQuranSpacingSign(String ch) {
 }
 
 /// --- Sanitizer: remove decorative rings, dotted-circles, and dangling marks ---
-final _stripRosettesOrRub = RegExp(r'[\u06DD\u06DE\u08E2][\u0660-\u0669]*'); // ۝, ۞, (U+08E2 in some datasets)
+final _stripRosettesOrRub = RegExp(r'[\u06DD\u06DE\u08E2][\u0660-\u0669]*'); // ۝, ۞, U+08E2 in some datasets
 const _dottedCircle = '\u25CC';
 
 bool _isArabicBaseCp(int cp) =>
@@ -76,16 +70,16 @@ String _removeDanglingCombiningMarks(String s) {
     final prev = (i > 0) ? runes[i - 1] : null;
     final next = (i + 1 < runes.length) ? runes[i + 1] : null;
     if ((prev != null && _isArabicBaseCp(prev)) || (next != null && _isArabicBaseCp(next))) {
-      kept.add(cp); // legitimate combining mark
-    } // else drop stand-alone ring-like mark
+      kept.add(cp);
+    }
   }
   return String.fromCharCodes(kept);
 }
 
 String _sanitize(String s) {
-  var out = s.replaceAll(_stripRosettesOrRub, ''); // strip ۝/۞ (+ verse digits)
-  out = out.replaceAll(_dottedCircle, '');         // strip dotted-circle placeholder
-  out = _removeDanglingCombiningMarks(out);        // drop orphaned combining marks
+  var out = s.replaceAll(_stripRosettesOrRub, '');
+  out = out.replaceAll(_dottedCircle, '');
+  out = _removeDanglingCombiningMarks(out);
   return out;
 }
 
@@ -153,7 +147,6 @@ List<_Cluster> _clusterize(String s) {
         out.add(_Cluster.letter(base, diacs));
         i = k; continue;
       }
-      // otherwise ignore (should be rare after sanitizer)
       i++; continue;
     }
 
@@ -179,16 +172,14 @@ int? _nextLetterIndex(List<_Cluster> cs, int k) {
   return null;
 }
 
-/// --- Small overlay: draw a tiny ring above the base when U+06DF is present ---
-/// Returns a WidgetSpan that renders the letter+other marks, plus a positioned
-/// small ring that mimics U+06DF precisely above the base.
+/// --- Optional small overlay (fallback) for U+06DF ---
 InlineSpan _overlay06DF({
   required String textWithout06DF, // base + other diacs
   required TextStyle style,
 }) {
   final fs = (style.fontSize ?? 24.0);
-  final ringSize = fs * 0.22;   // size of the ring dot
-  final topLift  = fs * 0.58;   // how much to lift above the text baseline
+  final ringSize = fs * 0.22;
+  final topLift  = fs * 0.58;
   final ringColor = style.color ?? Colors.white;
 
   return WidgetSpan(
@@ -197,9 +188,7 @@ InlineSpan _overlay06DF({
     child: Stack(
       clipBehavior: Clip.none,
       children: [
-        // Render the base + all other diacritics normally
         Text(textWithout06DF, style: style, textDirection: TextDirection.rtl),
-        // Paint the small round mark above (simulating correct U+06DF placement)
         Positioned(
           right: fs * 0.10,
           top: -topLift,
@@ -217,12 +206,12 @@ InlineSpan _overlay06DF({
   );
 }
 
-/// --- Tajwīd coloring over clusters (with optional U+06DF overlay fallback) ---
+/// --- Tajwīd coloring over clusters (overlay OFF by default) ---
 List<InlineSpan> tajweedSpans(
   BuildContext context,
   String raw,
   TextStyle base, {
-  bool overlay06df = false, // default OFF to avoid stray dots
+  bool overlay06df = false,
 }) {
   final text  = _sanitize(raw);
   final cls   = _clusterize(text);
@@ -234,7 +223,7 @@ List<InlineSpan> tajweedSpans(
     final current = cl.base!;
     final diacs   = cl.diacs;
 
-    // Qalqala: qalqala letter + sukūn (explicit or inferred at word-end)
+    // Qalqala: qalqala letter + sukun (explicit or inferred at word-end)
     if (_qalqala.contains(current)) {
       bool hasSukun = diacs.contains(_sukun);
       if (!hasSukun) {
@@ -252,7 +241,7 @@ List<InlineSpan> tajweedSpans(
       return const Color(0xFF2E7D32); // green
     }
 
-    // Noon sākin or Tanwīn rules
+    // Noon sakin or Tanwīn rules
     final isNoonSakin = current == _noon && diacs.contains(_sukun);
     final hasTanween  = diacs.contains(_fathatan) || diacs.contains(_dammatan) || diacs.contains(_kasratan);
     if (isNoonSakin || hasTanween) {
@@ -278,17 +267,16 @@ List<InlineSpan> tajweedSpans(
   for (int i = 0; i < cls.length; i++) {
     final cl = cls[i];
 
+
+    // Always use the correct font for all clusters, including combining marks and signs
     if (cl.kind != _Kind.letter) {
-      // spaces & independent signs
-      spans.add(TextSpan(text: cl.text, style: base));
+      spans.add(TextSpan(text: cl.text, style: base.copyWith(fontFamily: 'KFGQPCUthmanicHAFSRegular'))); // spaces & signs
       continue;
     }
 
-    // Decide coloring for this letter cluster
     final col = colorFor(i);
     final styleForLetter = (col == null) ? base : base.copyWith(color: col);
 
-    // Optional U+06DF overlay
     if (overlay06df && cl.diacs.runes.any((cp) => cp == 0x06DF)) {
       final filteredDiacs = String.fromCharCodes(
         cl.diacs.runes.where((cp) => cp != 0x06DF),
@@ -302,7 +290,6 @@ List<InlineSpan> tajweedSpans(
       continue;
     }
 
-    // Normal cluster
     spans.add(TextSpan(text: cl.text, style: styleForLetter));
   }
 

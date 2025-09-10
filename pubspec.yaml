@@ -118,7 +118,7 @@ flutter:
   fonts:
     - family: UthmanicHafs
       fonts:
-        - asset: assets/fonts/UthmanicHafs.otf
+        - asset: assets/fonts/KFGQPCUthmanicHAFSRegular.otf
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

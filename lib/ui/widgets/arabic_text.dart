@@ -39,9 +39,8 @@ class ArabicText extends StatelessWidget {
 
     // IMPORTANT: no letterSpacing/wordSpacing for Qur'anic Uthmani script.
     final TextStyle resolved = (style ?? const TextStyle()).copyWith(
-      fontFamily: 'UthmanicHafs',
+      fontFamily: 'KFGQPCUthmanicHAFSRegular',
       fontSize: fs,
-      // heavier by default to match English bold request
       fontWeight: weight ?? FontWeight.w700,
       // generous but not too airy; avoids clipping harakāt
       height: 1.65,
@@ -58,7 +57,7 @@ class ArabicText extends StatelessWidget {
 
     // Lock line metrics to avoid jitter and clipping.
     final strut = StrutStyle(
-      fontFamily: 'UthmanicHafs',
+      fontFamily: 'KFGQPCUthmanicHAFSRegular',
       fontSize: fs,
       height: 1.65,
       forceStrutHeight: true,
