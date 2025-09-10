@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
 import '../quran/models.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/quran_debug.dart';
 
 class SurahDetailPage extends StatefulWidget {
   final int surahId;
@@ -51,7 +51,8 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
         return Scaffold(
           appBar: AppBar(title: Text(meta?.nameSimple ?? 'Surah')),
           body: () {
-            if (loading) return const Center(child: CircularProgressIndicator());
+            if (loading)
+              return const Center(child: CircularProgressIndicator());
             if (error != null) {
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -91,6 +92,10 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                     itemBuilder: (context, i) {
                       final n = i + 1;
                       final a = ar['$n'];
+                      if (a != null && a.isNotEmpty) {
+                        debugRunesDetailed(a, label: 'Ayah $n');
+                      }
+
                       final e = en['$n'];
                       return Card(
                         child: Padding(
@@ -99,12 +104,13 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text('Ayah $n',
-                                  style: Theme.of(context).textTheme.titleSmall),
+                                  style:
+                                      Theme.of(context).textTheme.titleSmall),
                               const SizedBox(height: 8),
                               if (a != null && a.isNotEmpty)
                                 ArabicText(
                                   a,
-                                  tajweed: true,      // ✅ enable tajwīd coloring
+                                  tajweed: true, // ✅ enable tajwīd coloring
                                   fontSize: 22,
                                   weight: FontWeight.w600,
                                 ),
@@ -124,8 +130,8 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
 
                 // Legend row
                 Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(16, 6, 16, 12), // SafeArea above
+                  padding: const EdgeInsets.fromLTRB(
+                      16, 6, 16, 12), // SafeArea above
                   child: _tajweedLegend(context),
                 ),
                 SafeArea(top: false, child: SizedBox(height: 4)),
@@ -150,12 +156,12 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        chip('QALQALA', const Color(0xFFD32F2F)),       // red
-        chip('IQLAB',   const Color(0xFF1E88E5)),       // blue
-        chip('IDGHAM',  const Color(0xFF2E7D32)),       // green (with ghunnah)
-        chip('IDGHAM*', const Color(0xFF00897B)),       // teal (no ghunnah)
-        chip('IKHFAAʼ', const Color(0xFF8E24AA)),       // magenta
-        chip('IKHFAA MEEMI', const Color(0xFFF4511E)),  // orange
+        chip('QALQALA', const Color(0xFFD32F2F)), // red
+        chip('IQLAB', const Color(0xFF1E88E5)), // blue
+        chip('IDGHAM', const Color(0xFF2E7D32)), // green (with ghunnah)
+        chip('IDGHAM*', const Color(0xFF00897B)), // teal (no ghunnah)
+        chip('IKHFAAʼ', const Color(0xFF8E24AA)), // magenta
+        chip('IKHFAA MEEMI', const Color(0xFFF4511E)), // orange
       ],
     );
   }
