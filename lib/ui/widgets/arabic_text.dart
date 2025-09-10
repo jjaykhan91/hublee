@@ -1,12 +1,10 @@
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'tajweed.dart';
 
 /// Arabic text renderer for Qur'anic script.
 /// - Uses UthmanicHafs (declared in pubspec).
 /// - Forces OpenType features (mark/mkmk) so combining marks anchor on the base.
-/// - If tajweed=true, uses tajweedSpans(...) from tajweed.dart (which contains a
-///   code-only fallback to render U+06DF correctly even on buggy fonts).
+/// - Tajweed rendering uses `tajweedSpans` with U+06DF overlay **disabled by default**.
 class ArabicText extends StatelessWidget {
   final String text;
   final double? fontSize;
@@ -43,11 +41,13 @@ class ArabicText extends StatelessWidget {
     final TextStyle resolved = (style ?? const TextStyle()).copyWith(
       fontFamily: 'UthmanicHafs',
       fontSize: fs,
-      fontWeight: weight ?? FontWeight.w500,
-      height: 2.0, // generous line-height to avoid clipping diacritics
+      // heavier by default to match English bold request
+      fontWeight: weight ?? FontWeight.w700,
+      // generous but not too airy; avoids clipping harakāt
+      height: 1.65,
       color: color ?? Theme.of(context).colorScheme.onSurface,
 
-      // ✅ Force Arabic shaping/positioning so combining marks (e.g. U+06DF) attach.
+      // Force Arabic shaping/positioning so combining marks attach correctly
       fontFeatures: const <FontFeature>[
         FontFeature.enable('mark'), // GPOS mark-to-base
         FontFeature.enable('mkmk'), // GPOS mark-to-mark
@@ -60,7 +60,7 @@ class ArabicText extends StatelessWidget {
     final strut = StrutStyle(
       fontFamily: 'UthmanicHafs',
       fontSize: fs,
-      height: 2.0,
+      height: 1.65,
       forceStrutHeight: true,
     );
 
@@ -71,6 +71,7 @@ class ArabicText extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Text(
           text,
+          locale: const Locale('ar'),
           textDirection: TextDirection.rtl,
           textAlign: resolvedAlign,
           style: resolved,
@@ -85,13 +86,21 @@ class ArabicText extends StatelessWidget {
       );
     }
 
-    // Tajwīd: build colored spans (with built-in U+06DF overlay fallback).
+    // Tajwīd: build colored spans (overlay06df disabled by default).
     return Align(
       alignment: Alignment.centerRight,
       child: RichText(
+        locale: const Locale('ar'),
         textDirection: TextDirection.rtl,
         textAlign: resolvedAlign,
-        text: TextSpan(children: tajweedSpans(context, text, resolved)),
+        text: TextSpan(
+          children: tajweedSpans(
+            context,
+            text,
+            resolved,
+            overlay06df: false, // keep false to avoid stray dots
+          ),
+        ),
         strutStyle: strut,
         maxLines: maxLines,
         overflow: overflow ?? TextOverflow.visible,

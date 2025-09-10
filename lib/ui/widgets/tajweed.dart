@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Keeps Qur’anic marks (e.g., ۟ U+06DF), strips decorative rings (۝/۞),
 /// removes dotted-circle placeholders, clusters base+marks, and applies tajwīd
-/// coloring. If the device font mis-renders U+06DF, we add a tiny overlay ring
-/// above the base letter so it looks correct everywhere.
+/// coloring. You can optionally render a tiny overlay ring for U+06DF on fonts
+/// that misplace it (set `overlay06df: true`), but it’s OFF by default.
 
 /// --- Basic marks/letters used in rules ---
 const _sukun = '\u0652';
@@ -54,7 +54,7 @@ bool _isQuranSpacingSign(String ch) {
 }
 
 /// --- Sanitizer: remove decorative rings, dotted-circles, and dangling marks ---
-final _stripRosettesOrRub = RegExp(r'[\u06DD\u06DE\u08E2][\u0660-\u0669]*'); // ۝, ۞, (and U+08E2 in some datasets)
+final _stripRosettesOrRub = RegExp(r'[\u06DD\u06DE\u08E2][\u0660-\u0669]*'); // ۝, ۞, (U+08E2 in some datasets)
 const _dottedCircle = '\u25CC';
 
 bool _isArabicBaseCp(int cp) =>
@@ -110,7 +110,7 @@ List<_Cluster> _clusterize(String s) {
   final chars = List<String>.generate(runes.length, (i) => String.fromCharCode(runes[i]));
   final out = <_Cluster>[];
 
-  bool _isLetterLike(String ch) =>
+  bool isLetterLike(String ch) =>
       !_isSpaceLike(ch) && !_isCombiningMark(ch) && !_isQuranSpacingSign(ch);
 
   int i = 0;
@@ -132,14 +132,16 @@ List<_Cluster> _clusterize(String s) {
     if (_isCombiningMark(c)) {
       // attach back to previous letter if any
       int j = out.length - 1;
-      while (j >= 0 && out[j].kind != _Kind.letter) j--;
+      while (j >= 0 && out[j].kind != _Kind.letter) {
+        j--;
+      }
       if (j >= 0) {
         final prev = out.removeAt(j);
         out.insert(j, _Cluster.letter(prev.base!, prev.diacs + c));
         i++; continue;
       }
       // attach forward to next letter if present (handles mark-before-base)
-      if (i + 1 < chars.length && _isLetterLike(chars[i + 1])) {
+      if (i + 1 < chars.length && isLetterLike(chars[i + 1])) {
         final base = chars[i + 1];
         var diacs = c;
         int k = i + 2;
@@ -199,7 +201,6 @@ InlineSpan _overlay06DF({
         Text(textWithout06DF, style: style, textDirection: TextDirection.rtl),
         // Paint the small round mark above (simulating correct U+06DF placement)
         Positioned(
-          // Place it toward the right for RTL cluster
           right: fs * 0.10,
           top: -topLift,
           child: Container(
@@ -216,8 +217,13 @@ InlineSpan _overlay06DF({
   );
 }
 
-/// --- Tajwīd coloring over clusters (with U+06DF overlay fallback) ---
-List<InlineSpan> tajweedSpans(BuildContext context, String raw, TextStyle base) {
+/// --- Tajwīd coloring over clusters (with optional U+06DF overlay fallback) ---
+List<InlineSpan> tajweedSpans(
+  BuildContext context,
+  String raw,
+  TextStyle base, {
+  bool overlay06df = false, // default OFF to avoid stray dots
+}) {
   final text  = _sanitize(raw);
   final cls   = _clusterize(text);
   final spans = <InlineSpan>[];
@@ -282,10 +288,8 @@ List<InlineSpan> tajweedSpans(BuildContext context, String raw, TextStyle base) 
     final col = colorFor(i);
     final styleForLetter = (col == null) ? base : base.copyWith(color: col);
 
-    // --- U+06DF overlay fallback ---
-    if (cl.diacs.runes.any((cp) => cp == 0x06DF)) {
-      // Remove U+06DF from diacritics for the underlying text,
-      // then draw a tiny round overlay at the right spot.
+    // Optional U+06DF overlay
+    if (overlay06df && cl.diacs.runes.any((cp) => cp == 0x06DF)) {
       final filteredDiacs = String.fromCharCodes(
         cl.diacs.runes.where((cp) => cp != 0x06DF),
       );
