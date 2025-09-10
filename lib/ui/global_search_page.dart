@@ -8,6 +8,7 @@ import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
 
 import 'hadith_book_page.dart';
+import 'widgets/arabic_text.dart';
 import 'surah_detail_page.dart';
 
 class GlobalSearchPage extends StatefulWidget {
@@ -207,7 +208,12 @@ class _HadithTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     if (hit.snippet != null && hit.snippet!.isNotEmpty)
-                      Text(hit.snippet!, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
+                      ArabicText(
+                        hit.snippet!,
+                        fontSize: 28,
+                        weight: FontWeight.bold,
+                        tajweed: true,
+                      ),
                   ],
                 ),
               ),

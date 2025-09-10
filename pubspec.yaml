@@ -116,7 +116,7 @@ flutter:
   #         weight: 700
 
   fonts:
-    - family: UthmanicHafs
+    - family: KFGQPCUthmanicHAFS
       fonts:
         - asset: assets/fonts/KFGQPCUthmanicHAFSRegular.otf
 
