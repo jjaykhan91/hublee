@@ -6,7 +6,8 @@ import 'global_search_page.dart';
 import 'surah_list_page.dart';
 import 'hadith_collections_page.dart';
 
-import 'widgets/settings_drawer.dart';
+// AppScaffold with built-in Settings drawer
+import 'widgets/app_scaffold.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback onToggleTheme;
@@ -37,26 +38,12 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-
-        // 👉 Right-side drawer that opens halfway
-        endDrawer: SettingsDrawer(onToggleTheme: onToggleTheme),
-        endDrawerEnableOpenDragGesture: true,
-
-        appBar: AppBar(
-          title: const Text('Hublee'),
-          actions: [
-            IconButton(
-              tooltip: 'Settings',
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-              icon: const Icon(Icons.settings_rounded),
-            ),
-          ],
-        ),
+      child: AppScaffold(
+        titleText: 'Hublee',
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
+            // Make the search field a tappable launcher (avoids duplicate FAB)
             GestureDetector(
               onTap: openSearch,
               child: const AbsorbPointer(

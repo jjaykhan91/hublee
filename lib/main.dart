@@ -10,6 +10,7 @@ import 'ui/hadith_collections_page.dart';
 
 import 'services/settings_controller.dart';
 import 'services/settings_scope.dart';
+import 'services/app_scope.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,19 +46,22 @@ class _HubleeAppState extends State<HubleeApp> {
   Widget build(BuildContext context) {
     return SettingsScope(
       controller: _settings,
-      child: MaterialApp(
-        title: 'Hublee',
-        debugShowCheckedModeBanner: false,
-        theme: buildLightTheme(),
-        darkTheme: buildDarkTheme(),
-        themeMode: _mode,
-        home: HomePage(onToggleTheme: _toggleTheme),
+      child: AppScope(
+        toggleTheme: _toggleTheme, // 👈 expose globally
+        child: MaterialApp(
+          title: 'Hublee',
+          debugShowCheckedModeBanner: false,
+          theme: buildLightTheme(),
+          darkTheme: buildDarkTheme(),
+          themeMode: _mode,
+          home: HomePage(onToggleTheme: _toggleTheme),
 
-        routes: {
-          '/search': (_) => const GlobalSearchPage(),
-          '/quran' : (_) => const SurahListPage(),
-          '/hadith': (_) => const HadithCollectionsPage(),
-        },
+          routes: {
+            '/search': (_) => const GlobalSearchPage(),
+            '/quran' : (_) => const SurahListPage(),
+            '/hadith': (_) => const HadithCollectionsPage(),
+          },
+        ),
       ),
     );
   }
