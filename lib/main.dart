@@ -3,10 +3,13 @@ import 'theme/app_theme.dart';
 import 'services/theme_mode_service.dart';
 import 'ui/home_page.dart';
 
-// REAL pages to satisfy Navigator routes, even though HomePage uses MaterialPageRoute:
+// REAL pages to satisfy Navigator routes
 import 'ui/global_search_page.dart';
 import 'ui/surah_list_page.dart';
 import 'ui/hadith_collections_page.dart';
+
+import 'services/settings_controller.dart';
+import 'services/settings_scope.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,12 +24,15 @@ class HubleeApp extends StatefulWidget {
 
 class _HubleeAppState extends State<HubleeApp> {
   final _modeSvc = ThemeModeService();
+  final _settings = SettingsController();
+
   ThemeMode _mode = ThemeMode.system;
 
   @override
   void initState() {
     super.initState();
     _modeSvc.load().then((m) => setState(() => _mode = m));
+    _settings.load(); // load zooms
   }
 
   void _toggleTheme() async {
@@ -37,20 +43,22 @@ class _HubleeAppState extends State<HubleeApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Hublee',
-      debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
-      themeMode: _mode,
-      home: HomePage(onToggleTheme: _toggleTheme),
+    return SettingsScope(
+      controller: _settings,
+      child: MaterialApp(
+        title: 'Hublee',
+        debugShowCheckedModeBanner: false,
+        theme: buildLightTheme(),
+        darkTheme: buildDarkTheme(),
+        themeMode: _mode,
+        home: HomePage(onToggleTheme: _toggleTheme),
 
-      // Optional named routes (not used by HomePage anymore, but handy elsewhere)
-      routes: {
-        '/search': (_) => const GlobalSearchPage(),
-        '/quran':  (_) => const SurahListPage(),
-        '/hadith': (_) => const HadithCollectionsPage(),
-      },
+        routes: {
+          '/search': (_) => const GlobalSearchPage(),
+          '/quran' : (_) => const SurahListPage(),
+          '/hadith': (_) => const HadithCollectionsPage(),
+        },
+      ),
     );
   }
 }
