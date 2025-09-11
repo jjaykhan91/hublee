@@ -205,7 +205,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     // Helper to create a colored chip
     Chip buildChip(String label, Color color) => Chip(
           label: Text(label),
-          backgroundColor: color.withOpacity(0.12),
+          backgroundColor: color.withValues(alpha: 0.12),
           labelStyle: TextStyle(color: color, fontWeight: FontWeight.w600),
           side: BorderSide(color: color),
           padding: const EdgeInsets.symmetric(horizontal: 8),

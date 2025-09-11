@@ -119,7 +119,7 @@ class QuranInspector extends StatelessWidget {
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                     labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                    backgroundColor: color.withOpacity(.15),
+                    backgroundColor: color.withValues(alpha: 0.90),
                     side: BorderSide(color: color),
                     label: Text('$hex$label',
                         style: TextStyle(

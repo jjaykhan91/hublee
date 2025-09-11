@@ -127,11 +127,11 @@ class _BookTile extends StatelessWidget {
     // Styles: keep hierarchy clear and readable on both light/dark.
     final titleStyle   = theme.textTheme.titleMedium;
     final subtitleStyle= theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurface.withOpacity(0.75),
+  color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
     );
     final summaryStyle = theme.textTheme.bodySmall?.copyWith(
       height: 1.3,
-      color: theme.colorScheme.onSurface.withOpacity(0.90),
+  color: theme.colorScheme.onSurface.withValues(alpha: 0.90),
       fontWeight: FontWeight.w500,
     );
 

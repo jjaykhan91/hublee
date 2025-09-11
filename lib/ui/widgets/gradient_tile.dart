@@ -31,18 +31,18 @@ class GradientTile extends StatelessWidget {
       child: Ink(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          border: Border.all(color: cs.outline.withOpacity(0.9), width: 1),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.9), width: 1),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
               cs.surfaceContainerHighest,
-              Color.alphaBlend(cs.primary.withOpacity(0.06), cs.surfaceContainerHighest),
+              Color.alphaBlend(cs.primary.withValues(alpha: 0.06), cs.surfaceContainerHighest),
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -56,7 +56,7 @@ class GradientTile extends StatelessWidget {
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.18),
+                  color: cs.primary.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: cs.primary),
@@ -83,7 +83,7 @@ class GradientTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurface.withOpacity(0.9)),
+              Icon(Icons.chevron_right_rounded, color: cs.onSurface.withValues(alpha: 0.9)),
             ],
           ),
         ),

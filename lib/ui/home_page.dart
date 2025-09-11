@@ -31,7 +31,7 @@ class HomePage extends StatelessWidget {
           radius: 1.2,
           colors: [
             cs.surface,
-            Color.alphaBlend(Colors.white.withOpacity(0.02), cs.surface),
+            Color.alphaBlend(Colors.white.withValues(alpha: 0.02), cs.surface),
           ],
         ),
       ),
@@ -66,7 +66,7 @@ class HomePage extends StatelessWidget {
             Text(
               'What would you like to explore?',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: cs.onSurface.withOpacity(0.92),
+                    color: cs.onSurface.withValues(alpha: 0.92),
                     fontWeight: FontWeight.w700,
                   ),
             ),
