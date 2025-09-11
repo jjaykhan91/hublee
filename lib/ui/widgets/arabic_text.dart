@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
 import 'tajweed.dart';
 
+/// Arabic text renderer for Qur'anic script.
+/// - Uses UthmanicHafs (declared in pubspec).
+/// - Forces OpenType features (mark/mkmk) so combining marks anchor on the base.
+/// - Tajweed rendering uses `tajweedSpans` with U+06DF overlay **disabled by default**.
 class ArabicText extends StatelessWidget {
   final String text;
   final double? fontSize;
   final FontWeight? weight;
-  final bool tajweed; // enable only for Qur’an ayah
+  final bool tajweed;
+
+  // Back-compat props used in your project
+  final double? size;
+  final TextAlign? align;
+  final TextStyle? style;
+  final Color? color;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   const ArabicText(
     this.text, {
@@ -14,30 +25,89 @@ class ArabicText extends StatelessWidget {
     this.fontSize,
     this.weight,
     this.tajweed = false,
+    this.size,
+    this.align,
+    this.style,
+    this.color,
+    this.maxLines,
+    this.overflow,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = AppTheme.arabicStyle(
-      context,
-      fontSize: fontSize,
-      weight: weight,
+    final fs = (fontSize ?? size ?? 26).toDouble();
+
+    // IMPORTANT: no letterSpacing/wordSpacing for Qur'anic Uthmani script.
+    final TextStyle resolved = (style ?? const TextStyle()).copyWith(
+      fontFamily: 'KFGQPCUthmanicHAFSRegular',
+      fontSize: fs,
+      fontWeight: weight ?? FontWeight.w700,
+      // generous but not too airy; avoids clipping harakāt
+      height: 1.65,
+      color: color ?? Theme.of(context).colorScheme.onSurface,
+
+      // Force Arabic shaping/positioning so combining marks attach correctly
+      fontFeatures: const <FontFeature>[
+        FontFeature.enable('mark'), // GPOS mark-to-base
+        FontFeature.enable('mkmk'), // GPOS mark-to-mark
+        FontFeature.enable('rlig'), // required ligatures
+        FontFeature.enable('calt'), // contextual alternates
+      ],
     );
 
-    final child = tajweed
-        ? RichText(
-            textDirection: TextDirection.rtl,
-            textAlign: TextAlign.right,
-            text: TextSpan(children: tajweedSpans(context, text, style)),
-          )
-        : Text(
-            text,
-            textDirection: TextDirection.rtl,
-            textAlign: TextAlign.right,
-            style: style,
-          );
+    // Lock line metrics to avoid jitter and clipping.
+    final strut = StrutStyle(
+      fontFamily: 'KFGQPCUthmanicHAFSRegular',
+      fontSize: fs,
+      height: 1.65,
+      forceStrutHeight: true,
+    );
 
-    // Make the block sit on the right edge in an LTR layout
-    return Align(alignment: Alignment.centerRight, child: child);
+    final TextAlign resolvedAlign = align ?? TextAlign.right;
+
+    if (!tajweed) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Text(
+          text,
+          locale: const Locale('ar'),
+          textDirection: TextDirection.rtl,
+          textAlign: resolvedAlign,
+          style: resolved,
+          strutStyle: strut,
+          maxLines: maxLines,
+          overflow: overflow,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+        ),
+      );
+    }
+
+    // Tajwīd: build colored spans (overlay06df disabled by default).
+    return Align(
+      alignment: Alignment.centerRight,
+      child: RichText(
+        locale: const Locale('ar'),
+        textDirection: TextDirection.rtl,
+        textAlign: resolvedAlign,
+        text: TextSpan(
+          children: tajweedSpans(
+            context,
+            text,
+            resolved,
+            overlay06df: false, // keep false to avoid stray dots
+          ),
+        ),
+        strutStyle: strut,
+        maxLines: maxLines,
+        overflow: overflow ?? TextOverflow.visible,
+        textHeightBehavior: const TextHeightBehavior(
+          applyHeightToFirstAscent: false,
+          applyHeightToLastDescent: false,
+        ),
+      ),
+    );
   }
 }
