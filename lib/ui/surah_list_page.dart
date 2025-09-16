@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hublee/ui/widgets/app_scaffold.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/models.dart';
 import 'surah_detail_page.dart';
@@ -10,7 +11,7 @@ class SurahListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = const QuranChaptersRepository();
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(title: const Text('Qur’an')),
       body: FutureBuilder<List<ChapterMeta>>(
         future: repo.loadChapters(),

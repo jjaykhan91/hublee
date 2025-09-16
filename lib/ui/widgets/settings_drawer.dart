@@ -46,7 +46,7 @@ class SettingsDrawer extends StatelessWidget {
 
               // Arabic font zoom + preview
               _LabeledSliderWithPreview(
-                label: 'Arabic size',
+                label: 'Quran Size',
                 value: settings.arabicZoom,
                 min: 0.8,
                 max: 1.8,
@@ -55,7 +55,7 @@ class SettingsDrawer extends StatelessWidget {
                 valueText: '${(settings.arabicZoom * 100).round()}%',
                 preview: ArabicText(
                   'الْحَمْدُ لِلَّهِ',
-                  tajweed: true,
+                  tajweed: false,
                   fontSize: 26 * settings.arabicZoom,
                   weight: FontWeight.bold,
                 ),
@@ -64,7 +64,7 @@ class SettingsDrawer extends StatelessWidget {
 
               // English font zoom + preview
               _LabeledSliderWithPreview(
-                label: 'English size',
+                label: 'Translation Size',
                 value: settings.englishZoom,
                 min: 0.8,
                 max: 1.8,

@@ -20,4 +20,7 @@ class AssetPaths {
 
   // Optional: manifest if you add one later
   static String get quranManifest => '$quranRoot/manifest.json';
+
+  // Unified Quran source (Hafs Smart v8)
+  static const kFGQPCQuranMushafSmartV8 = 'assets/quran/KFGQPCQuranMushaf_smart_v8.json';
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'tajweed.dart';
 
-/// Arabic text renderer for Qur'anic script.
-/// - Uses UthmanicHafs (declared in pubspec).
-/// - Forces OpenType features (mark/mkmk) so combining marks anchor on the base.
-/// - Tajweed rendering uses `tajweedSpans` with U+06DF overlay **disabled by default**.
+/// Arabic text renderer for Qur'anic script (Hafs Smart v8).
+/// - Uses KFGQPC Hafs Smart v8 font (declared in pubspec).
+/// - Forces useful OpenType features.
+/// - If tajweed=true, uses tajweedSpans(...) with U+06DF fallback overlay.
 class ArabicText extends StatelessWidget {
   final String text;
   final double? fontSize;
@@ -37,29 +37,26 @@ class ArabicText extends StatelessWidget {
   Widget build(BuildContext context) {
     final fs = (fontSize ?? size ?? 26).toDouble();
 
-    // IMPORTANT: no letterSpacing/wordSpacing for Qur'anic Uthmani script.
+    // IMPORTANT: do not set letterSpacing/wordSpacing for Qur'anic script.
     final TextStyle resolved = (style ?? const TextStyle()).copyWith(
-      fontFamily: 'KFGQPCUthmanicHAFSRegular',
+      // 👇 Make sure this matches the family name in pubspec.yaml
+      fontFamily: 'KFGQPCQuranicFontHafsSmart',
       fontSize: fs,
-      fontWeight: weight ?? FontWeight.w700,
-      // generous but not too airy; avoids clipping harakāt
-      height: 1.65,
+      fontWeight: weight ?? FontWeight.w600,
+      height: 2.0,
       color: color ?? Theme.of(context).colorScheme.onSurface,
-
-      // Force Arabic shaping/positioning so combining marks attach correctly
       fontFeatures: const <FontFeature>[
-        FontFeature.enable('mark'), // GPOS mark-to-base
-        FontFeature.enable('mkmk'), // GPOS mark-to-mark
-        FontFeature.enable('rlig'), // required ligatures
-        FontFeature.enable('calt'), // contextual alternates
+        FontFeature.enable('mark'),
+        FontFeature.enable('mkmk'),
+        FontFeature.enable('rlig'),
+        FontFeature.enable('calt'),
       ],
     );
 
-    // Lock line metrics to avoid jitter and clipping.
     final strut = StrutStyle(
-      fontFamily: 'KFGQPCUthmanicHAFSRegular',
+      fontFamily: 'KFGQPCQuranicFontHafsSmart',
       fontSize: fs,
-      height: 1.65,
+      height: 2.0,
       forceStrutHeight: true,
     );
 
@@ -70,7 +67,6 @@ class ArabicText extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Text(
           text,
-          locale: const Locale('ar'),
           textDirection: TextDirection.rtl,
           textAlign: resolvedAlign,
           style: resolved,
@@ -85,21 +81,12 @@ class ArabicText extends StatelessWidget {
       );
     }
 
-    // Tajwīd: build colored spans (overlay06df disabled by default).
     return Align(
       alignment: Alignment.centerRight,
       child: RichText(
-        locale: const Locale('ar'),
         textDirection: TextDirection.rtl,
         textAlign: resolvedAlign,
-        text: TextSpan(
-          children: tajweedSpans(
-            context,
-            text,
-            resolved,
-            overlay06df: false, // keep false to avoid stray dots
-          ),
-        ),
+        text: TextSpan(children: tajweedSpans(context, text, resolved)),
         strutStyle: strut,
         maxLines: maxLines,
         overflow: overflow ?? TextOverflow.visible,

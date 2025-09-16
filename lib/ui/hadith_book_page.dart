@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hublee/ui/widgets/app_scaffold.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../hadith/hadith_repository.dart';
-import '../hadith/models.dart';
 import 'widgets/arabic_text.dart';
 
 class HadithBookPage extends StatefulWidget {
@@ -38,7 +38,7 @@ class _HadithBookPageState extends State<HadithBookPage> {
         final error = snap.hasError ? snap.error.toString() : null;
         final book = snap.data;
 
-        return Scaffold(
+        return AppScaffold(
           appBar: AppBar(title: Text(book?.title ?? widget.title)),
           body: () {
             if (loading) return const Center(child: CircularProgressIndicator());
@@ -98,7 +98,7 @@ class _HadithBookPageState extends State<HadithBookPage> {
                             h.arabic!,
                             fontSize: 38, // match SurahDetailPage for clarity
                             weight: FontWeight.w800,
-                            tajweed: true,
+                            tajweed: false,
                             style: const TextStyle(
                               shadows: [
                                 Shadow(

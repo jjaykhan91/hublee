@@ -270,7 +270,7 @@ List<InlineSpan> tajweedSpans(
 
     // Always use the correct font for all clusters, including combining marks and signs
     if (cl.kind != _Kind.letter) {
-      spans.add(TextSpan(text: cl.text, style: base.copyWith(fontFamily: 'KFGQPCUthmanicHAFSRegular'))); // spaces & signs
+      spans.add(TextSpan(text: cl.text, style: base.copyWith(fontFamily: 'KFGQPCQuranicFontHafsSmart'))); // spaces & signs
       continue;
     }
 
