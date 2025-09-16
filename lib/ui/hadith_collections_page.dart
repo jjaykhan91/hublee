@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hublee/ui/widgets/app_scaffold.dart';
 import '../hadith/hadith_repository.dart';
 import 'hadith_books_page.dart';
 
@@ -9,7 +10,7 @@ class HadithCollectionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = const HadithRepository();
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(title: const Text('Hadith Collections')),
       body: FutureBuilder<List<HadithCollectionMeta>>(
         future: repo.loadCollections(),

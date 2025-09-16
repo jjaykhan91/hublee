@@ -6,6 +6,9 @@ import 'global_search_page.dart';
 import 'surah_list_page.dart';
 import 'hadith_collections_page.dart';
 
+// AppScaffold with built-in Settings drawer
+import 'widgets/app_scaffold.dart';
+
 class HomePage extends StatelessWidget {
   final VoidCallback onToggleTheme;
   const HomePage({super.key, required this.onToggleTheme});
@@ -35,18 +38,8 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('Hublee'),
-          actions: [
-            IconButton(
-              tooltip: 'Toggle theme',
-              onPressed: onToggleTheme,
-              icon: const Icon(Icons.brightness_6_rounded),
-            ),
-          ],
-        ),
+      child: AppScaffold(
+        titleText: 'Hublee',
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [

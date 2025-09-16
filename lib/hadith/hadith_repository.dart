@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart';
 
 import '../data/asset_paths.dart';
-import 'models.dart';
+import '../services/search_models.dart'; // 👈 use shared search models
 
 class HadithRepository {
   const HadithRepository();
@@ -30,16 +31,18 @@ class HadithRepository {
     }
     title ??= _titleFromFileName(bookFile);
 
-    // ✅ make the types explicit so we don’t end up with List<dynamic>
-    final List<Chapter> chapters = (root['chapters'] is List ? root['chapters'] : const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map<Chapter>(Chapter.fromJson)
-        .toList(growable: false);
+    // ✅ strong typing
+    final List<Chapter> chapters =
+        (root['chapters'] is List ? root['chapters'] : const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map<Chapter>(Chapter.fromJson)
+            .toList(growable: false);
 
-    final List<Hadith> hadiths = (root['hadiths'] is List ? root['hadiths'] : const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map<Hadith>(Hadith.fromJson)
-        .toList(growable: false);
+    final List<Hadith> hadiths =
+        (root['hadiths'] is List ? root['hadiths'] : const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map<Hadith>(Hadith.fromJson)
+            .toList(growable: false);
 
     return HadithBook(title: title, chapters: chapters, hadiths: hadiths);
   }
@@ -88,8 +91,10 @@ extension HadithRepositoryLists on HadithRepository {
   }
 
   /// Reads `assets/hadith/<collectionId>/index.json` and returns the books.
-  /// Supports your shape:
-  /// [ { "id": 10, "file": "nawawi40.json", "bookName": "...", "length": 42 }, ... ]
+  /// Supports shapes:
+  /// - List of maps: [{ "file": "...", "bookName": "...", "length": 42 }, ...]
+  /// - Map with books/items array
+  /// - Flat map { "file.json": "Title", ... }
   Future<List<HadithBookMeta>> loadBooksForCollection(String collectionId) async {
     final path = 'assets/hadith/$collectionId/index.json';
     final raw = await rootBundle.loadString(path);
@@ -103,6 +108,7 @@ extension HadithRepositoryLists on HadithRepository {
       if (arr is List) {
         list = arr;
       } else {
+        // flat map
         return decoded.entries
             .where((e) => e.value is String)
             .map((e) => HadithBookMeta(file: e.key.toString(), title: e.value as String))
@@ -122,21 +128,6 @@ extension HadithRepositoryLists on HadithRepository {
 }
 
 // ---------- Search ----------
-class HadithSearchHit {
-  final String collectionId;
-  final String bookFile;
-  final String? bookTitle;
-  final int hadithIndex; // 0-based
-  final String? snippet;
-  const HadithSearchHit({
-    required this.collectionId,
-    required this.bookFile,
-    required this.hadithIndex,
-    this.bookTitle,
-    this.snippet,
-  });
-}
-
 extension HadithSearch on HadithRepository {
   Future<List<HadithSearchHit>> searchHadith(String query, {int limit = 100}) async {
     final qLower = query.toLowerCase();
@@ -170,7 +161,7 @@ extension HadithSearch on HadithRepository {
             final idx = en.indexOf(qLower);
             if (idx >= 0) {
               final start = (idx - 40).clamp(0, en.length);
-              final end = (idx + qLower.length + 60).clamp(0, en.length);
+              final end   = (idx + qLower.length + 60).clamp(0, en.length);
               snippet = (h.english ?? '').substring(start, end).trim();
               if (start > 0) snippet = '…$snippet';
               if (end < en.length) snippet = '$snippet…';
@@ -192,6 +183,82 @@ extension HadithSearch on HadithRepository {
       }
     }
     return hits;
+  }
+}
+
+// ---------- Data models ----------
+
+@immutable
+class HadithBook {
+  final String title;
+  final List<Chapter> chapters;
+  final List<Hadith> hadiths;
+
+  const HadithBook({
+    required this.title,
+    required this.chapters,
+    required this.hadiths,
+  });
+}
+
+@immutable
+class Chapter {
+  final int? bookId;
+  final int? id;
+  final String? arabic;
+  final String? english;
+
+  const Chapter({this.bookId, this.id, this.arabic, this.english});
+
+  factory Chapter.fromJson(Map<String, dynamic> j) => Chapter(
+        bookId: _toInt(j['bookId']),
+        id: _toInt(j['id']),
+        arabic: j['arabic'] as String?,
+        english: j['english'] as String?,
+      );
+}
+
+@immutable
+class Hadith {
+  final int? id;
+  final int? idInBook;
+  final int? chapterId;
+  final int? bookId;
+  final String? arabic;
+  final String? english;  // may come from { text, narrator }
+  final String? narrator;
+
+  const Hadith({
+    this.id,
+    this.idInBook,
+    this.chapterId,
+    this.bookId,
+    this.arabic,
+    this.english,
+    this.narrator,
+  });
+
+  factory Hadith.fromJson(Map<String, dynamic> j) {
+    final en = j['english'];
+    String? english;
+    String? narrator;
+
+    if (en is String) {
+      english = en;
+    } else if (en is Map<String, dynamic>) {
+      english  = en['text'] as String?;
+      narrator = (en['narrator'] ?? j['narrator']) as String?;
+    }
+
+    return Hadith(
+      id: _toInt(j['id']),
+      idInBook: _toInt(j['idInBook']),
+      chapterId: _toInt(j['chapterId']),
+      bookId: _toInt(j['bookId']),
+      arabic: j['arabic'] as String?,
+      english: english,
+      narrator: narrator,
+    );
   }
 }
 
