@@ -1,45 +1,57 @@
+/// Builds the Material 3 light and dark [ThemeData] for Hublee.
+///
+/// Palette colours are hand-tuned for AMOLED-friendly dark mode
+/// and a clean, accessible light mode. Arabic text styles use the
+/// UthmanicHafs font with generous line height for readability.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'tajweed_extension.dart';
 
-// ===== Dark palette tuned for phones =====
-const _ink        = Color(0xFF0B0F14); // canvas
-const _surface1   = Color(0xFF11161C); // base surface
-const _surface2   = Color(0xFF151B22); // elevated/tiles
-const _outline    = Color(0xFF233042); // soft border
-const _onSurface  = Color(0xFFE7ECF2); // main text
-const _onSurface2 = Color(0xFFB8C2CF); // secondary
-const _muted      = Color(0xFF97A6B5); // hints / tertiary
-const _primary    = Color(0xFF8AB4FF); // calm blue
-const _onPrimary  = Color(0xFF0A1220);
-const _secondary  = Color(0xFF7DD3FC);
-const _error      = Color(0xFFFF6B6B);
+// ── Dark-mode palette ────────────────────────────────────────────
+const _darkCanvas = Color(0xFF0B0F14);
+const _darkSurface = Color(0xFF11161C);
+const _darkSurfaceElevated = Color(0xFF151B22);
+const _darkOutline = Color(0xFF233042);
+const _darkOnSurface = Color(0xFFE7ECF2);
+const _darkOnSurfaceSecondary = Color(0xFFB8C2CF);
+const _darkMuted = Color(0xFF97A6B5);
+const _darkPrimary = Color(0xFF8AB4FF);
+const _darkOnPrimary = Color(0xFF0A1220);
+const _darkSecondary = Color(0xFF7DD3FC);
+const _darkError = Color(0xFFFF6B6B);
 
-final _lightScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB));
+/// Light colour scheme seeded from a vivid blue.
+final _lightScheme = ColorScheme.fromSeed(
+  seedColor: const Color(0xFF2563EB),
+);
 
-final _darkScheme = const ColorScheme(
+/// Custom dark colour scheme with precise hand-picked values.
+const _darkScheme = ColorScheme(
   brightness: Brightness.dark,
-  primary: _primary,
-  onPrimary: _onPrimary,
+  primary: _darkPrimary,
+  onPrimary: _darkOnPrimary,
   primaryContainer: Color(0xFF2B3B55),
-  onPrimaryContainer: _onSurface,
-  secondary: _secondary,
-  onSecondary: _onSurface,
+  onPrimaryContainer: _darkOnSurface,
+  secondary: _darkSecondary,
+  onSecondary: _darkOnSurface,
   secondaryContainer: Color(0xFF1D2A36),
-  onSecondaryContainer: _onSurface,
+  onSecondaryContainer: _darkOnSurface,
   tertiary: Color(0xFFB5A7F5),
-  onTertiary: _onSurface,
+  onTertiary: _darkOnSurface,
   tertiaryContainer: Color(0xFF292342),
-  onTertiaryContainer: _onSurface,
-  error: _error,
-  onError: _onSurface,
+  onTertiaryContainer: _darkOnSurface,
+  error: _darkError,
+  onError: _darkOnSurface,
   errorContainer: Color(0xFF3A1E1E),
-  onErrorContainer: _onSurface,
-  surface: _surface1,
-  onSurface: _onSurface,
-  surfaceContainerHighest: _surface2,
-  onSurfaceVariant: _onSurface2,
-  outline: _outline,
+  onErrorContainer: _darkOnSurface,
+  surface: _darkSurface,
+  onSurface: _darkOnSurface,
+  surfaceContainerHighest: _darkSurfaceElevated,
+  onSurfaceVariant: _darkOnSurfaceSecondary,
+  outline: _darkOutline,
   outlineVariant: Color(0xFF1C2532),
   shadow: Colors.black,
   scrim: Colors.black,
@@ -48,8 +60,11 @@ final _darkScheme = const ColorScheme(
   inversePrimary: Color(0xFF2E6BEA),
 );
 
-// Force UthmanicHafs on Arabic-oriented sizes
-TextTheme _arabicTextTweaks(TextTheme base) {
+// ── Arabic text helpers ──────────────────────────────────────────
+
+/// Applies the UthmanicHafs font and generous line height to the
+/// text styles commonly used for Arabic content.
+TextTheme _applyArabicFontToTextTheme(TextTheme base) {
   return base.copyWith(
     bodyLarge: base.bodyLarge?.copyWith(
       fontFamily: 'UthmanicHafs',
@@ -66,38 +81,47 @@ TextTheme _arabicTextTweaks(TextTheme base) {
   );
 }
 
-// Add UthmanicHafs as a fallback so English can render Qur’anic symbols.
-TextTheme _withFallback(TextTheme base) {
-  const ff = ['UthmanicHafs'];
-  TextStyle? add(TextStyle? s) => s?.copyWith(fontFamilyFallback: ff);
+/// Adds UthmanicHafs as a fallback font family so that any
+/// style can render Qur'anic symbols even when the primary font
+/// is a Latin typeface.
+TextTheme _addArabicFontFallback(TextTheme base) {
+  const fallbackFonts = ['UthmanicHafs'];
+  TextStyle? withFallback(TextStyle? style) =>
+      style?.copyWith(fontFamilyFallback: fallbackFonts);
+
   return base.copyWith(
-    displayLarge:  add(base.displayLarge),
-    displayMedium: add(base.displayMedium),
-    displaySmall:  add(base.displaySmall),
-    headlineLarge: add(base.headlineLarge),
-    headlineMedium:add(base.headlineMedium),
-    headlineSmall: add(base.headlineSmall),
-    titleLarge:    add(base.titleLarge),
-    titleMedium:   add(base.titleMedium),
-    titleSmall:    add(base.titleSmall),
-    bodyLarge:     add(base.bodyLarge),
-    bodyMedium:    add(base.bodyMedium),
-    bodySmall:     add(base.bodySmall),
-    labelLarge:    add(base.labelLarge),
-    labelMedium:   add(base.labelMedium),
-    labelSmall:    add(base.labelSmall),
+    displayLarge: withFallback(base.displayLarge),
+    displayMedium: withFallback(base.displayMedium),
+    displaySmall: withFallback(base.displaySmall),
+    headlineLarge: withFallback(base.headlineLarge),
+    headlineMedium: withFallback(base.headlineMedium),
+    headlineSmall: withFallback(base.headlineSmall),
+    titleLarge: withFallback(base.titleLarge),
+    titleMedium: withFallback(base.titleMedium),
+    titleSmall: withFallback(base.titleSmall),
+    bodyLarge: withFallback(base.bodyLarge),
+    bodyMedium: withFallback(base.bodyMedium),
+    bodySmall: withFallback(base.bodySmall),
+    labelLarge: withFallback(base.labelLarge),
+    labelMedium: withFallback(base.labelMedium),
+    labelSmall: withFallback(base.labelSmall),
   );
 }
 
+// ── Public theme builders ────────────────────────────────────────
+
+/// Builds the light [ThemeData] with Material 3 colour scheme,
+/// Arabic text tweaks, and the [TajweedTheme] extension.
 ThemeData buildLightTheme() {
   final base = ThemeData.light(useMaterial3: true);
-  final text = _withFallback(_arabicTextTweaks(base.textTheme));
+  final textTheme = _addArabicFontFallback(
+    _applyArabicFontToTextTheme(base.textTheme),
+  );
 
   return base.copyWith(
     colorScheme: _lightScheme,
-    textTheme: text,
+    textTheme: textTheme,
     scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-
     cardTheme: const CardThemeData(
       surfaceTintColor: Colors.transparent,
       elevation: 1,
@@ -105,78 +129,75 @@ ThemeData buildLightTheme() {
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
-
     appBarTheme: AppBarTheme(
       backgroundColor: _lightScheme.surface,
       foregroundColor: _lightScheme.onSurface,
       elevation: 0,
       centerTitle: true,
     ),
-
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
-      hintStyle: TextStyle(color: _muted),
+      hintStyle: TextStyle(color: _darkMuted),
       contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
         borderSide: BorderSide.none,
       ),
     ),
-
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
   );
 }
 
+/// Builds the dark [ThemeData] with an AMOLED-friendly palette,
+/// Arabic text tweaks, and the [TajweedTheme] extension.
 ThemeData buildDarkTheme() {
   final base = ThemeData.dark(useMaterial3: true);
-  final text = _withFallback(_arabicTextTweaks(base.textTheme)).apply(
-    bodyColor: _onSurface,
-    displayColor: _onSurface,
+  final textTheme = _addArabicFontFallback(
+    _applyArabicFontToTextTheme(base.textTheme),
+  ).apply(
+    bodyColor: _darkOnSurface,
+    displayColor: _darkOnSurface,
   );
 
   return base.copyWith(
     colorScheme: _darkScheme,
-    textTheme: text,
-    scaffoldBackgroundColor: _ink,
-    canvasColor: _ink,
-
+    textTheme: textTheme,
+    scaffoldBackgroundColor: _darkCanvas,
+    canvasColor: _darkCanvas,
     appBarTheme: const AppBarTheme(
-      backgroundColor: _ink,
-      foregroundColor: _onSurface,
+      backgroundColor: _darkCanvas,
+      foregroundColor: _darkOnSurface,
       elevation: 0,
       centerTitle: true,
       systemOverlayStyle: SystemUiOverlayStyle.light,
     ),
-
     cardTheme: const CardThemeData(
-      color: _surface2,
+      color: _darkSurfaceElevated,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
-        side: BorderSide(color: _outline, width: 1),
+        side: BorderSide(color: _darkOutline, width: 1),
       ),
       margin: EdgeInsets.zero,
     ),
-
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
-      fillColor: _surface2,
-      hintStyle: TextStyle(color: _muted),
-      labelStyle: TextStyle(color: _onSurface2),
-      prefixIconColor: _onSurface2,
-      suffixIconColor: _onSurface2,
+      fillColor: _darkSurfaceElevated,
+      hintStyle: TextStyle(color: _darkMuted),
+      labelStyle: TextStyle(color: _darkOnSurfaceSecondary),
+      prefixIconColor: _darkOnSurfaceSecondary,
+      suffixIconColor: _darkOnSurfaceSecondary,
       contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide(color: _outline),
+        borderSide: BorderSide(color: _darkOutline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide(color: _primary, width: 1.4),
+        borderSide: BorderSide(color: _darkPrimary, width: 1.4),
       ),
     ),
-
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
   );
 }

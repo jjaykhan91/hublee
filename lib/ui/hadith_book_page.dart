@@ -1,15 +1,32 @@
+/// Full-screen reading view for a single hadith book.
+///
+/// Displays each hadith with its number, optional narrator,
+/// Arabic text (no tajweed), English translation, and a bookmark
+/// toggle. Supports scroll-to-index via query parameter.
+library;
+
 import 'package:flutter/material.dart';
-import 'package:hublee/ui/widgets/app_scaffold.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../hadith/hadith_repository.dart';
+import '../services/settings_scope.dart';
+import '../services/bookmark_scope.dart';
+import '../services/bookmark_service.dart';
 import 'widgets/arabic_text.dart';
 
+/// Loads and renders all hadiths within a single book.
 class HadithBookPage extends StatefulWidget {
+  /// Collection directory ID (e.g. `"forties"`).
   final String collectionId;
+
+  /// JSON filename of the book (e.g. `"nawawi40.json"`).
   final String bookFile;
+
+  /// Human-readable book title for the app bar.
   final String title;
-  final int? scrollToIndex; // 0-based
+
+  /// If provided, the list auto-scrolls to this zero-based index.
+  final int? scrollToIndex;
 
   const HadithBookPage({
     super.key,
@@ -24,103 +41,239 @@ class HadithBookPage extends StatefulWidget {
 }
 
 class _HadithBookPageState extends State<HadithBookPage> {
-  final _scroll = ItemScrollController();
-  final _positions = ItemPositionsListener.create();
+  final _scrollController = ItemScrollController();
+  final _positionsListener = ItemPositionsListener.create();
 
   @override
   Widget build(BuildContext context) {
-    final repo = const HadithRepository();
+    final repository = const HadithRepository();
 
     return FutureBuilder<HadithBook>(
-      future: repo.loadBook(widget.collectionId, widget.bookFile),
-      builder: (context, snap) {
-        final loading = snap.connectionState != ConnectionState.done;
-        final error = snap.hasError ? snap.error.toString() : null;
-        final book = snap.data;
+      future: repository.loadBook(
+        widget.collectionId,
+        widget.bookFile,
+      ),
+      builder: (context, snapshot) {
+        final isLoading = snapshot.connectionState != ConnectionState.done;
+        final errorMessage =
+            snapshot.hasError ? snapshot.error.toString() : null;
+        final book = snapshot.data;
 
-        return AppScaffold(
-          appBar: AppBar(title: Text(book?.title ?? widget.title)),
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(book?.title ?? widget.title),
+          ),
           body: () {
-            if (loading) return const Center(child: CircularProgressIndicator());
-            if (error != null) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Error: $error\n\nTried: assets/hadith/${widget.collectionId}/${widget.bookFile}',
-                ),
+            if (isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
               );
             }
-
-            final items = book!.hadiths;
-
-            // Jump exactly to the requested item after first frame
-            if (widget.scrollToIndex != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final idx = widget.scrollToIndex!.clamp(0, items.length - 1);
-                if (_scroll.isAttached) {
-                  // instant jump (no lag), then a tiny smooth align
-                  _scroll.jumpTo(index: idx);
-                  _scroll.scrollTo(
-                    index: idx,
-                    duration: const Duration(milliseconds: 200),
-                    alignment: 0.08,
-                    curve: Curves.easeInOut,
-                  );
-                }
-              });
+            if (errorMessage != null) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Error: $errorMessage'),
+              );
             }
-
-            return ScrollablePositionedList.separated(
-              itemScrollController: _scroll,
-              itemPositionsListener: _positions,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final h = items[i];
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Hadith ${i + 1}${h.idInBook != null ? ' • #${h.idInBook}' : ''}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        if (h.narrator?.isNotEmpty == true)
-                          Text(h.narrator!, style: Theme.of(context).textTheme.labelMedium),
-                        if (h.narrator?.isNotEmpty == true) const SizedBox(height: 6),
-                        if (h.arabic?.isNotEmpty == true)
-                          ArabicText(
-                            h.arabic!,
-                            fontSize: 38, // match SurahDetailPage for clarity
-                            weight: FontWeight.w800,
-                            tajweed: false,
-                            style: const TextStyle(
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 2,
-                                  color: Colors.black54,
-                                  offset: Offset(1, 1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (h.arabic?.isNotEmpty == true) const SizedBox(height: 8),
-                        if (h.english?.isNotEmpty == true)
-                          Text(h.english!, style: Theme.of(context).textTheme.bodyMedium),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+            return _buildHadithList(context, book!);
           }(),
         );
       },
+    );
+  }
+
+  /// Builds the scrollable hadith list with auto-scroll support.
+  Widget _buildHadithList(BuildContext context, HadithBook book) {
+    final hadiths = book.hadiths;
+
+    // Persist this position as last-read.
+    _saveLastReadPosition(book);
+
+    // Auto-scroll to the requested index after the frame renders.
+    if (widget.scrollToIndex != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final targetIndex = widget.scrollToIndex!.clamp(0, hadiths.length - 1);
+        if (_scrollController.isAttached) {
+          _scrollController.jumpTo(index: targetIndex);
+          _scrollController.scrollTo(
+            index: targetIndex,
+            duration: const Duration(milliseconds: 200),
+            alignment: 0.08,
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+
+    final settings = SettingsScope.of(context);
+    final bookmarkService = BookmarkScope.of(context);
+
+    return ScrollablePositionedList.separated(
+      itemScrollController: _scrollController,
+      itemPositionsListener: _positionsListener,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: hadiths.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final hadith = hadiths[index];
+        final bookmarkId =
+            'hadith:${widget.collectionId}:${widget.bookFile}:$index';
+        final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
+        final colorScheme = Theme.of(context).colorScheme;
+
+        return _HadithCard(
+          hadith: hadith,
+          displayIndex: index + 1,
+          colorScheme: colorScheme,
+          arabicZoom: settings.arabicZoom,
+          englishZoom: settings.englishZoom,
+          isBookmarked: isBookmarked,
+          onBookmarkToggle: () {
+            bookmarkService.toggleBookmark(
+              Bookmark.hadith(
+                collectionId: widget.collectionId,
+                bookFile: widget.bookFile,
+                bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+                hadithIndex: index,
+                snippet: hadith.english,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Records this book as the user's last-read hadith position.
+  void _saveLastReadPosition(HadithBook book) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BookmarkScope.of(context).saveLastReadHadith(
+        collectionId: widget.collectionId,
+        bookFile: widget.bookFile,
+        bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+        hadithIndex: widget.scrollToIndex ?? 0,
+      );
+    });
+  }
+}
+
+/// A single hadith card with number badge, narrator, Arabic text,
+/// English translation, and bookmark toggle.
+class _HadithCard extends StatelessWidget {
+  final Hadith hadith;
+
+  /// 1-based display number for the hadith.
+  final int displayIndex;
+  final ColorScheme colorScheme;
+  final double arabicZoom;
+  final double englishZoom;
+  final bool isBookmarked;
+  final VoidCallback onBookmarkToggle;
+
+  const _HadithCard({
+    required this.hadith,
+    required this.displayIndex,
+    required this.colorScheme,
+    required this.arabicZoom,
+    required this.englishZoom,
+    required this.isBookmarked,
+    required this.onBookmarkToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header: hadith number badge + bookmark icon
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Hadith $displayIndex'
+                    '${hadith.idInBook != null ? ' \u2022 #${hadith.idInBook}' : ''}',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    isBookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_outline_rounded,
+                    color: isBookmarked
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.3),
+                    size: 22,
+                  ),
+                  onPressed: onBookmarkToggle,
+                  visualDensity: VisualDensity.compact,
+                  tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Narrator (isnad) label
+            if (hadith.narrator?.isNotEmpty == true) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  hadith.narrator!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Arabic text (no tajweed for hadith)
+            if (hadith.arabic?.isNotEmpty == true)
+              ArabicText(
+                hadith.arabic!,
+                fontSize: 34 * arabicZoom,
+                weight: FontWeight.w800,
+                tajweed: false,
+              ),
+            if (hadith.arabic?.isNotEmpty == true) const SizedBox(height: 14),
+
+            // English translation
+            if (hadith.english?.isNotEmpty == true)
+              Text(
+                hadith.english!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 15 * englishZoom,
+                      height: 1.5,
+                      color: colorScheme.onSurface.withValues(alpha: 0.85),
+                    ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

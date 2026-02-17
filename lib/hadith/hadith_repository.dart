@@ -1,180 +1,322 @@
+/// Loads hadith collections, book indexes, individual books,
+/// and supports full-text search across all hadith data.
+///
+/// The hadith asset layout is:
+/// ```
+/// assets/hadith/
+///   <collectionId>/        (e.g. "forties", "the_9_books")
+///     index.json           — list of books in this collection
+///     <book>.json          — individual book with chapters & hadiths
+/// ```
+library;
+
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
-import '../services/search_models.dart'; // 👈 use shared search models
+import '../services/search_models.dart';
 
+// ────────────────────────────────────────────────────────────────
+//  Core repository
+// ────────────────────────────────────────────────────────────────
+
+/// Loads individual hadith book JSON files and parses them into
+/// strongly-typed [HadithBook] objects.
 class HadithRepository {
   const HadithRepository();
 
-  // ---------- Load a single book ----------
-  Future<HadithBook> loadBook(String collectionId, String bookFile) async {
+  /// Loads and parses a single hadith book.
+  ///
+  /// [collectionId] identifies the collection directory (e.g. `"forties"`).
+  /// [bookFile] is the filename within that directory (e.g. `"nawawi40.json"`).
+  Future<HadithBook> loadBook(
+    String collectionId,
+    String bookFile,
+  ) async {
     final path = AssetPaths.hadith(collectionId, bookFile);
-    final raw = await rootBundle.loadString(path);
-    final root = json.decode(raw);
+    final rawJson = await rootBundle.loadString(path);
+    final root = json.decode(rawJson);
 
     if (root is! Map<String, dynamic>) {
-      throw const FormatException('Expected top-level Map for hadith book JSON.');
+      throw const FormatException(
+        'Expected top-level Map for hadith book JSON.',
+      );
     }
 
-    // Title from english.title -> metadata.english.title -> filename
-    String? title;
-    final en1 = root['english'];
-    if (en1 is Map<String, dynamic>) title = en1['title'] as String?;
-    if (title == null) {
-      final meta = root['metadata'];
-      if (meta is Map<String, dynamic>) {
-        final metaEn = meta['english'];
-        if (metaEn is Map<String, dynamic>) title = metaEn['title'] as String?;
-      }
-    }
-    title ??= _titleFromFileName(bookFile);
+    // Resolve the display title by checking multiple JSON shapes.
+    final title = _resolveBookTitle(root, bookFile);
 
-    // ✅ strong typing
-    final List<Chapter> chapters =
-        (root['chapters'] is List ? root['chapters'] : const <dynamic>[])
-            .whereType<Map<String, dynamic>>()
-            .map<Chapter>(Chapter.fromJson)
-            .toList(growable: false);
+    final chapters = (root['chapters'] is List
+            ? root['chapters'] as List
+            : const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map<HadithChapter>(HadithChapter.fromJson)
+        .toList(growable: false);
 
-    final List<Hadith> hadiths =
-        (root['hadiths'] is List ? root['hadiths'] : const <dynamic>[])
+    final hadiths =
+        (root['hadiths'] is List ? root['hadiths'] as List : const <dynamic>[])
             .whereType<Map<String, dynamic>>()
             .map<Hadith>(Hadith.fromJson)
             .toList(growable: false);
 
-    return HadithBook(title: title, chapters: chapters, hadiths: hadiths);
-  }
-
-  String _titleFromFileName(String file) {
-    final base = file.split('/').last.split('.').first;
-    return base.replaceAll('_', ' ').replaceFirstMapped(
-      RegExp(r'^\w'),
-      (m) => m.group(0)!.toUpperCase(),
+    return HadithBook(
+      title: title,
+      chapters: chapters,
+      hadiths: hadiths,
     );
   }
-}
 
-// ---------- Lightweight list metadata + loaders ----------
-class HadithCollectionMeta {
-  final String id;     // e.g., 'forties'
-  final String title;  // e.g., 'Forties'
-  final int? count;
-  const HadithCollectionMeta({required this.id, required this.title, this.count});
-}
+  /// Attempts to extract a book title from the JSON root using
+  /// several common key paths. Falls back to a title derived
+  /// from the file name.
+  String _resolveBookTitle(
+    Map<String, dynamic> root,
+    String bookFile,
+  ) {
+    // Try root.english.title
+    final english = root['english'];
+    if (english is Map<String, dynamic>) {
+      final title = english['title'] as String?;
+      if (title != null) return title;
+    }
 
-class HadithBookMeta {
-  final String file;   // 'nawawi40.json'
-  final String title;  // display title from index.json (bookName/title)
-  final int? length;
-  const HadithBookMeta({required this.file, required this.title, this.length});
-}
-
-extension HadithRepositoryLists on HadithRepository {
-  Future<List<HadithCollectionMeta>> loadCollections() async {
-    final known = <HadithCollectionMeta>[
-      const HadithCollectionMeta(id: 'forties', title: 'Forties'),
-      const HadithCollectionMeta(id: 'the_9_books', title: 'The Nine Books'),
-      const HadithCollectionMeta(id: 'other_books', title: 'Other Books'),
-    ];
-    final out = <HadithCollectionMeta>[];
-    for (final c in known) {
-      try {
-        final books = await loadBooksForCollection(c.id);
-        out.add(HadithCollectionMeta(id: c.id, title: c.title, count: books.length));
-      } catch (_) {
-        out.add(c);
+    // Try root.metadata.english.title
+    final metadata = root['metadata'];
+    if (metadata is Map<String, dynamic>) {
+      final metaEnglish = metadata['english'];
+      if (metaEnglish is Map<String, dynamic>) {
+        final title = metaEnglish['title'] as String?;
+        if (title != null) return title;
       }
     }
-    return out;
+
+    return _titleFromFileName(bookFile);
   }
 
-  /// Reads `assets/hadith/<collectionId>/index.json` and returns the books.
-  /// Supports shapes:
-  /// - List of maps: [{ "file": "...", "bookName": "...", "length": 42 }, ...]
-  /// - Map with books/items array
-  /// - Flat map { "file.json": "Title", ... }
-  Future<List<HadithBookMeta>> loadBooksForCollection(String collectionId) async {
-    final path = 'assets/hadith/$collectionId/index.json';
-    final raw = await rootBundle.loadString(path);
-    final decoded = json.decode(raw);
+  /// Derives a human-readable title from a file name.
+  ///
+  /// Example: `"nawawi40.json"` → `"Nawawi40"`
+  String _titleFromFileName(String file) {
+    final baseName = file.split('/').last.split('.').first;
+    return baseName.replaceAll('_', ' ').replaceFirstMapped(
+          RegExp(r'^\w'),
+          (match) => match.group(0)!.toUpperCase(),
+        );
+  }
+}
 
-    List<dynamic> list;
+// ────────────────────────────────────────────────────────────────
+//  Collection & book metadata
+// ────────────────────────────────────────────────────────────────
+
+/// Lightweight descriptor for a hadith collection directory.
+@immutable
+class HadithCollectionMeta {
+  /// Directory name under `assets/hadith/` (e.g. `"forties"`).
+  final String id;
+
+  /// Human-readable title (e.g. `"Forties"`).
+  final String title;
+
+  /// Number of books in this collection, if known.
+  final int? count;
+
+  const HadithCollectionMeta({
+    required this.id,
+    required this.title,
+    this.count,
+  });
+}
+
+/// Lightweight descriptor for a single hadith book within a
+/// collection.
+@immutable
+class HadithBookMeta {
+  /// JSON filename (e.g. `"nawawi40.json"`).
+  final String file;
+
+  /// Display title from `index.json`.
+  final String title;
+
+  /// Number of hadiths in this book, if provided by the index.
+  final int? length;
+
+  const HadithBookMeta({
+    required this.file,
+    required this.title,
+    this.length,
+  });
+}
+
+// ────────────────────────────────────────────────────────────────
+//  Collection/book listing extension
+// ────────────────────────────────────────────────────────────────
+
+/// Extends [HadithRepository] with methods to discover available
+/// collections and their books.
+extension HadithRepositoryListing on HadithRepository {
+  /// Returns metadata for all known hadith collections.
+  ///
+  /// Currently hard-coded to three top-level directories. The
+  /// book count is resolved lazily from each collection's
+  /// `index.json`.
+  Future<List<HadithCollectionMeta>> loadCollections() async {
+    const knownCollections = <HadithCollectionMeta>[
+      HadithCollectionMeta(id: 'forties', title: 'Forties'),
+      HadithCollectionMeta(
+        id: 'the_9_books',
+        title: 'The Nine Books',
+      ),
+      HadithCollectionMeta(
+        id: 'other_books',
+        title: 'Other Books',
+      ),
+    ];
+
+    final results = <HadithCollectionMeta>[];
+    for (final collection in knownCollections) {
+      try {
+        final books = await loadBooksForCollection(collection.id);
+        results.add(HadithCollectionMeta(
+          id: collection.id,
+          title: collection.title,
+          count: books.length,
+        ));
+      } catch (_) {
+        // If the index is missing, keep the collection without a count.
+        results.add(collection);
+      }
+    }
+    return results;
+  }
+
+  /// Reads `assets/hadith/<collectionId>/index.json` and returns
+  /// the list of books.
+  ///
+  /// Supports multiple JSON shapes:
+  /// - **Array of maps**: `[{ "file": "...", "bookName": "..." }]`
+  /// - **Map with nested array**: `{ "books": [...] }`
+  /// - **Flat map**: `{ "file.json": "Title", ... }`
+  Future<List<HadithBookMeta>> loadBooksForCollection(
+    String collectionId,
+  ) async {
+    final path = 'assets/hadith/$collectionId/index.json';
+    final rawJson = await rootBundle.loadString(path);
+    final decoded = json.decode(rawJson);
+
+    List<dynamic> bookList;
+
     if (decoded is List) {
-      list = decoded;
+      bookList = decoded;
     } else if (decoded is Map<String, dynamic>) {
-      final arr = decoded['books'] ?? decoded['items'];
-      if (arr is List) {
-        list = arr;
+      // Try a nested array first.
+      final nested = decoded['books'] ?? decoded['items'];
+      if (nested is List) {
+        bookList = nested;
       } else {
-        // flat map
+        // Flat map: { "filename.json": "Display title", ... }
         return decoded.entries
-            .where((e) => e.value is String)
-            .map((e) => HadithBookMeta(file: e.key.toString(), title: e.value as String))
+            .where((entry) => entry.value is String)
+            .map((entry) => HadithBookMeta(
+                  file: entry.key.toString(),
+                  title: entry.value as String,
+                ))
             .toList(growable: false);
       }
     } else {
       throw const FormatException('Unsupported index.json shape');
     }
 
-    return list.whereType<Map<String, dynamic>>().map<HadithBookMeta>((m) {
-      final file = (m['file'] ?? m['path'] ?? m['name']).toString();
-      final title = (m['bookName'] ?? m['title'] ?? m['english'] ?? m['label'] ?? m['name'] ?? file).toString();
-      final length = _toInt(m['length']);
-      return HadithBookMeta(file: file, title: title, length: length);
+    return bookList
+        .whereType<Map<String, dynamic>>()
+        .map<HadithBookMeta>((map) {
+      final file = (map['file'] ?? map['path'] ?? map['name']).toString();
+      final title = (map['bookName'] ??
+              map['title'] ??
+              map['english'] ??
+              map['label'] ??
+              map['name'] ??
+              file)
+          .toString();
+      final length = _toInt(map['length']);
+      return HadithBookMeta(
+        file: file,
+        title: title,
+        length: length,
+      );
     }).toList(growable: false);
   }
 }
 
-// ---------- Search ----------
-extension HadithSearch on HadithRepository {
-  Future<List<HadithSearchHit>> searchHadith(String query, {int limit = 100}) async {
-    final qLower = query.toLowerCase();
+// ────────────────────────────────────────────────────────────────
+//  Full-text search extension
+// ────────────────────────────────────────────────────────────────
+
+/// Extends [HadithRepository] with a brute-force full-text search
+/// across all collections and books.
+extension HadithSearchExtension on HadithRepository {
+  /// Searches all hadith text (English and Arabic) for [query].
+  ///
+  /// Returns up to [limit] matching [HadithSearchHit] results.
+  /// The search is case-insensitive for English text and exact
+  /// for Arabic text.
+  Future<List<HadithSearchHit>> searchHadith(
+    String query, {
+    int limit = 100,
+  }) async {
+    final queryLower = query.toLowerCase();
     final hits = <HadithSearchHit>[];
 
     final collections = await loadCollections();
-    for (final c in collections) {
+    for (final collection in collections) {
       late final List<HadithBookMeta> books;
       try {
-        books = await loadBooksForCollection(c.id);
+        books = await loadBooksForCollection(collection.id);
       } catch (_) {
         continue;
       }
 
-      for (final b in books) {
+      for (final bookMeta in books) {
         HadithBook book;
         try {
-          book = await loadBook(c.id, b.file);
+          book = await loadBook(collection.id, bookMeta.file);
         } catch (_) {
           continue;
         }
 
-        for (var i = 0; i < book.hadiths.length; i++) {
-          final h = book.hadiths[i];
-          final en = (h.english ?? '').toLowerCase();
-          final ar = (h.arabic ?? '');
-          if (!(en.contains(qLower) || ar.contains(query))) continue;
+        for (var index = 0; index < book.hadiths.length; index++) {
+          final hadith = book.hadiths[index];
+          final englishLower = (hadith.english ?? '').toLowerCase();
+          final arabicText = hadith.arabic ?? '';
 
+          // Check if either text contains the query.
+          final isMatch =
+              englishLower.contains(queryLower) || arabicText.contains(query);
+          if (!isMatch) continue;
+
+          // Build a snippet around the match in English text.
           String? snippet;
-          if (en.isNotEmpty) {
-            final idx = en.indexOf(qLower);
-            if (idx >= 0) {
-              final start = (idx - 40).clamp(0, en.length);
-              final end   = (idx + qLower.length + 60).clamp(0, en.length);
-              snippet = (h.english ?? '').substring(start, end).trim();
+          if (englishLower.isNotEmpty) {
+            final matchIndex = englishLower.indexOf(queryLower);
+            if (matchIndex >= 0) {
+              final start = (matchIndex - 40).clamp(0, englishLower.length);
+              final end = (matchIndex + queryLower.length + 60)
+                  .clamp(0, englishLower.length);
+              snippet = (hadith.english ?? '').substring(start, end).trim();
               if (start > 0) snippet = '…$snippet';
-              if (end < en.length) snippet = '$snippet…';
+              if (end < englishLower.length) snippet = '$snippet…';
             } else {
-              snippet = h.english;
+              snippet = hadith.english;
             }
           }
 
           hits.add(HadithSearchHit(
-            collectionId: c.id,
-            bookFile: b.file,
-            bookTitle: book.title.isNotEmpty ? book.title : b.title,
-            hadithIndex: i,
+            collectionId: collection.id,
+            bookFile: bookMeta.file,
+            bookTitle: book.title.isNotEmpty ? book.title : bookMeta.title,
+            hadithIndex: index,
             snippet: snippet,
           ));
 
@@ -186,12 +328,16 @@ extension HadithSearch on HadithRepository {
   }
 }
 
-// ---------- Data models ----------
+// ────────────────────────────────────────────────────────────────
+//  Data models
+// ────────────────────────────────────────────────────────────────
 
+/// A fully loaded hadith book, containing its title, chapter
+/// headings, and individual hadith entries.
 @immutable
 class HadithBook {
   final String title;
-  final List<Chapter> chapters;
+  final List<HadithChapter> chapters;
   final List<Hadith> hadiths;
 
   const HadithBook({
@@ -201,31 +347,48 @@ class HadithBook {
   });
 }
 
+/// A chapter heading within a hadith book.
 @immutable
-class Chapter {
+class HadithChapter {
   final int? bookId;
   final int? id;
   final String? arabic;
   final String? english;
 
-  const Chapter({this.bookId, this.id, this.arabic, this.english});
+  const HadithChapter({
+    this.bookId,
+    this.id,
+    this.arabic,
+    this.english,
+  });
 
-  factory Chapter.fromJson(Map<String, dynamic> j) => Chapter(
-        bookId: _toInt(j['bookId']),
-        id: _toInt(j['id']),
-        arabic: j['arabic'] as String?,
-        english: j['english'] as String?,
+  /// Parses a chapter from its JSON representation.
+  factory HadithChapter.fromJson(Map<String, dynamic> json) => HadithChapter(
+        bookId: _toInt(json['bookId']),
+        id: _toInt(json['id']),
+        arabic: json['arabic'] as String?,
+        english: json['english'] as String?,
       );
 }
 
+/// A single hadith entry with Arabic text, English translation,
+/// and optional narrator information.
 @immutable
 class Hadith {
   final int? id;
+
+  /// The hadith number within its book.
   final int? idInBook;
   final int? chapterId;
   final int? bookId;
+
+  /// Arabic text of the hadith (no tajweed markup).
   final String? arabic;
-  final String? english;  // may come from { text, narrator }
+
+  /// English translation text.
+  final String? english;
+
+  /// Narrator chain (isnad), if provided separately.
   final String? narrator;
 
   const Hadith({
@@ -238,33 +401,40 @@ class Hadith {
     this.narrator,
   });
 
-  factory Hadith.fromJson(Map<String, dynamic> j) {
-    final en = j['english'];
+  /// Parses a hadith from JSON.
+  ///
+  /// Handles two shapes for the "english" field:
+  /// - A plain string: `"english": "..."`
+  /// - A nested object: `"english": { "text": "...", "narrator": "..." }`
+  factory Hadith.fromJson(Map<String, dynamic> json) {
+    final englishField = json['english'];
     String? english;
     String? narrator;
 
-    if (en is String) {
-      english = en;
-    } else if (en is Map<String, dynamic>) {
-      english  = en['text'] as String?;
-      narrator = (en['narrator'] ?? j['narrator']) as String?;
+    if (englishField is String) {
+      english = englishField;
+    } else if (englishField is Map<String, dynamic>) {
+      english = englishField['text'] as String?;
+      narrator = (englishField['narrator'] ?? json['narrator']) as String?;
     }
 
     return Hadith(
-      id: _toInt(j['id']),
-      idInBook: _toInt(j['idInBook']),
-      chapterId: _toInt(j['chapterId']),
-      bookId: _toInt(j['bookId']),
-      arabic: j['arabic'] as String?,
+      id: _toInt(json['id']),
+      idInBook: _toInt(json['idInBook']),
+      chapterId: _toInt(json['chapterId']),
+      bookId: _toInt(json['bookId']),
+      arabic: json['arabic'] as String?,
       english: english,
       narrator: narrator,
     );
   }
 }
 
-int? _toInt(dynamic v) {
-  if (v == null) return null;
-  if (v is int) return v;
-  if (v is String) return int.tryParse(v);
+/// Safely converts a dynamic value to [int], handling `null`,
+/// `int`, and `String` inputs.
+int? _toInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value);
   return null;
 }

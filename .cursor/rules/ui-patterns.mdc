@@ -1,0 +1,56 @@
+---
+alwaysApply: true
+---
+# UI Patterns
+
+## App Structure
+
+- `AppShell` (`lib/ui/app_shell.dart`): Root shell with `NavigationBar` (5 tabs)
+- Tab pages use plain `Scaffold` with AppBar
+- Detail pages (reading views) push full-screen above the shell via `parentNavigatorKey`
+
+## Navigation
+
+```dart
+// Switch to a tab
+context.go('/quran');
+
+// Push a detail page (full screen, no bottom nav)
+context.push('/quran/1');
+context.push('/quran/2?ayah=255');
+context.push('/hadith/forties/nawawi40.json?title=Nawawi%2040');
+context.push('/search');
+```
+
+## Scope Access
+
+- Font zoom: `SettingsScope.of(context).arabicZoom` / `.englishZoom`
+- Theme toggle: `AppScope.of(context).toggleTheme()`
+- Bookmarks: `BookmarkScope.of(context)`
+- Theme mode: `Theme.of(context).brightness`
+
+## Quran Detail Page
+
+- Shows Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
+- Each ayah has a styled number badge + bookmark icon
+- Arabic with tajweed coloring + English translation below
+- Tajweed legend at the bottom
+- Saves last-read position automatically
+
+## Hadith Book Page
+
+- Each hadith has a styled number badge + bookmark icon
+- Narrator shown in a distinct container
+- Arabic without tajweed + English below
+- Saves last-read position automatically
+
+## Search
+
+- Debounced text input (300ms)
+- Results grouped by Quran / Hadith with counts
+- Results navigate to detail pages with scroll-to position
+
+## Reusable Widgets
+
+- `ArabicText` -- Arabic rendering with Tajweed support
+- `GradientTile` -- Card with gradient background, icon, title, subtitle

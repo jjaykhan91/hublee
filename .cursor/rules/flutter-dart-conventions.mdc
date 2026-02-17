@@ -1,0 +1,52 @@
+---
+alwaysApply: true
+---
+# Flutter & Dart Conventions
+
+## Dart Style
+
+- Prefer `const` constructors wherever possible
+- Use `final` for fields that don't change after initialization
+- Use named parameters for widgets with more than 2 parameters
+- Follow effective Dart naming: `lowerCamelCase` for variables/functions, `UpperCamelCase` for classes/enums
+
+## Widget Patterns
+
+- Prefer `StatelessWidget` over `StatefulWidget` unless local mutable state is needed
+- Use `FutureBuilder` for loading async data in widgets
+- Extract private helper widgets as `_WidgetName` in the same file for page-specific components
+- All pages use plain `Scaffold` (not AppScaffold -- that's deprecated)
+
+## Theming
+
+- Never hardcode colors -- always use `Theme.of(context).colorScheme`
+- Access tajweed colors via `Theme.of(context).extension<TajweedTheme>()`
+- Font sizes for Arabic/English are user-configurable via `SettingsScope.of(context)`
+
+## Arabic Text
+
+- Always use the `ArabicText` widget for rendering Arabic content (handles font, RTL, OpenType features, and optional Tajweed coloring)
+- Do not use raw `Text` widgets for Arabic strings
+- **Never strip diacritics** from Quran Arabic text -- they are essential for correct recitation
+- Use `aya_text` (Uthmani) for display; use `aya_text_emlaey` only for search indexing
+- Tajweed coloring applies ONLY to Quran text, not Hadith Arabic
+- Never truncate Arabic text mid-word -- always break at word boundaries
+
+## Navigation
+
+- Use go_router: `context.push('/path')` for pushing, `context.go('/path')` for tab switching
+- Route definitions are in `lib/router.dart`
+- Bottom nav tabs: Home (`/home`), Quran (`/quran`), Hadith (`/hadith`), Bookmarks (`/bookmarks`), Settings (`/settings`)
+- Detail pages push above the shell (no bottom nav): `/quran/:surahId`, `/hadith/:collection/:book`, `/search`
+
+## Data Access
+
+- Use repository classes to load data from assets -- never call `rootBundle` directly in widgets
+- Asset paths are centralized in the `AssetPaths` class (`lib/data/asset_paths.dart`)
+
+## Bookmarks
+
+- Access via `BookmarkScope.of(context)` -- provides `BookmarkService`
+- Bookmark IDs: `quran:{surahId}:{ayah}` or `hadith:{collection}:{book}:{index}`
+- Use `service.toggleBookmark(...)` to add/remove
+- Use `service.isBookmarked(id)` to check state

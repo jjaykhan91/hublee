@@ -1,0 +1,39 @@
+---
+description: Hublee project overview, architecture, and tech stack
+alwaysApply: true
+---
+
+# Hublee Project Overview
+
+Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is an Islamic religious text app -- the Quran is sacred scripture and must be displayed with absolute textual fidelity. See `quran-guidelines.mdc` and `hadith-guidelines.mdc` for Islamic display requirements.
+
+## Tech Stack
+
+- **Framework**: Flutter (Dart 3.10+), targets Android, iOS, Web, Windows, Linux, macOS
+- **State management**: InheritedWidget (`AppScope`, `SettingsScope`, `BookmarkScope`) + ChangeNotifier (`SettingsController`, `BookmarkService`)
+- **Navigation**: go_router with `StatefulShellRoute.indexedStack` for bottom navigation
+- **Local storage**: `SharedPreferences` for settings, bookmarks, and last-read positions
+- **UI**: Material Design 3, custom light/dark themes, NavigationBar (5 tabs)
+- **Arabic rendering**: Custom `KFGQPCQuranicFontHafsSmart` font with Tajweed coloring
+
+## Architecture
+
+- **Offline-first**: All Quran and Hadith data is bundled as JSON assets. No backend server, no database, no authentication, no runtime API calls.
+- **Repository pattern**: `QuranChaptersRepository`, `QuranArabicRepository`, `QuranTranslationRepository`, `HadithRepository` load and parse JSON assets.
+- **Service layer**: `ThemeModeService`, `SettingsController`, `BookmarkService` handle business logic and persistence.
+- **Router**: `lib/router.dart` defines all routes using go_router. Bottom nav has 5 tabs: Home, Quran, Hadith, Bookmarks, Settings. Detail pages (surah reading, hadith reading, search) push as full-screen routes above the shell.
+
+## Key Directories
+
+- `lib/router.dart` -- GoRouter config with StatefulShellRoute
+- `lib/ui/app_shell.dart` -- Bottom navigation shell
+- `lib/ui/` -- Pages and shared widgets
+- `lib/quran/` -- Quran data models and repositories
+- `lib/hadith/` -- Hadith data models and repository
+- `lib/services/` -- Settings, theme, bookmarks, scopes, search models
+- `lib/theme/` -- Light/dark theme config and Tajweed color extension
+- `lib/data/` -- `AssetPaths` helper for asset file paths
+- `assets/quran/` -- Arabic text JSON + ClearQuran English translations
+- `assets/hadith/` -- Hadith collection JSON files (forties, 9 books, others)
+- `tools/` -- Build-time Dart scripts for fetching and processing data
+- `.cursor/rules/coding-standards.mdc` -- Naming, commenting, and formatting rules

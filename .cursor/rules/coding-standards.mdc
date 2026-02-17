@@ -1,0 +1,86 @@
+---
+description: Coding standards for naming, commenting, and formatting in Hublee
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Coding Standards
+
+## File-Level Documentation
+
+Every Dart file must start with a `///` doc comment explaining what the file contains:
+
+```dart
+/// Defines the [BookmarkService] which manages saving, loading,
+/// and toggling bookmarks for Quran ayahs and Hadith entries.
+```
+
+## Class Documentation
+
+Every public class must have a `///` doc comment explaining its purpose:
+
+```dart
+/// Loads chapter metadata (surah names, verse counts) from the
+/// bundled Quran JSON asset.
+class QuranChaptersRepository { ... }
+```
+
+## Method Documentation
+
+- Public methods: always add `///` doc comments describing what they do, parameters, and return value
+- Private methods: add a brief `//` comment if the logic is non-obvious
+- Omit comments on trivial getters/setters and `build()` overrides unless complex
+
+```dart
+/// Loads all 114 chapters with names and verse counts.
+///
+/// Returns a sorted list of [ChapterMeta] objects.
+Future<List<ChapterMeta>> loadChapters() async { ... }
+```
+
+## Inline Comments
+
+- Use `//` for single-line explanations of non-obvious logic
+- Place the comment on the line above the code, not at the end
+- Do NOT comment obvious code (e.g., `// increment counter` above `counter++`)
+- Use `// TODO:` for planned work, `// FIXME:` for known issues
+
+## Naming Conventions
+
+### Variables and Parameters
+- `lowerCamelCase` for all variables, parameters, and local functions
+- Use descriptive names -- avoid single letters except in lambdas and loops (`i`, `e`)
+- Prefix private fields with underscore: `_bookmarks`, `_mode`
+- Boolean variables: use `is`, `has`, `should` prefix: `isBookmarked`, `hasBismillah`
+
+### Classes and Enums
+- `UpperCamelCase` for all class, enum, typedef, and extension names
+- Suffix pattern classes: `*Repository`, `*Service`, `*Controller`, `*Scope`, `*Page`
+- Model classes: use the domain noun: `Bookmark`, `ChapterMeta`, `Hadith`
+
+### Constants
+- `lowerCamelCase` for const values (Dart convention, NOT UPPER_SNAKE)
+- Prefix SharedPreferences keys with the domain: `settings.arabicZoom`, `bookmarks`
+
+### Files
+- `snake_case.dart` for all file names
+- Match the primary class: `bookmark_service.dart` for `BookmarkService`
+- Page files: `*_page.dart` (e.g., `surah_detail_page.dart`)
+- Widget files: descriptive name (e.g., `arabic_text.dart`, `gradient_tile.dart`)
+
+## Formatting
+
+- Max line length: 80 characters (enforced by `dart format`)
+- Use trailing commas on all multi-line argument lists (enables better formatting)
+- One blank line between methods, two blank lines between top-level declarations
+- Import ordering: dart: first, package: second, relative imports third
+- Group imports by section with a blank line between groups
+
+## Code Organization Within a File
+
+1. Imports (grouped and sorted)
+2. File-level doc comment
+3. Main public class
+4. Private helper classes (prefixed with `_`)
+5. Top-level helper functions (if any)
+6. Extensions (if any)

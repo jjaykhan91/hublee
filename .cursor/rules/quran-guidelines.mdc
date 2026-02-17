@@ -1,0 +1,82 @@
+---
+alwaysApply: true
+---
+# Quran Display Guidelines
+
+These rules reflect Islamic scholarly requirements for properly displaying the Quran in a digital app. The sacred text must be rendered with absolute textual fidelity.
+
+## Bismillah (Basmala)
+
+- Display "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ" as a **separate decorative header** before the first ayah of every surah
+- **Exceptions**: Surah Al-Fatiha (1) includes Bismillah as ayah 1 -- do not duplicate it. Surah At-Tawbah (9) has **no Bismillah** at all
+- The Bismillah in Surah An-Naml (27:30) is part of the ayah text, not a header
+- Style the Bismillah header distinctly from regular ayah text (centered, decorative)
+
+## Ayah Numbering
+
+- Display ayah numbers clearly alongside each verse
+- Use Arabic-Indic numerals (٠١٢٣٤٥٦٧٨٩) or standard numerals -- be consistent
+- Ayah numbers should be visually distinct (e.g., circled, colored, or in a badge)
+
+## Surah Header
+
+- Show the surah name in both Arabic and English
+- Include the total ayah count
+- Consider showing: revelation type (Meccan/Medinan), surah number, juz info
+- The surah header should be visually prominent and separate from the ayah text
+
+## Diacritics and Text Integrity
+
+- **Never strip diacritics** (tashkeel/harakat) from the displayed Arabic text -- they are essential for correct recitation
+- Diacritics include: fatha, kasra, damma, sukun, shadda, tanween (fathatain, kasratain, dammatain), maddah
+- The Uthmani script must be preserved exactly as sourced -- do not modify or "simplify" the Arabic text
+- Only use plain/emlaey text for search indexing, never for display
+
+## Tajweed Coloring
+
+Currently implemented rules (preserve these):
+- **Qalqala** (red): echoing sound on sukun letters (ق ط ب ج د)
+- **Ghunnah** (green): nasal sound on noon/meem with shadda
+- **Ikhfaa** (magenta): concealment of noon sakin/tanween before specific letters
+- **Idgham** (teal): assimilation of noon sakin/tanween into following letter
+- **Iqlab** (blue): conversion of noon sakin/tanween to meem before ba
+- **Ikhfaa Meemi** (orange): concealment of meem sakin before ba
+
+Rules to consider adding in future:
+- **Madd** (prolongation): various types (Asli, Far'i, Lazim, etc.)
+- **Qalqala Kubra** vs **Qalqala Sughra** distinction
+
+## Waqf Signs (Stop Marks)
+
+These symbols guide recitation pausing. If present in the text data, they must be preserved and ideally explained:
+- **مـ** (Waqf Lazim): mandatory stop -- meaning changes if you continue
+- **لا** (La Taqif): do not stop -- phrase is incomplete
+- **ج** (Waqf Jaiz): permissible to stop or continue
+- **قلى** (Qeela Alayhil-Waqf): stopping is preferred
+- **صلى** (Qeelal-Waslu): continuing is preferred
+- **س** (Saktah): brief pause without breathing
+- **∴** (Mu'anaqah): stop at one of two marked positions, not both
+
+## Sajdah Markers
+
+- There are 15 sajdah (prostration) ayahs in the Quran
+- Mark these ayahs with a visible sajdah icon (۩) or indicator
+- Consider showing a tooltip explaining that prostration is recommended
+
+## Juz, Hizb, and Ruku Divisions
+
+The data already has a `jozz` (juz) field per ayah:
+- **Juz** (30 parts): show the current juz number, especially at boundaries
+- **Hizb** (60 parts): each juz has 2 hizb
+- **Rub al-Hizb** (240 quarters): marked with ۞ symbol
+- **Ruku** (558 sections): thematic paragraph groupings
+
+## Page Numbers
+
+The data has a `page` field per ayah. Consider showing Mushaf page numbers for users who cross-reference with a physical Quran.
+
+## Respectful UX
+
+- Avoid placing Quran text in contexts where it could be disrespected (e.g., overlapping with ads, cut off mid-ayah)
+- When truncating for search results, include enough context to preserve meaning
+- Use "..." to indicate truncation, never cut mid-word in Arabic

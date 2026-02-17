@@ -1,0 +1,55 @@
+---
+alwaysApply: true
+---
+# Data Layer
+
+## Data Source
+
+All data is bundled as JSON files in `assets/`. There are no runtime API calls.
+
+- Quran Arabic: `assets/quran/KFGQPCQuranMushaf_smart_v8.json`
+- Quran translations: `assets/quran/en.clearquran/{surahId}.json`
+- Chapter metadata: `assets/quran/chapters.min.json`
+- Hadith collections: `assets/hadith/{collection}/index.json` + book files
+
+## Repository Pattern
+
+- Repositories are plain Dart classes with static or instance methods
+- They load JSON via `rootBundle.loadString()` and decode with `jsonDecode()`
+- Return strongly-typed model objects (e.g., `ChapterMeta`, `HadithBook`, `Hadith`, `HadithChapter`)
+
+## Models
+
+- `ChapterMeta`: id, nameSimple, nameArabic, versesCount
+- `HadithBook`: title, chapters, hadiths (also has metadata with author/introduction)
+- `Hadith`: id, idInBook, chapterId, bookId, arabic, english, narrator
+- `QuranSearchHit` / `HadithSearchHit`: search result types in `lib/services/search_models.dart`
+
+## Quran Arabic JSON Fields
+
+Each ayah in `KFGQPCQuranMushaf_smart_v8.json` has these fields:
+- `id`: sequential ayah ID across entire Quran
+- `jozz`: juz number (1-30) -- available but NOT yet used in the UI
+- `sura_no`, `sura_name_en`, `sura_name_ar`: surah identifiers
+- `page`: Mushaf page number -- available but NOT yet used in the UI
+- `line_start`, `line_end`: line positions -- available but NOT yet used
+- `aya_no`: ayah number within the surah
+- `aya_text`: Uthmani Hafs Smart Unicode (for display, with full diacritics)
+- `aya_text_emlaey`: simplified Arabic (for search only, never display this)
+
+## Hadith JSON Structure
+
+Each hadith book JSON has:
+- `metadata`: title, author, introduction (Arabic + English)
+- `chapters`: array of `HadithChapter` { id, bookId, arabic, english }
+- `hadiths`: array of { id, idInBook, chapterId, bookId, arabic, english/narrator }
+
+## Asset Paths
+
+Use `AssetPaths` class (`lib/data/asset_paths.dart`) for constructing file paths. Do not hardcode asset paths.
+
+## Settings Persistence
+
+- `SharedPreferences` for theme mode and font zoom values
+- `ThemeModeService` handles theme persistence
+- `SettingsController` (ChangeNotifier) handles font zoom with `notifyListeners()`

@@ -44,16 +44,16 @@ String _decodeHtmlEntities(String s) {
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
     ..addFlag('minify',
-        defaultsTo: false,
-        help: 'Write compact JSON (default pretty).');
+        defaultsTo: false, help: 'Write compact JSON (default pretty).');
   final opts = parser.parse(args);
   final minify = opts['minify'] as bool;
 
   final inputPath = 'assets/quran/translations/TheClearQuran_MK_2018.json';
   final outputDir = Directory('assets/quran/en.clearquran');
 
-  String toJson(Object value) =>
-      minify ? jsonEncode(value) : const JsonEncoder.withIndent('  ').convert(value);
+  String toJson(Object value) => minify
+      ? jsonEncode(value)
+      : const JsonEncoder.withIndent('  ').convert(value);
 
   if (!await outputDir.exists()) await outputDir.create(recursive: true);
 
@@ -88,7 +88,7 @@ Future<void> main(List<String> args) async {
       if (v is Map && v.containsKey('Mustafa Khattab 2018')) {
         var text = (v['Mustafa Khattab 2018'] ?? '').toString();
         text = text.replaceAll(RegExp(r'</?i>'), ''); // strip italics tags
-        text = _decodeHtmlEntities(text).trim();      // ← decode entities
+        text = _decodeHtmlEntities(text).trim(); // ← decode entities
         if (text.isNotEmpty) out[k.toString()] = text;
       }
     });

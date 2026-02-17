@@ -1,0 +1,71 @@
+---
+alwaysApply: true
+---
+# Hadith Display Guidelines
+
+Hadiths are the recorded sayings, actions, and approvals of Prophet Muhammad (peace be upon him). Proper display respects Islamic scholarly conventions.
+
+## Honorifics
+
+- After mentioning the Prophet Muhammad, always include the honorific:
+  - Arabic: "صلى الله عليه وسلم" (sallallahu alayhi wa sallam)
+  - English: "(peace be upon him)" or abbreviation "PBUH" or Unicode ﷺ
+- After mentioning a Companion (Sahabi): "رضي الله عنه/عنها" (may Allah be pleased with him/her)
+- These are already present in source texts -- never strip them
+
+## Hadith Structure
+
+A hadith has two essential parts that should be visually distinguished:
+- **Isnad (Chain of Narrators)**: the chain of transmission from the Prophet to the compiler. Display as a distinct section (e.g., lighter text, different style)
+- **Matn (Text)**: the actual content of the hadith. Display prominently
+
+## Reference Format
+
+Display hadith references clearly:
+- Book name (e.g., "Sahih al-Bukhari")
+- Hadith number within the book
+- Chapter/section (Kitab/Bab) if available
+- Format example: "Sahih al-Bukhari 1, Book of Revelation, Hadith 1"
+
+## Hadith Grading
+
+When grading data is available, display it prominently with visual indicators:
+- **Sahih** (Authentic): green badge or indicator
+- **Hasan** (Good): yellow/amber badge
+- **Da'if** (Weak): red/orange badge with note
+- **Mawdu** (Fabricated): should not be displayed, or displayed with strong warning
+
+If grading data is not available in the current dataset, do not fabricate gradings. Instead, note the source book (e.g., "from Sahih al-Bukhari" implies sahih).
+
+## Chapter Organization
+
+Hadith books are organized into chapters (Kitab) and sub-chapters (Bab):
+- Show chapter headings as section dividers when scrolling through a book
+- Allow navigation by chapter (table of contents)
+- Display chapter title in both Arabic and English when available
+
+## Narrator Display
+
+- Show the primary narrator prominently (e.g., "Narrated by Abu Hurairah")
+- If the full isnad chain is available, make it accessible (expandable section or separate view)
+- Do not hide the narrator -- it is a key part of hadith authentication
+
+## Arabic Text
+
+- Preserve all diacritics in hadith Arabic text
+- Use the same `ArabicText` widget used for Quran (proper font, RTL, OpenType features)
+- Hadith Arabic does NOT use tajweed coloring (tajweed is only for Quran)
+
+## Collection Context
+
+When displaying a hadith, provide context about its source:
+- Which of the 9 canonical books it comes from (Kutub al-Sittah + Ahmad, Malik, Darimi)
+- Or which special collection (Nawawi 40, Qudsi 40, etc.)
+- For well-known collections, a brief description helps users understand significance
+
+## Search and Cross-Reference
+
+- Search should cover both Arabic and English text
+- When showing search results, include the book name and hadith number
+- Preserve enough context in snippets to convey the hadith's topic
+- Never truncate Arabic text mid-word

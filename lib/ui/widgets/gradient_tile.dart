@@ -1,9 +1,24 @@
+/// A large, tappable tile with a gradient background, icon badge,
+/// title, subtitle, and trailing chevron.
+///
+/// Used on the Home page for the "Quran" and "Hadith" explore
+/// shortcuts.
+library;
+
 import 'package:flutter/material.dart';
 
+/// Gradient-filled card with an icon, title, and subtitle.
 class GradientTile extends StatelessWidget {
+  /// Icon displayed in a rounded badge on the left.
   final IconData icon;
+
+  /// Primary title text.
   final String title;
+
+  /// Secondary description text.
   final String subtitle;
+
+  /// Called when the tile is tapped.
   final VoidCallback? onTap;
 
   const GradientTile({
@@ -16,8 +31,10 @@ class GradientTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
+    // Resolve the card's border radius from the theme, falling
+    // back to a default of 16 px.
     final shape = Theme.of(context).cardTheme.shape;
     final BorderRadius borderRadius = switch (shape) {
       final RoundedRectangleBorder r when r.borderRadius is BorderRadius =>
@@ -31,13 +48,19 @@ class GradientTile extends StatelessWidget {
       child: Ink(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          border: Border.all(color: cs.outline.withValues(alpha: 0.9), width: 1),
+          border: Border.all(
+            color: colorScheme.outline.withValues(alpha: 0.9),
+            width: 1,
+          ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              cs.surfaceContainerHighest,
-              Color.alphaBlend(cs.primary.withValues(alpha: 0.06), cs.surfaceContainerHighest),
+              colorScheme.surfaceContainerHighest,
+              Color.alphaBlend(
+                colorScheme.primary.withValues(alpha: 0.06),
+                colorScheme.surfaceContainerHighest,
+              ),
             ],
           ),
           boxShadow: [
@@ -52,16 +75,18 @@ class GradientTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              // Icon badge
               Container(
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.18),
+                  color: colorScheme.primary.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: cs.primary),
+                child: Icon(icon, color: colorScheme.primary),
               ),
               const SizedBox(width: 14),
+              // Title + subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +94,7 @@ class GradientTile extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: cs.onSurface,
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -77,13 +102,16 @@ class GradientTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurface.withValues(alpha: 0.9)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurface.withValues(alpha: 0.9),
+              ),
             ],
           ),
         ),

@@ -1,45 +1,62 @@
+/// Manages user-configurable display settings (font zoom levels)
+/// and persists them in [SharedPreferences].
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Holds user-facing settings (Arabic/English font zoom) with persistence.
+/// Holds Arabic and English font zoom factors with persistence.
+///
+/// Zoom values are clamped to the range [0.8, 1.8] where 1.0 is
+/// the default (100%). Call [load] once at startup to restore the
+/// saved values from disk.
 class SettingsController extends ChangeNotifier {
-  static const _kArabicZoomKey  = 'settings.arabicZoom';
+  /// SharedPreferences keys for each zoom setting.
+  static const _kArabicZoomKey = 'settings.arabicZoom';
   static const _kEnglishZoomKey = 'settings.englishZoom';
 
-  /// Zoom factors (1.0 = 100%). Reasonable range: 0.8 – 1.6
-  double _arabicZoom  = 1.0;
+  double _arabicZoom = 1.0;
   double _englishZoom = 1.0;
 
-  double get arabicZoom  => _arabicZoom;
+  /// Current Arabic text zoom factor (1.0 = 100%).
+  double get arabicZoom => _arabicZoom;
+
+  /// Current English text zoom factor (1.0 = 100%).
   double get englishZoom => _englishZoom;
 
-  set arabicZoom(double v) {
-    v = v.clamp(0.8, 1.8);
-    if (v != _arabicZoom) {
-      _arabicZoom = v;
-      _save(_kArabicZoomKey, v);
+  /// Sets the Arabic zoom factor, clamped to [0.8, 1.8],
+  /// persists the value, and notifies listeners.
+  set arabicZoom(double value) {
+    value = value.clamp(0.8, 1.8);
+    if (value != _arabicZoom) {
+      _arabicZoom = value;
+      _persist(_kArabicZoomKey, value);
       notifyListeners();
     }
   }
 
-  set englishZoom(double v) {
-    v = v.clamp(0.8, 1.8);
-    if (v != _englishZoom) {
-      _englishZoom = v;
-      _save(_kEnglishZoomKey, v);
+  /// Sets the English zoom factor, clamped to [0.8, 1.8],
+  /// persists the value, and notifies listeners.
+  set englishZoom(double value) {
+    value = value.clamp(0.8, 1.8);
+    if (value != _englishZoom) {
+      _englishZoom = value;
+      _persist(_kEnglishZoomKey, value);
       notifyListeners();
     }
   }
 
+  /// Restores saved zoom levels from [SharedPreferences].
   Future<void> load() async {
-    final sp = await SharedPreferences.getInstance();
-    _arabicZoom  = sp.getDouble(_kArabicZoomKey)  ?? 1.0;
-    _englishZoom = sp.getDouble(_kEnglishZoomKey) ?? 1.0;
+    final prefs = await SharedPreferences.getInstance();
+    _arabicZoom = prefs.getDouble(_kArabicZoomKey) ?? 1.0;
+    _englishZoom = prefs.getDouble(_kEnglishZoomKey) ?? 1.0;
     notifyListeners();
   }
 
-  Future<void> _save(String key, double v) async {
-    final sp = await SharedPreferences.getInstance();
-    await sp.setDouble(key, v);
+  /// Writes a single zoom value to disk.
+  Future<void> _persist(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(key, value);
   }
 }

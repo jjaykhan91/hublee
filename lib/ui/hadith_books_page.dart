@@ -1,11 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:hublee/ui/widgets/app_scaffold.dart';
-import '../hadith/hadith_repository.dart';
-import 'hadith_book_page.dart';
+/// Lists all books within a hadith collection.
+///
+/// Shows each book's title, hadith count (if available), and an
+/// optional summary blurb for well-known collections like Nawawi's
+/// Forty Hadith.
+library;
 
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../hadith/hadith_repository.dart';
+
+/// Displays the books index for a single hadith collection.
 class HadithBooksPage extends StatelessWidget {
-  final String collectionId; // e.g. 'forties'
-  final String title;        // e.g. 'Forties'
+  /// Directory ID of the collection (e.g. `"forties"`).
+  final String collectionId;
+
+  /// Human-readable collection title for the app bar.
+  final String title;
 
   const HadithBooksPage({
     super.key,
@@ -15,61 +26,63 @@ class HadithBooksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repo = const HadithRepository();
+    final repository = const HadithRepository();
 
-    return AppScaffold(
+    return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: FutureBuilder<List<HadithBookMeta>>(
-        future: repo.loadBooksForCollection(collectionId),
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+        future: repository.loadBooksForCollection(collectionId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
-          if (snap.hasError) {
+          if (snapshot.hasError) {
             return Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(
-                'Error: ${snap.error}\n\n'
-                'Tried: assets/hadith/$collectionId/index.json',
-              ),
+              child: Text('Error: ${snapshot.error}'),
             );
           }
 
-          final books = snap.data ?? const <HadithBookMeta>[];
+          final books = snapshot.data ?? const <HadithBookMeta>[];
           if (books.isEmpty) {
-            return const Center(child: Text('No books found in this collection.'));
+            return const Center(
+              child: Text('No books found in this collection.'),
+            );
           }
 
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
             itemCount: books.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final b = books[i];
+            itemBuilder: (context, index) {
+              final book = books[index];
 
-              // Subtitle parts: "40 hadith • nawawi40"
-              final parts = <String>[];
-              if (b.length != null) parts.add('${b.length} hadith');
-              final fileBase = b.file.split('/').last.split('.').first;
-              parts.add(fileBase);
-              final subtitle = parts.where((s) => s.isNotEmpty).join(' • ');
+              // Build subtitle from hadith count + filename.
+              final subtitleParts = <String>[];
+              if (book.length != null) {
+                subtitleParts.add('${book.length} hadith');
+              }
+              final fileBaseName = book.file.split('/').last.split('.').first;
+              subtitleParts.add(fileBaseName);
+              final subtitle = subtitleParts
+                  .where((part) => part.isNotEmpty)
+                  .join(' \u2022 ');
 
-              // Summary: use title first; if not matched, try fileBase as a key.
-              final summary = _lookupSummaryFor(b.title, fileBase);
+              final summary = _lookupBookSummary(
+                book.title,
+                fileBaseName,
+              );
 
               return _BookTile(
-                title: b.title,           // human title from index.json
-                subtitle: subtitle,       // e.g., "40 hadith • nawawi40"
-                summary: summary,         // short description shown under title
+                title: book.title,
+                subtitle: subtitle,
+                summary: summary,
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => HadithBookPage(
-                        collectionId: collectionId,
-                        bookFile: b.file,
-                        title: b.title, // pass human title as fallback
-                      ),
-                    ),
+                  context.push(
+                    '/hadith/$collectionId/${book.file}'
+                    '?title=${Uri.encodeComponent(book.title)}',
                   );
                 },
               );
@@ -81,33 +94,43 @@ class HadithBooksPage extends StatelessWidget {
   }
 }
 
-/// Short, app-friendly summaries for well-known “Forty Hadith” books.
-/// Keys match by either `title` or `fileBase` (e.g., 'nawawi40', 'qudsi40').
-String? _lookupSummaryFor(String title, String fileBase) {
-  // Normalize for robust matching
-  final t = title.toLowerCase().trim();
-  final f = fileBase.toLowerCase().trim();
+/// Returns a brief description for well-known hadith books.
+///
+/// Matches by title or file name against known collections.
+/// Returns `null` for unrecognised books.
+String? _lookupBookSummary(String title, String fileBaseName) {
+  final titleLower = title.toLowerCase().trim();
+  final fileLower = fileBaseName.toLowerCase().trim();
 
-  const nawawi = 'Concise foundations of Islam—faith, worship, ethics, and sincerity. '
-      'A beloved set of core principles often memorized and taught worldwide.';
-  const qudsi = 'Forty sacred sayings in which the Prophet ﷺ narrates the words of Allah ﷻ '
-      'outside the Qur’an—highlighting divine mercy, love, justice, and guidance.';
-  const waliullah = 'A practical revivalist selection by Shah Waliullah, balancing worship, '
-      'morals, and social conduct—aimed at everyday practice of the Sunnah.';
+  const nawawiSummary =
+      'Concise foundations of Islam\u2014faith, worship, ethics, '
+      'and sincerity. A beloved set of core principles often '
+      'memorized and taught worldwide.';
+  const qudsiSummary =
+      'Forty sacred sayings in which the Prophet \uFDFA narrates '
+      'the words of Allah outside the Quran\u2014highlighting '
+      'divine mercy, love, justice, and guidance.';
+  const waliullahSummary =
+      'A practical revivalist selection by Shah Waliullah, '
+      'balancing worship, morals, and social conduct\u2014aimed '
+      'at everyday practice of the Sunnah.';
 
-  // Title-based checks
-  if (t.contains('nawawi')) return nawawi;
-  if (t.contains('qudsi')) return qudsi;
-  if (t.contains('waliullah') || t.contains('wali allah') || t.contains('shah wali')) return waliullah;
+  if (titleLower.contains('nawawi')) return nawawiSummary;
+  if (titleLower.contains('qudsi')) return qudsiSummary;
+  if (titleLower.contains('waliullah') ||
+      titleLower.contains('wali allah') ||
+      titleLower.contains('shah wali')) {
+    return waliullahSummary;
+  }
+  if (fileLower.contains('nawawi')) return nawawiSummary;
+  if (fileLower.contains('qudsi')) return qudsiSummary;
+  if (fileLower.contains('wali')) return waliullahSummary;
 
-  // File-base fallbacks
-  if (f.contains('nawawi')) return nawawi;
-  if (f.contains('qudsi')) return qudsi;
-  if (f.contains('wali')) return waliullah;
-
-  return null; // unknown book -> no summary shown
+  return null;
 }
 
+/// A list tile for a single hadith book with title, subtitle,
+/// optional summary, and a chevron.
 class _BookTile extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -125,19 +148,10 @@ class _BookTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Styles: keep hierarchy clear and readable on both light/dark.
-    final titleStyle   = theme.textTheme.titleMedium;
-    final subtitleStyle= theme.textTheme.labelSmall?.copyWith(
-  color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-    );
-    final summaryStyle = theme.textTheme.bodySmall?.copyWith(
-      height: 1.3,
-  color: theme.colorScheme.onSurface.withValues(alpha: 0.90),
-      fontWeight: FontWeight.w500,
-    );
-
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -155,21 +169,32 @@ class _BookTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
-                    Text(title, style: titleStyle, maxLines: 2, overflow: TextOverflow.ellipsis),
-
-                    // Subtitle (length • fileBase)
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     if (subtitle != null && subtitle!.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(subtitle!, style: subtitleStyle),
+                      Text(
+                        subtitle!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.75),
+                        ),
+                      ),
                     ],
-
-                    // Summary
                     if (summary != null && summary!.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         summary!,
-                        style: summaryStyle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          height: 1.3,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -1,0 +1,43 @@
+---
+alwaysApply: true
+---
+# Theming
+
+## Material 3
+
+- `useMaterial3: true` is enabled
+- Light theme seed color: `#2563EB`
+- Light background: `#F8FAFC`
+
+## Dark Theme Palette
+
+Custom GitHub-inspired dark palette (not auto-generated from seed):
+
+- Canvas: `#0B0F14`
+- Surface: `#11161C`
+- Elevated: `#151B22`
+- Outline/border: `#233042`
+- Primary: `#8AB4FF`
+- Secondary: `#7DD3FC`
+
+## Card Styling
+
+- Light: rounded corners (16px), elevation 1
+- Dark: no elevation, uses border instead (`#233042`)
+
+## TajweedTheme Extension
+
+`TajweedTheme` is a `ThemeExtension` providing colors for Quranic tajweed rules:
+
+- Qalqala: red
+- Ghunnah: green
+- Ikhfaa: magenta
+- Idgham: teal
+- Iqlab: blue
+- Ikhfaa Meemi: orange
+
+Both light and dark palettes are defined. Access via:
+
+```dart
+Theme.of(context).extension<TajweedTheme>()
+```

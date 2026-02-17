@@ -44,6 +44,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# in .gitignore
+# Environment variables
 .env*
+!.env.example
 env.*.json
+
+# Cursor (track rules and mcp config, ignore internal files)
+.cursor/*
+!.cursor/rules/
+!.cursor/mcp.json

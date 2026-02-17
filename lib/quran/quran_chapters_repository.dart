@@ -1,53 +1,64 @@
+/// Loads surah metadata (names and verse counts) from the unified
+/// KFGQPC Mushaf Smart v8 dataset.
+library;
+
 import 'dart:convert';
+
 import 'package:flutter/services.dart' show rootBundle;
+
 import '../data/asset_paths.dart';
 import 'models.dart';
 
-/// Loads chapter metadata directly from the unified Hafs Smart v8 JSON.
-///
-/// The file contains a flat list of ayat; we group by `sura_no` to build
-/// chapter metadata (names + verse counts).
+/// Builds a list of all 114 [ChapterMeta] objects by scanning the
+/// full ayah dataset and grouping by `sura_no`.
 class QuranChaptersRepository {
   const QuranChaptersRepository();
 
-  /// Loads all chapters (1–114) with names and verse counts.
+  /// Loads all 114 chapters sorted by surah number.
+  ///
+  /// Iterates over every ayah row to extract the surah number,
+  /// English name, Arabic name, and counts the verses per surah.
   Future<List<ChapterMeta>> loadChapters() async {
-    final raw = await rootBundle.loadString(AssetPaths.kFGQPCQuranMushafSmartV8);
-    final List<dynamic> list = json.decode(raw);
+    final rawJson = await rootBundle.loadString(
+      AssetPaths.kfgqpcQuranMushafSmartV8,
+    );
+    final List<dynamic> rows = json.decode(rawJson);
 
-    // Group: sura_no -> {name_en, name_ar, count}
-    final Map<int, _Accumulator> acc = {};
+    // Accumulate verse counts per surah.
+    final Map<int, _SurahAccumulator> accumulator = {};
 
-    for (final item in list) {
-      final int sura = item['sura_no'] as int;
-      final String nameEn = (item['sura_name_en'] as String).trim();
-      final String nameAr = (item['sura_name_ar'] as String).trim();
+    for (final row in rows) {
+      final int surahNumber = row['sura_no'] as int;
+      final String nameEn = (row['sura_name_en'] as String).trim();
+      final String nameAr = (row['sura_name_ar'] as String).trim();
 
-      final bucket = acc.putIfAbsent(sura, () => _Accumulator(nameEn, nameAr));
-      bucket.count++;
-    }
-
-    final chapters = <ChapterMeta>[];
-    for (final entry in acc.entries) {
-      chapters.add(
-        ChapterMeta(
-          id: entry.key,
-          nameSimple: entry.value.nameEn,
-          nameArabic: entry.value.nameAr,
-          versesCount: entry.value.count,
-        ),
+      final bucket = accumulator.putIfAbsent(
+        surahNumber,
+        () => _SurahAccumulator(nameEn, nameAr),
       );
+      bucket.verseCount++;
     }
 
-    // Ensure ordered by sura id.
+    // Convert the map into a sorted list of ChapterMeta.
+    final chapters = accumulator.entries.map((entry) {
+      return ChapterMeta(
+        id: entry.key,
+        nameSimple: entry.value.nameEn,
+        nameArabic: entry.value.nameAr,
+        versesCount: entry.value.verseCount,
+      );
+    }).toList();
+
     chapters.sort((a, b) => a.id.compareTo(b.id));
     return chapters;
   }
 }
 
-class _Accumulator {
+/// Temporary helper to tally verses while iterating the JSON rows.
+class _SurahAccumulator {
   final String nameEn;
   final String nameAr;
-  int count = 0;
-  _Accumulator(this.nameEn, this.nameAr);
+  int verseCount = 0;
+
+  _SurahAccumulator(this.nameEn, this.nameAr);
 }

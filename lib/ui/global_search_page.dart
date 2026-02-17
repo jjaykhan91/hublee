@@ -1,22 +1,23 @@
+/// Full-screen search page for Quran ayahs and Hadith text.
+///
+/// Uses a debounced text field to search across all surahs
+/// (Arabic + English) and all hadith collections (English + Arabic).
+/// Results are grouped by type (Quran / Hadith) and tapping a
+/// result navigates to the detail page scrolled to the match.
+library;
+
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../hadith/hadith_repository.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
-
-import 'hadith_book_page.dart';
-import 'widgets/arabic_text.dart';
-import 'surah_detail_page.dart';
-import 'widgets/app_scaffold.dart';
-import '../services/settings_scope.dart';
 import '../services/search_models.dart';
 
-/// Unified global search over Qur'an and Hadith.
-/// - Debounced search (300ms)
-/// - Qur'an: searches Arabic (exact) + English (case-insensitive)
-/// - Hadith: uses HadithRepository.searchHadith(...)
+/// Global search across Quran and Hadith with debounced input.
 class GlobalSearchPage extends StatefulWidget {
   const GlobalSearchPage({super.key});
 
@@ -25,35 +26,34 @@ class GlobalSearchPage extends StatefulWidget {
 }
 
 class _GlobalSearchPageState extends State<GlobalSearchPage> {
-  // Search field controller + debounce timer
-  final TextEditingController _queryController = TextEditingController();
-  Timer? _debounce;
+  final _queryController = TextEditingController();
 
-  // UI state
+  /// Timer for debouncing search input (300 ms delay).
+  Timer? _debounceTimer;
+
   bool _isSearching = false;
-
-  // Results
-  final List<HadithSearchHit> _hadithResults = <HadithSearchHit>[];
-  final List<QuranSearchHit> _quranResults = <QuranSearchHit>[];
+  final List<HadithSearchHit> _hadithResults = [];
+  final List<QuranSearchHit> _quranResults = [];
 
   @override
   void dispose() {
     _queryController.dispose();
-    _debounce?.cancel();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  /// Debounce wrapper for the text field
-  void _onQueryChanged(String raw) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      _performSearch(raw);
-    });
+  /// Restarts the debounce timer on each keystroke.
+  void _onQueryChanged(String rawQuery) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(
+      const Duration(milliseconds: 300),
+      () => _performSearch(rawQuery),
+    );
   }
 
-  /// Core search routine: queries Hadith and Qur'an
-  Future<void> _performSearch(String raw) async {
-    final query = raw.trim();
+  /// Runs a full-text search across both Quran and Hadith data.
+  Future<void> _performSearch(String rawQuery) async {
+    final query = rawQuery.trim();
     if (query.isEmpty) {
       setState(() {
         _hadithResults.clear();
@@ -64,65 +64,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
 
     setState(() => _isSearching = true);
     try {
-      // --- Hadith search ---
+      // Search hadith collections.
       final hadithRepo = const HadithRepository();
       final hadithHits = await hadithRepo.searchHadith(query, limit: 100);
 
-      // --- Qur'an search ---
-      final chaptersRepo = const QuranChaptersRepository();
-      final arabicRepo   = const QuranArabicRepository();
-      final transRepo    = const QuranTranslationRepository();
-
-      final chapters = await chaptersRepo.loadChapters();
-      final List<QuranSearchHit> qHits = [];
-      final qLower = query.toLowerCase();
-
-      // Walk surahs; collect hits until we reach a soft cap.
-      for (final c in chapters) {
-        Map<String, String> ar = const {};
-        Map<String, String> en = const {};
-        try {
-          ar = await arabicRepo.loadArabicSurah(c.id);
-          en = await transRepo.loadClearQuran(c.id);
-        } catch (_) {
-          continue; // skip if a surah is missing either map
-        }
-
-        for (var i = 1; i <= c.versesCount; i++) {
-          final key = '$i';
-          final arText = ar[key] ?? '';
-          final enText = en[key] ?? '';
-
-          final bool matches =
-              arText.contains(query) || enText.toLowerCase().contains(qLower);
-          if (!matches) continue;
-
-          // Build a small English snippet around the match if available.
-          String? snippet;
-          if (enText.isNotEmpty) {
-            final idx = enText.toLowerCase().indexOf(qLower);
-            if (idx >= 0) {
-              final start = (idx - 40).clamp(0, enText.length);
-              final end   = (idx + query.length + 60).clamp(0, enText.length);
-              snippet = enText.substring(start, end).trim();
-              if (start > 0) snippet = '…$snippet';
-              if (end < enText.length) snippet = '$snippet…';
-            } else {
-              snippet = enText;
-            }
-          }
-
-          qHits.add(QuranSearchHit(
-            surahId: c.id,
-            ayah: i,
-            surahName: c.nameSimple,
-            snippet: snippet,
-          ));
-
-          if (qHits.length >= 150) break;
-        }
-        if (qHits.length >= 150) break;
-      }
+      // Search Quran ayahs across all surahs.
+      final quranHits = await _searchQuranAyahs(query);
 
       if (!mounted) return;
       setState(() {
@@ -131,21 +78,92 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
           ..addAll(hadithHits);
         _quranResults
           ..clear()
-          ..addAll(qHits);
+          ..addAll(quranHits);
       });
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }
   }
 
+  /// Iterates all 114 surahs to find ayahs matching [query].
+  Future<List<QuranSearchHit>> _searchQuranAyahs(
+    String query,
+  ) async {
+    final chaptersRepo = const QuranChaptersRepository();
+    final arabicRepo = const QuranArabicRepository();
+    final translationRepo = const QuranTranslationRepository();
+
+    final chapters = await chaptersRepo.loadChapters();
+    final hits = <QuranSearchHit>[];
+    final queryLower = query.toLowerCase();
+
+    for (final chapter in chapters) {
+      Map<String, String> arabicAyahs = const {};
+      Map<String, String> englishAyahs = const {};
+      try {
+        arabicAyahs = await arabicRepo.loadArabicSurah(chapter.id);
+        englishAyahs = await translationRepo.loadClearQuran(chapter.id);
+      } catch (_) {
+        continue;
+      }
+
+      for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
+        final key = '$ayahNum';
+        final arabicText = arabicAyahs[key] ?? '';
+        final englishText = englishAyahs[key] ?? '';
+
+        final isMatch = arabicText.contains(query) ||
+            englishText.toLowerCase().contains(queryLower);
+        if (!isMatch) continue;
+
+        // Build a snippet around the match.
+        final snippet = _buildSnippet(
+          englishText,
+          queryLower,
+          query.length,
+        );
+
+        hits.add(QuranSearchHit(
+          surahId: chapter.id,
+          ayah: ayahNum,
+          surahName: chapter.nameSimple,
+          snippet: snippet,
+        ));
+
+        if (hits.length >= 150) return hits;
+      }
+      if (hits.length >= 150) break;
+    }
+    return hits;
+  }
+
+  /// Extracts a snippet window around the first match in [text].
+  String? _buildSnippet(
+    String text,
+    String queryLower,
+    int queryLength,
+  ) {
+    if (text.isEmpty) return null;
+
+    final matchIndex = text.toLowerCase().indexOf(queryLower);
+    if (matchIndex >= 0) {
+      final start = (matchIndex - 40).clamp(0, text.length);
+      final end = (matchIndex + queryLength + 60).clamp(0, text.length);
+      var snippet = text.substring(start, end).trim();
+      if (start > 0) snippet = '\u2026$snippet';
+      if (end < text.length) snippet = '$snippet\u2026';
+      return snippet;
+    }
+    return text;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
-    final settings = SettingsScope.of(context); // for Arabic preview scaling
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final totalResults = _quranResults.length + _hadithResults.length;
 
-    return AppScaffold(
-      // The AppBar contains the search field; a consistent settings gear
-      // is auto-injected by AppScaffold on the right.
+    return Scaffold(
       appBar: AppBar(
         title: TextField(
           controller: _queryController,
@@ -154,88 +172,135 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
           onChanged: _onQueryChanged,
           onSubmitted: _performSearch,
           decoration: const InputDecoration(
-            hintText: 'Search Qur’an and Hadith…',
+            hintText: 'Search Quran and Hadith\u2026',
             border: InputBorder.none,
           ),
         ),
       ),
-
       body: _isSearching
           ? const Center(child: CircularProgressIndicator())
-          : (_hadithResults.isEmpty && _quranResults.isEmpty)
-              ? Center(
-                  child: Text(
-                    'Type to search Qur’an and Hadith.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                )
-              : ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-                  children: [
-                    if (_quranResults.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 4),
-                        child: Text('Qur’an',
-                            style: theme.textTheme.titleMedium),
-                      ),
-                      ..._quranResults.map(
-                        (hit) => _QuranTile(
-                          hit: hit,
-                          englishStyle: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_hadithResults.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 4),
-                        child: Text('Hadith',
-                            style: theme.textTheme.titleMedium),
-                      ),
-                      ..._hadithResults.map(
-                        (hit) => _HadithTile(
-                          hit: hit,
-                          arabicFontSize: 38 * settings.arabicZoom,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+          : totalResults == 0
+              ? _buildEmptyState(theme, colorScheme)
+              : _buildResultsList(theme, colorScheme),
+    );
+  }
+
+  /// Shown before any search or when there are no results.
+  Widget _buildEmptyState(ThemeData theme, ColorScheme cs) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.search_rounded,
+            size: 48,
+            color: cs.onSurface.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Search across Quran and Hadith',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the grouped results list (Quran first, then Hadith).
+  Widget _buildResultsList(
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      children: [
+        if (_quranResults.isNotEmpty) ...[
+          _ResultSectionHeader(
+            icon: Icons.menu_book_rounded,
+            label: 'Quran (${_quranResults.length})',
+            colorScheme: colorScheme,
+          ),
+          ..._quranResults.map(
+            (hit) => _QuranResultTile(hit: hit),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (_hadithResults.isNotEmpty) ...[
+          _ResultSectionHeader(
+            icon: Icons.library_books_rounded,
+            label: 'Hadith (${_hadithResults.length})',
+            colorScheme: colorScheme,
+          ),
+          ..._hadithResults.map(
+            (hit) => _HadithResultTile(hit: hit),
+          ),
+        ],
+      ],
     );
   }
 }
 
-/// Hadith search result tile.
-/// Shows book + item index; snippet rendered in Arabic with ArabicText.
-class _HadithTile extends StatelessWidget {
-  final HadithSearchHit hit;
-  final double arabicFontSize;
+// ────────────────────────────────────────────────────────────────
+//  Private sub-widgets
+// ────────────────────────────────────────────────────────────────
 
-  const _HadithTile({
-    required this.hit,
-    required this.arabicFontSize,
+/// Section header for search result groups.
+class _ResultSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final ColorScheme colorScheme;
+
+  const _ResultSectionHeader({
+    required this.icon,
+    required this.label,
+    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 8,
+        horizontal: 4,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A search-result tile for a hadith match.
+class _HadithResultTile extends StatelessWidget {
+  final HadithSearchHit hit;
+
+  const _HadithResultTile({required this.hit});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HadithBookPage(
-                collectionId: hit.collectionId,
-                bookFile: hit.bookFile,
-                title: hit.bookTitle ?? hit.bookFile,
-                scrollToIndex: hit.hadithIndex,
-              ),
-            ),
+          context.push(
+            '/hadith/${hit.collectionId}/${hit.bookFile}'
+            '?title=${Uri.encodeComponent(hit.bookTitle ?? hit.bookFile)}'
+            '&index=${hit.hadithIndex}',
           );
         },
         child: Padding(
@@ -243,34 +308,30 @@ class _HadithTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.menu_book_outlined, size: 26),
+              const Icon(
+                Icons.library_books_outlined,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${hit.bookTitle ?? hit.bookFile} • Hadith ${hit.hadithIndex + 1}',
+                      '${hit.bookTitle ?? hit.bookFile}'
+                      ' \u2022 Hadith ${hit.hadithIndex + 1}',
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 6),
-                    if (hit.snippet != null && hit.snippet!.isNotEmpty)
-                      ArabicText(
+                    if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
                         hit.snippet!,
-                        tajweed: true,
-                        fontSize: arabicFontSize,      // 👈 scales with settings
-                        weight: FontWeight.w800,
-                        style: const TextStyle(
-                          shadows: [
-                            Shadow(
-                              blurRadius: 2,
-                              color: Colors.black54,
-                              offset: Offset(1, 1),
-                            ),
-                          ],
-                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -283,60 +344,46 @@ class _HadithTile extends StatelessWidget {
   }
 }
 
-/// Qur’an search result tile.
-/// Shows surah name + ayah number and an English snippet.
-class _QuranTile extends StatelessWidget {
+/// A search-result tile for a Quran ayah match.
+class _QuranResultTile extends StatelessWidget {
   final QuranSearchHit hit;
-  final TextStyle? englishStyle;
 
-  const _QuranTile({
-    required this.hit,
-    required this.englishStyle,
-  });
+  const _QuranResultTile({required this.hit});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SurahDetailPage(
-                surahId: hit.surahId,
-                scrollToAyah: hit.ayah,
-              ),
-            ),
-          );
-        },
+        onTap: () => context.push(
+          '/quran/${hit.surahId}?ayah=${hit.ayah}',
+        ),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.book_outlined, size: 26),
+              const Icon(Icons.menu_book_outlined, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${hit.surahName} • Ayah ${hit.ayah}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      '${hit.surahName} \u2022 Ayah ${hit.ayah}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                    const SizedBox(height: 6),
-                    if (hit.snippet != null && hit.snippet!.isNotEmpty)
+                    if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
                       Text(
                         hit.snippet!,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        // English sizes already follow global englishZoom via theme
-                        style: englishStyle,
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
+                    ],
                   ],
                 ),
               ),
