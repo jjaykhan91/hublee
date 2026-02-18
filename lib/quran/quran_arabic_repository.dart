@@ -1,10 +1,17 @@
 /// Loads Arabic ayah text from the unified KFGQPC Mushaf Smart v8
-/// dataset.
+/// dataset and the standard Uthmanic per-surah files.
 ///
-/// Supports two text columns:
-/// - `aya_text`        — Uthmanic Hafs Smart glyphs (for rendering
-///                        with the KFGQPC font and tajweed colours).
-/// - `aya_text_emlaey` — Plain/Imla'i Arabic (better for search).
+/// Two text sources are available:
+/// - **KFGQPC PUA glyphs** (`aya_text`) — for rendering with the
+///   bundled KFGQPCQuranicFontHafsSmart font. Not parseable for
+///   tajweed because it uses Private Use Area characters.
+/// - **Standard Uthmanic** (`assets/quran/ar/{surahId}.json`) —
+///   standard Arabic Unicode with full tashkeel, downloaded from
+///   the quran.com API `text_uthmani` field. Works with any Arabic
+///   font (Amiri, Scheherazade, Noto Naskh) and supports tajweed
+///   colour analysis.
+/// - **Imla'i** (`aya_text_emlaey`) — simplified spelling for
+///   search indexing only.
 library;
 
 import 'dart:convert';
@@ -19,9 +26,9 @@ class QuranArabicRepository {
 
   /// Returns a map of `{ ayahNumber: arabicText }` for [surahId].
   ///
-  /// When [useGlyphText] is `true` (the default) the Uthmanic glyph
-  /// column (`aya_text`) is used. Set it to `false` to get the
-  /// Imla'i column (`aya_text_emlaey`) which is suited for search.
+  /// When [useGlyphText] is `true` (the default) the KFGQPC PUA
+  /// glyph column (`aya_text`) is used. Set it to `false` to get
+  /// the Imla'i column (`aya_text_emlaey`) for search.
   Future<Map<String, String>> loadArabicSurah(
     int surahId, {
     bool useGlyphText = true,
@@ -45,5 +52,24 @@ class QuranArabicRepository {
     }
 
     return ayahMap;
+  }
+
+  /// Loads standard Uthmanic Arabic text (full tashkeel, standard
+  /// Unicode) from the per-surah JSON files in `assets/quran/ar/`.
+  ///
+  /// These files were downloaded from the quran.com API
+  /// `text_uthmani` field and contain proper harakat for rendering
+  /// with Google Fonts and tajweed colour analysis.
+  Future<Map<String, String>> loadUthmaniStandard(int surahId) async {
+    final rawJson = await rootBundle.loadString(
+      AssetPaths.quranUthmaniStandard(surahId),
+    );
+    final decoded = json.decode(rawJson);
+
+    if (decoded is Map<String, dynamic>) {
+      return decoded.map((key, value) => MapEntry(key, value.toString()));
+    }
+
+    return const {};
   }
 }

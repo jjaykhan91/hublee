@@ -18,14 +18,14 @@ import '../quran/quran_translation_repository.dart';
 import '../services/search_models.dart';
 
 /// Global search across Quran and Hadith with debounced input.
-class GlobalSearchPage extends StatefulWidget {
-  const GlobalSearchPage({super.key});
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
 
   @override
-  State<GlobalSearchPage> createState() => _GlobalSearchPageState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _GlobalSearchPageState extends State<GlobalSearchPage> {
+class _SearchPageState extends State<SearchPage> {
   final _queryController = TextEditingController();
 
   /// Timer for debouncing search input (300 ms delay).

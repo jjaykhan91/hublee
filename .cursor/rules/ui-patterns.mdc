@@ -3,11 +3,19 @@ alwaysApply: true
 ---
 # UI Patterns
 
-## App Structure
+## Page Names
 
-- `AppShell` (`lib/ui/app_shell.dart`): Root shell with `NavigationBar` (5 tabs)
-- Tab pages use plain `Scaffold` with AppBar
-- Detail pages (reading views) push full-screen above the shell via `parentNavigatorKey`
+| File | Class | Purpose |
+|------|-------|---------|
+| `home_page.dart` | `HomePage` | Home tab with Verse/Hadith of the Day, search, continue reading, explore |
+| `quran_page.dart` | `QuranPage` | Quran tab: surah list with Surah/Juz/Makki-Madani/Revelation tabs |
+| `surah_reader_page.dart` | `SurahReaderPage` | Full-screen surah reading with scrubber + settings sheet |
+| `hadith_page.dart` | `HadithPage` | Hadith tab: all books from all collections |
+| `hadith_reader_page.dart` | `HadithReaderPage` | Full-screen hadith reading with scrubber + settings sheet |
+| `bookmarks_page.dart` | `BookmarksPage` | Bookmarks tab |
+| `settings_page.dart` | `SettingsPage` | Settings tab |
+| `global_search_page.dart` | `SearchPage` | Full-screen global search |
+| `app_shell.dart` | `AppShell` | Bottom nav shell (5 tabs) |
 
 ## Navigation
 
@@ -22,6 +30,13 @@ context.push('/hadith/forties/nawawi40.json?title=Nawawi%2040');
 context.push('/search');
 ```
 
+## Key Architecture Rules
+
+- **Cache futures in `initState()`** -- NEVER create futures inside `build()`. This causes re-fetching on every rebuild and UI flickering.
+- **Save last-read only once** -- Use a `_hasPersistedLastRead` flag. Saving inside `build()` triggers `notifyListeners()` which causes infinite rebuilds.
+- **Scroll-to only once** -- Use a `_hasScrolledToAyah` flag to prevent repeated scrolling on rebuilds.
+- Detail pages push full-screen via `parentNavigatorKey` (hides bottom nav)
+
 ## Scope Access
 
 - Font zoom: `SettingsScope.of(context).arabicZoom` / `.englishZoom`
@@ -29,28 +44,57 @@ context.push('/search');
 - Bookmarks: `BookmarkScope.of(context)`
 - Theme mode: `Theme.of(context).brightness`
 
-## Quran Detail Page
+## Reader Pages (SurahReaderPage, HadithReaderPage)
 
-- Shows Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
-- Each ayah has a styled number badge + bookmark icon
-- Arabic with tajweed coloring + English translation below
+Both reader pages share these features:
+- **In-page search**: Search icon opens a text field that filters items within the current surah/book (NOT global search)
+- **Settings bottom sheet**: Gear icon opens `ReaderSettingsSheet` for live font size adjustment and theme toggle
+- **Scroll scrubber**: Custom `ScrollScrubber` overlaid on the right edge, works with `ItemScrollController`/`ItemPositionsListener`
+- **Bookmarking**: Per-ayah (Quran) or per-hadith toggle
+- **Auto-save**: Last-read position saved once per visit
+
+### Surah Reader specifics
+- Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
+- Arabic with tajweed coloring
 - Tajweed legend at the bottom
-- Saves last-read position automatically
 
-## Hadith Book Page
-
-- Each hadith has a styled number badge + bookmark icon
+### Hadith Reader specifics
 - Narrator shown in a distinct container
-- Arabic without tajweed + English below
-- Saves last-read position automatically
+- Arabic without tajweed
 
-## Search
+## QuranPage Groupings
 
-- Debounced text input (300ms)
-- Results grouped by Quran / Hadith with counts
-- Results navigate to detail pages with scroll-to position
+`QuranPage` has a `TabBar` with 4 views:
+- **Surah** (default): Flat list of 114 surahs
+- **Juz**: Grouped by Juz 1-30 with section headers
+- **Type**: Two sections (Meccan, Medinan)
+- **Revelation**: Sorted by chronological revelation order
+
+Each surah card shows a Makki/Madani badge (amber for Makki, teal for Madani).
+
+## Hadith Page (Tab)
+
+- Shows ALL books from ALL collections in a single flat list
+- Grouped by collection with section headers (Forties, The Nine Books, Other Books)
+- Tapping a book opens HadithReaderPage
+
+## Home Page
+
+- Verse of the Day card (deep indigo gradient)
+- Hadith of the Day card (emerald gradient)
+- Continue Reading cards
+- Explore tiles (Quran, Hadith)
 
 ## Reusable Widgets
 
 - `ArabicText` -- Arabic rendering with Tajweed support
 - `GradientTile` -- Card with gradient background, icon, title, subtitle
+- `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)
+- `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`
+
+## Animations
+
+Uses `flutter_animate` for:
+- Staggered fade+slide list entry animations on QuranPage and HadithPage
+- Fade+slide on Verse/Hadith of the Day cards
+- Keep delays short (30ms per item, capped at 600ms) for responsiveness

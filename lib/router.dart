@@ -11,14 +11,14 @@ import 'package:go_router/go_router.dart';
 
 import 'ui/app_shell.dart';
 import 'ui/home_page.dart';
-import 'ui/surah_list_page.dart';
-import 'ui/surah_detail_page.dart';
-import 'ui/hadith_collections_page.dart';
-import 'ui/hadith_books_page.dart';
-import 'ui/hadith_book_page.dart';
+import 'ui/quran_page.dart';
+import 'ui/surah_reader_page.dart';
+import 'ui/hadith_page.dart';
+import 'ui/hadith_reader_page.dart';
 import 'ui/global_search_page.dart';
 import 'ui/bookmarks_page.dart';
 import 'ui/settings_page.dart';
+import 'ui/tajweed_guide_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
 /// Used by detail pages that should push above the shell.
@@ -50,7 +50,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/quran',
-              builder: (context, state) => const SurahListPage(),
+              builder: (context, state) => const QuranPage(),
               routes: [
                 // Full-screen surah reading view
                 GoRoute(
@@ -59,7 +59,7 @@ final GoRouter appRouter = GoRouter(
                   builder: (context, state) {
                     final surahId = int.parse(state.pathParameters['surahId']!);
                     final scrollToAyah = state.uri.queryParameters['ayah'];
-                    return SurahDetailPage(
+                    return SurahReaderPage(
                       surahId: surahId,
                       scrollToAyah: scrollToAyah != null
                           ? int.tryParse(scrollToAyah)
@@ -72,49 +72,33 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Tab 2: Hadith (collections grid)
+        // Tab 2: Hadith (all books from all collections)
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/hadith',
-              builder: (context, state) => const HadithCollectionsPage(),
+              builder: (context, state) => const HadithPage(),
               routes: [
-                // Books list within a collection
+                // Full-screen hadith book reading view
+                // Path: /hadith/:collectionId/:bookFile
                 GoRoute(
-                  path: ':collectionId',
+                  path: ':collectionId/:bookFile',
+                  parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final collectionId = state.pathParameters['collectionId']!;
+                    final bookFile = state.pathParameters['bookFile']!;
                     final title =
-                        state.uri.queryParameters['title'] ?? collectionId;
-                    return HadithBooksPage(
+                        state.uri.queryParameters['title'] ?? bookFile;
+                    final scrollToIndex = state.uri.queryParameters['index'];
+                    return HadithReaderPage(
                       collectionId: collectionId,
+                      bookFile: bookFile,
                       title: title,
+                      scrollToIndex: scrollToIndex != null
+                          ? int.tryParse(scrollToIndex)
+                          : null,
                     );
                   },
-                  routes: [
-                    // Full-screen hadith book reading view
-                    GoRoute(
-                      path: ':bookFile',
-                      parentNavigatorKey: _rootNavigatorKey,
-                      builder: (context, state) {
-                        final collectionId =
-                            state.pathParameters['collectionId']!;
-                        final bookFile = state.pathParameters['bookFile']!;
-                        final title =
-                            state.uri.queryParameters['title'] ?? bookFile;
-                        final scrollToIndex =
-                            state.uri.queryParameters['index'];
-                        return HadithBookPage(
-                          collectionId: collectionId,
-                          bookFile: bookFile,
-                          title: title,
-                          scrollToIndex: scrollToIndex != null
-                              ? int.tryParse(scrollToIndex)
-                              : null,
-                        );
-                      },
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -147,7 +131,12 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/search',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const GlobalSearchPage(),
+      builder: (context, state) => const SearchPage(),
+    ),
+    GoRoute(
+      path: '/tajweed-guide',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const TajweedGuidePage(),
     ),
   ],
 );

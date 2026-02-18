@@ -1,19 +1,37 @@
 /// Landing page shown in the Home tab.
 ///
-/// Displays a search shortcut, "Continue Reading" cards for
-/// last-read Quran and Hadith positions, and quick-access tiles
-/// for the Quran and Hadith sections.
+/// Displays Verse of the Day, Hadith of the Day, a search shortcut,
+/// "Continue Reading" cards for last-read positions, and explore tiles.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/bookmark_scope.dart';
+import '../services/daily_content_service.dart';
+import '../services/settings_controller.dart';
+import 'widgets/arabic_text.dart';
 import 'widgets/gradient_tile.dart';
 
-/// Home tab content with search, continue-reading, and explore.
-class HomePage extends StatelessWidget {
+/// Home tab content with daily content, search, continue-reading.
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final Future<DailyVerse> _verseFuture;
+  late final Future<DailyHadith> _hadithFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _verseFuture = DailyContentService.loadVerseOfTheDay();
+    _hadithFuture = DailyContentService.loadHadithOfTheDay();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,13 +45,19 @@ class HomePage extends StatelessWidget {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.9),
-            radius: 1.2,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.3, 0.7, 1.0],
             colors: [
+              Color.alphaBlend(
+                colorScheme.primary.withValues(alpha: 0.06),
+                colorScheme.surface,
+              ),
+              colorScheme.surface,
               colorScheme.surface,
               Color.alphaBlend(
-                Colors.white.withValues(alpha: 0.02),
+                colorScheme.tertiary.withValues(alpha: 0.04),
                 colorScheme.surface,
               ),
             ],
@@ -57,6 +81,51 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Verse of the Day ────────────────────────────
+            FutureBuilder<DailyVerse>(
+              future: _verseFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+                return _VerseOfTheDayCard(verse: snapshot.data!)
+                    .animate()
+                    .fadeIn(duration: 600.ms, curve: Curves.easeOut)
+                    .slideY(
+                      begin: 0.05,
+                      end: 0,
+                      duration: 600.ms,
+                      curve: Curves.easeOut,
+                    );
+              },
+            ),
+            const SizedBox(height: 14),
+
+            // ── Hadith of the Day ───────────────────────────
+            FutureBuilder<DailyHadith>(
+              future: _hadithFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+                return _HadithOfTheDayCard(hadith: snapshot.data!)
+                    .animate()
+                    .fadeIn(
+                      duration: 600.ms,
+                      delay: 150.ms,
+                      curve: Curves.easeOut,
+                    )
+                    .slideY(
+                      begin: 0.05,
+                      end: 0,
+                      duration: 600.ms,
+                      delay: 150.ms,
+                      curve: Curves.easeOut,
+                    );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -101,13 +170,37 @@ class HomePage extends StatelessWidget {
                 bookmarkService.lastReadHadith != null)
               const SizedBox(height: 8),
 
-            Text(
-              'Explore',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.92),
-                    fontWeight: FontWeight.w700,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primary.withValues(alpha: 0.14),
+                        colorScheme.tertiary.withValues(alpha: 0.06),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-            ),
+                  child: Icon(
+                    Icons.explore_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Explore',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
             const SizedBox(height: 12),
 
             GradientTile(
@@ -115,13 +208,157 @@ class HomePage extends StatelessWidget {
               title: 'Quran',
               subtitle: 'Read by surah with translations and tajweed',
               onTap: () => context.go('/quran'),
-            ),
+            )
+                .animate()
+                .fadeIn(duration: 500.ms, delay: 400.ms)
+                .slideY(begin: 0.04, end: 0, duration: 500.ms, delay: 400.ms),
             const SizedBox(height: 12),
             GradientTile(
               icon: Icons.library_books_rounded,
               title: 'Hadith',
               subtitle: 'Forties, The Nine Books, and more',
               onTap: () => context.go('/hadith'),
+            )
+                .animate()
+                .fadeIn(duration: 500.ms, delay: 500.ms)
+                .slideY(begin: 0.04, end: 0, duration: 500.ms, delay: 500.ms),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+//  Verse of the Day card (compact + tappable)
+// ────────────────────────────────────────────────────────────────
+
+class _VerseOfTheDayCard extends StatelessWidget {
+  final DailyVerse verse;
+
+  const _VerseOfTheDayCard({required this.verse});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(
+        '/quran/${verse.surahId}?ayah=${verse.ayah}',
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4338CA).withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header row
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.auto_stories_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Ayah of the Day',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${verse.surahName} : ${verse.ayah}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Arabic text (compact)
+            if (verse.arabic.isNotEmpty)
+              ArabicText(
+                verse.arabic,
+                tajweed: false,
+                fontSize: 20,
+                weight: FontWeight.bold,
+                align: TextAlign.center,
+                color: Colors.white,
+                fontOverride: ArabicFontOption.uthmanic,
+              ),
+            if (verse.arabic.isNotEmpty) const SizedBox(height: 10),
+
+            // English translation (show full but clamp height)
+            if (verse.english.isNotEmpty)
+              Text(
+                verse.english,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            // "Tap to read more" footer
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Tap to read full surah',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ],
             ),
           ],
         ),
@@ -130,8 +367,170 @@ class HomePage extends StatelessWidget {
   }
 }
 
-/// A compact card that shows the user's last-read position and
-/// allows one-tap navigation back to that spot.
+// ────────────────────────────────────────────────────────────────
+//  Hadith of the Day card (compact + tappable)
+// ────────────────────────────────────────────────────────────────
+
+class _HadithOfTheDayCard extends StatelessWidget {
+  final DailyHadith hadith;
+
+  const _HadithOfTheDayCard({required this.hadith});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(
+        '/hadith/${hadith.collectionId}/${hadith.bookFile}'
+        '?title=${Uri.encodeComponent(hadith.bookTitle)}'
+        '&index=${hadith.hadithIndex}',
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF065F46), Color(0xFF047857), Color(0xFF10B981)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF047857).withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header row
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.library_books_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Hadith of the Day',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    hadith.bookTitle,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Narrator (compact)
+            if (hadith.narrator != null && hadith.narrator!.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  hadith.narrator!,
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Arabic text (compact)
+            if (hadith.arabic.isNotEmpty)
+              ArabicText(
+                hadith.arabic,
+                tajweed: false,
+                fontSize: 18,
+                weight: FontWeight.bold,
+                align: TextAlign.center,
+                color: Colors.white,
+              ),
+            if (hadith.arabic.isNotEmpty) const SizedBox(height: 10),
+
+            // English translation (show preview)
+            if (hadith.english.isNotEmpty)
+              Text(
+                hadith.english,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            // "Tap to read more" footer
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Tap to read full hadith',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+//  Continue reading card
+// ────────────────────────────────────────────────────────────────
+
+/// A compact card showing the user's last-read position.
 class _ContinueReadingCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -160,7 +559,6 @@ class _ContinueReadingCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Icon badge
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -174,7 +572,6 @@ class _ContinueReadingCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Label + detail text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

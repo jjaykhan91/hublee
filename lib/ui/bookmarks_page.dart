@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/bookmark_scope.dart';
@@ -76,6 +77,8 @@ class BookmarksPage extends StatelessWidget {
       itemBuilder: (context, index) {
         final bookmark = bookmarks[index];
         final isQuran = bookmark.type == 'quran';
+        final badgeColor =
+            isQuran ? const Color(0xFF4338CA) : const Color(0xFF047857);
 
         return Dismissible(
           key: ValueKey(bookmark.id),
@@ -95,9 +98,27 @@ class BookmarksPage extends StatelessWidget {
           onDismissed: (_) => bookmarkService.removeBookmark(bookmark.id),
           child: Card(
             child: ListTile(
-              leading: Icon(
-                isQuran ? Icons.menu_book_rounded : Icons.library_books_rounded,
-                color: colorScheme.primary,
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      badgeColor.withValues(alpha: 0.15),
+                      badgeColor.withValues(alpha: 0.06),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isQuran
+                      ? Icons.menu_book_rounded
+                      : Icons.library_books_rounded,
+                  color: badgeColor,
+                  size: 20,
+                ),
               ),
               title: Text(
                 isQuran
@@ -119,7 +140,21 @@ class BookmarksPage extends StatelessWidget {
                       isQuran ? 'Quran' : 'Hadith',
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.bookmark_remove_rounded,
+                      color: colorScheme.error,
+                    ),
+                    tooltip: 'Remove bookmark',
+                    onPressed: () =>
+                        bookmarkService.removeBookmark(bookmark.id),
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
               onTap: () => _navigateToBookmark(
                 context,
                 bookmark,
@@ -127,7 +162,19 @@ class BookmarksPage extends StatelessWidget {
               ),
             ),
           ),
-        );
+        )
+            .animate()
+            .fadeIn(
+              duration: 400.ms,
+              delay: (30 * index).clamp(0, 600).ms,
+            )
+            .slideX(
+              begin: 0.03,
+              end: 0,
+              duration: 400.ms,
+              delay: (30 * index).clamp(0, 600).ms,
+              curve: Curves.easeOut,
+            );
       },
     );
   }

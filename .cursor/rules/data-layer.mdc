@@ -9,7 +9,7 @@ All data is bundled as JSON files in `assets/`. There are no runtime API calls.
 
 - Quran Arabic: `assets/quran/KFGQPCQuranMushaf_smart_v8.json`
 - Quran translations: `assets/quran/en.clearquran/{surahId}.json`
-- Chapter metadata: `assets/quran/chapters.min.json`
+- Surah metadata: `assets/quran/surah_metadata.json` (revelation type, order, juz ranges)
 - Hadith collections: `assets/hadith/{collection}/index.json` + book files
 
 ## Repository Pattern
@@ -20,22 +20,32 @@ All data is bundled as JSON files in `assets/`. There are no runtime API calls.
 
 ## Models
 
-- `ChapterMeta`: id, nameSimple, nameArabic, versesCount
-- `HadithBook`: title, chapters, hadiths (also has metadata with author/introduction)
+- `ChapterMeta`: id, nameSimple, nameArabic, versesCount, revelationType, revelationOrder, startJuz, endJuz
+  - `isMeccan` / `isMedinan` getters for filtering
+- `HadithBook`: title, chapters, hadiths
 - `Hadith`: id, idInBook, chapterId, bookId, arabic, english, narrator
 - `QuranSearchHit` / `HadithSearchHit`: search result types in `lib/services/search_models.dart`
+- `DailyVerse` / `DailyHadith`: daily content models in `lib/services/daily_content_service.dart`
 
 ## Quran Arabic JSON Fields
 
 Each ayah in `KFGQPCQuranMushaf_smart_v8.json` has these fields:
 - `id`: sequential ayah ID across entire Quran
-- `jozz`: juz number (1-30) -- available but NOT yet used in the UI
+- `jozz`: juz number (1-30)
 - `sura_no`, `sura_name_en`, `sura_name_ar`: surah identifiers
-- `page`: Mushaf page number -- available but NOT yet used in the UI
-- `line_start`, `line_end`: line positions -- available but NOT yet used
+- `page`: Mushaf page number
+- `line_start`, `line_end`: line positions
 - `aya_no`: ayah number within the surah
 - `aya_text`: Uthmani Hafs Smart Unicode (for display, with full diacritics)
 - `aya_text_emlaey`: simplified Arabic (for search only, never display this)
+
+## Surah Metadata JSON
+
+`assets/quran/surah_metadata.json` has per-surah entries:
+- `id`: surah number (1-114)
+- `revelationType`: "Meccan" or "Medinan"
+- `revelationOrder`: chronological order (1-114)
+- `startJuz` / `endJuz`: juz range
 
 ## Hadith JSON Structure
 
@@ -53,3 +63,11 @@ Use `AssetPaths` class (`lib/data/asset_paths.dart`) for constructing file paths
 - `SharedPreferences` for theme mode and font zoom values
 - `ThemeModeService` handles theme persistence
 - `SettingsController` (ChangeNotifier) handles font zoom with `notifyListeners()`
+
+## Daily Content
+
+`DailyContentService` provides deterministic daily verse/hadith:
+- Uses date-based seeding (same content all day, changes daily)
+- Caches loaded content for the session
+- Verse from random ayah across all 114 surahs
+- Hadith from Nawawi 40 collection

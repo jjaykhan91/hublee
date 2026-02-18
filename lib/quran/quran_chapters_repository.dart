@@ -1,5 +1,5 @@
-/// Loads surah metadata (names and verse counts) from the unified
-/// KFGQPC Mushaf Smart v8 dataset.
+/// Loads surah metadata (names, verse counts, juz, revelation info)
+/// from the KFGQPC Mushaf dataset merged with static metadata.
 library;
 
 import 'dart:convert';
@@ -10,23 +10,34 @@ import '../data/asset_paths.dart';
 import 'models.dart';
 
 /// Builds a list of all 114 [ChapterMeta] objects by scanning the
-/// full ayah dataset and grouping by `sura_no`.
+/// full ayah dataset and merging with the static surah metadata
+/// file for revelation type, revelation order, and juz ranges.
 class QuranChaptersRepository {
   const QuranChaptersRepository();
 
   /// Loads all 114 chapters sorted by surah number.
   ///
-  /// Iterates over every ayah row to extract the surah number,
-  /// English name, Arabic name, and counts the verses per surah.
+  /// Merges per-ayah name/verse data with static metadata for
+  /// revelation type, revelation order, and juz ranges.
   Future<List<ChapterMeta>> loadChapters() async {
-    final rawJson = await rootBundle.loadString(
-      AssetPaths.kfgqpcQuranMushafSmartV8,
-    );
-    final List<dynamic> rows = json.decode(rawJson);
+    // Load both sources in parallel.
+    final results = await Future.wait([
+      rootBundle.loadString(AssetPaths.kfgqpcQuranMushafSmartV8),
+      rootBundle.loadString(AssetPaths.surahMetadata),
+    ]);
 
-    // Accumulate verse counts per surah.
+    final List<dynamic> rows = json.decode(results[0]);
+    final List<dynamic> metaRows = json.decode(results[1]);
+
+    // Index static metadata by surah id.
+    final metaById = <int, Map<String, dynamic>>{};
+    for (final row in metaRows) {
+      final map = row as Map<String, dynamic>;
+      metaById[map['id'] as int] = map;
+    }
+
+    // Accumulate verse counts and names per surah from ayah data.
     final Map<int, _SurahAccumulator> accumulator = {};
-
     for (final row in rows) {
       final int surahNumber = row['sura_no'] as int;
       final String nameEn = (row['sura_name_en'] as String).trim();
@@ -39,13 +50,18 @@ class QuranChaptersRepository {
       bucket.verseCount++;
     }
 
-    // Convert the map into a sorted list of ChapterMeta.
+    // Merge both sources into ChapterMeta objects.
     final chapters = accumulator.entries.map((entry) {
+      final meta = metaById[entry.key];
       return ChapterMeta(
         id: entry.key,
         nameSimple: entry.value.nameEn,
         nameArabic: entry.value.nameAr,
         versesCount: entry.value.verseCount,
+        revelationType: (meta?['revelationType'] as String?) ?? 'Meccan',
+        revelationOrder: (meta?['revelationOrder'] as int?) ?? 0,
+        startJuz: (meta?['startJuz'] as int?) ?? 1,
+        endJuz: (meta?['endJuz'] as int?) ?? 1,
       );
     }).toList();
 

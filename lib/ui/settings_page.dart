@@ -6,7 +6,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 
+import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
 import 'widgets/arabic_text.dart';
@@ -30,7 +33,10 @@ class SettingsPage extends StatelessWidget {
           _SectionHeader(
             'Display',
             icon: Icons.text_fields_rounded,
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms),
           const SizedBox(height: 8),
 
           // Arabic font zoom with live preview
@@ -47,7 +53,10 @@ class SettingsPage extends StatelessWidget {
               fontSize: 26 * settings.arabicZoom,
               weight: FontWeight.bold,
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 60.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 60.ms),
           const SizedBox(height: 12),
 
           // English font zoom with live preview
@@ -63,14 +72,129 @@ class SettingsPage extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 120.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 120.ms),
+          const SizedBox(height: 12),
+
+          // Arabic font picker
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Arabic Font',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: ArabicFontOption.values.map((font) {
+                      final isSelected = font == settings.arabicFont;
+                      return ChoiceChip(
+                        label: Text(font.label),
+                        selected: isSelected,
+                        onSelected: (_) => settings.arabicFont = font,
+                        selectedColor:
+                            colorScheme.primary.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
+                          fontSize: 13,
+                        ),
+                        side: BorderSide(
+                          color: isSelected
+                              ? colorScheme.primary.withValues(alpha: 0.4)
+                              : colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 150.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 150.ms),
+          const SizedBox(height: 12),
+
+          // Tajweed toggle
+          Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: Icon(
+                Icons.color_lens_rounded,
+                color: colorScheme.primary,
+              ),
+              title: const Text('Tajweed Colors'),
+              subtitle: Text(
+                settings.tajweedEnabled
+                    ? 'Colour-coded tajweed rules shown'
+                    : 'Plain Arabic text displayed',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: Switch(
+                value: settings.tajweedEnabled,
+                onChanged: (v) => settings.tajweedEnabled = v,
+              ),
+              onTap: () =>
+                  settings.tajweedEnabled = !settings.tajweedEnabled,
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 210.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 210.ms),
+
+          // Tajweed guide link
+          Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: Icon(
+                Icons.info_outline_rounded,
+                color: colorScheme.primary,
+              ),
+              title: const Text('Tajweed Guide'),
+              subtitle: Text(
+                'Learn tajweed rules and color coding',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/tajweed-guide'),
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 240.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 240.ms),
           const SizedBox(height: 24),
 
           // ── Appearance section ───────────────────────────
           _SectionHeader(
             'Appearance',
             icon: Icons.palette_outlined,
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 300.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 300.ms),
           const SizedBox(height: 8),
 
           Card(
@@ -83,7 +207,7 @@ class SettingsPage extends StatelessWidget {
                 isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                 color: colorScheme.primary,
               ),
-              title: Text(isDark ? 'Dark Mode' : 'Light Mode'),
+              title: Text(isDark ? 'Moon Mode' : 'Sun Mode'),
               subtitle: Text(
                 isDark
                     ? 'Easier on the eyes at night'
@@ -96,14 +220,20 @@ class SettingsPage extends StatelessWidget {
               ),
               onTap: () => AppScope.of(context).toggleTheme(),
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 360.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 360.ms),
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────
           _SectionHeader(
             'About',
             icon: Icons.info_outline_rounded,
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 420.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 420.ms),
           const SizedBox(height: 8),
 
           Card(
@@ -136,7 +266,10 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 480.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 480.ms),
         ],
       ),
     );

@@ -17,12 +17,14 @@ dependencies:
   go_router: ^16.1.0
   scrollable_positioned_list: ^0.3.8
   shared_preferences: ^2.2.3
+  flutter_animate: ^4.5.2
 
   # Used by build tools in tools/ only (not at runtime)
   dio: ^5.9.0
   flutter_dotenv: ^5.1.0
   args: ^2.6.0
   path: ^1.9.0
+  google_fonts: ^8.0.1
 
 dev_dependencies:
   flutter_test:
@@ -35,12 +37,17 @@ flutter:
 
   assets:
     - assets/quran/KFGQPCQuranMushaf_smart_v8.json
+    - assets/quran/surah_metadata.json
+    - assets/quran/ar/
+    - assets/quran/surah_info.json
     - assets/quran/en.clearquran/
     - assets/hadith/manifest.json
     - assets/hadith/collections.json
     - assets/hadith/forties/
     - assets/hadith/other_books/
     - assets/hadith/the_9_books/
+    - assets/images/kaaba_makki.png
+    - assets/images/masjid_nabawi_madani.png
 
   fonts:
     - family: KFGQPCQuranicFontHafsSmart

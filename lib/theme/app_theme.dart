@@ -23,9 +23,12 @@ const _darkOnPrimary = Color(0xFF0A1220);
 const _darkSecondary = Color(0xFF7DD3FC);
 const _darkError = Color(0xFFFF6B6B);
 
-/// Light colour scheme seeded from a vivid blue.
+/// Light colour scheme seeded from a vivid blue with richer
+/// secondary and tertiary tones.
 final _lightScheme = ColorScheme.fromSeed(
   seedColor: const Color(0xFF2563EB),
+  secondary: const Color(0xFF0891B2),
+  tertiary: const Color(0xFF7C3AED),
 );
 
 /// Custom dark colour scheme with precise hand-picked values.
@@ -133,7 +136,14 @@ ThemeData buildLightTheme() {
       backgroundColor: _lightScheme.surface,
       foregroundColor: _lightScheme.onSurface,
       elevation: 0,
+      scrolledUnderElevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       centerTitle: true,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: _lightScheme.onSurface,
+      ),
     ),
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
@@ -143,6 +153,12 @@ ThemeData buildLightTheme() {
         borderRadius: BorderRadius.all(Radius.circular(14)),
         borderSide: BorderSide.none,
       ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
     ),
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
   );
@@ -168,7 +184,14 @@ ThemeData buildDarkTheme() {
       backgroundColor: _darkCanvas,
       foregroundColor: _darkOnSurface,
       elevation: 0,
+      scrolledUnderElevation: 1,
+      shadowColor: Colors.black26,
       centerTitle: true,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: _darkOnSurface,
+      ),
       systemOverlayStyle: SystemUiOverlayStyle.light,
     ),
     cardTheme: const CardThemeData(
@@ -197,6 +220,12 @@ ThemeData buildDarkTheme() {
         borderRadius: BorderRadius.all(Radius.circular(14)),
         borderSide: BorderSide(color: _darkPrimary, width: 1.4),
       ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
     ),
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
   );

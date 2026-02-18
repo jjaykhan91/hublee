@@ -23,8 +23,13 @@ class AssetPaths {
   // ── Quran ───────────────────────────────────────────────────
   static const quranRoot = 'assets/quran';
 
-  /// Per-surah Arabic text: `assets/quran/ar/<surahId>.json`
-  static String quranArabic(int surahId) => '$quranRoot/ar/$surahId.json';
+  /// Per-surah standard Uthmanic Arabic text (standard Unicode with
+  /// full tashkeel): `assets/quran/ar/<surahId>.json`.
+  ///
+  /// Downloaded from quran.com API `text_uthmani` field. Use for
+  /// non-KFGQPC fonts and tajweed colour analysis.
+  static String quranUthmaniStandard(int surahId) =>
+      '$quranRoot/ar/$surahId.json';
 
   /// ClearQuran English translation per surah.
   static String quranClearQuran(int surahId) =>
@@ -43,4 +48,10 @@ class AssetPaths {
   /// info, and tajweed colour mappings.
   static const kfgqpcQuranMushafSmartV8 =
       'assets/quran/KFGQPCQuranMushaf_smart_v8.json';
+
+  /// Static surah metadata (revelation type, order, juz ranges).
+  static const surahMetadata = 'assets/quran/surah_metadata.json';
+
+  /// Surah info summaries (short_text + full text) for all 114 surahs.
+  static const surahInfo = 'assets/quran/surah_info.json';
 }
