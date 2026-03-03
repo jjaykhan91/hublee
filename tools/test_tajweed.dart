@@ -20,9 +20,21 @@ const _qalqalaLetters = {'\u0642', '\u0637', '\u0628', '\u062C', '\u062F'};
 const _idghamWithGhunnahLetters = {'\u064A', '\u0646', '\u0645', '\u0648'};
 const _idghamWithoutGhunnahLetters = {'\u0631', '\u0644'};
 const _ikhfaLetters = {
-  '\u062A', '\u062B', '\u062C', '\u062F', '\u0630',
-  '\u0632', '\u0633', '\u0634', '\u0635', '\u0636',
-  '\u0637', '\u0638', '\u0641', '\u0642', '\u0643',
+  '\u062A',
+  '\u062B',
+  '\u062C',
+  '\u062F',
+  '\u0630',
+  '\u0632',
+  '\u0633',
+  '\u0634',
+  '\u0635',
+  '\u0636',
+  '\u0637',
+  '\u0638',
+  '\u0641',
+  '\u0642',
+  '\u0643',
 };
 
 bool _isSpaceLike(String ch) =>
@@ -30,14 +42,20 @@ bool _isSpaceLike(String ch) =>
 
 bool _isArabicBaseCodePoint(int cp) =>
     (cp >= 0x0621 && cp <= 0x064A) ||
-    cp == 0x0671 || cp == 0x0672 || cp == 0x0673 || cp == 0x0674 ||
+    cp == 0x0671 ||
+    cp == 0x0672 ||
+    cp == 0x0673 ||
+    cp == 0x0674 ||
     (cp >= 0x066E && cp <= 0x066F);
 
 bool _isCombiningCodePoint(int cp) =>
     cp == 0x0670 ||
-    (cp >= 0x064B && cp <= 0x0652) ||
-    cp == 0x06DF || cp == 0x06E0 || cp == 0x06E2 ||
-    cp == 0x06E7 || cp == 0x06E8;
+    (cp >= 0x064B && cp <= 0x0653) || // includes U+0653 maddah
+    cp == 0x06DF ||
+    cp == 0x06E0 ||
+    cp == 0x06E2 ||
+    cp == 0x06E7 ||
+    cp == 0x06E8;
 
 bool _isCombiningMark(String ch) => _isCombiningCodePoint(ch.codeUnitAt(0));
 
@@ -76,12 +94,18 @@ String _removeDanglingCombiningMarks(String text) {
     }
     bool foundBase = false;
     for (int j = i - 1; j >= 0; j--) {
-      if (_isArabicBaseCodePoint(runes[j])) { foundBase = true; break; }
+      if (_isArabicBaseCodePoint(runes[j])) {
+        foundBase = true;
+        break;
+      }
       if (!_isCombiningCodePoint(runes[j])) break;
     }
     if (!foundBase) {
       for (int j = i + 1; j < runes.length; j++) {
-        if (_isArabicBaseCodePoint(runes[j])) { foundBase = true; break; }
+        if (_isArabicBaseCodePoint(runes[j])) {
+          foundBase = true;
+          break;
+        }
         if (!_isCombiningCodePoint(runes[j])) break;
       }
     }
@@ -104,35 +128,55 @@ class Cluster {
   final String text;
   final String? base;
   final String diacritics;
-  Cluster.space(this.text) : kind = ClusterKind.space, base = null, diacritics = '';
-  Cluster.sign(this.text) : kind = ClusterKind.sign, base = null, diacritics = '';
-  Cluster.letter(this.base, this.diacritics) : kind = ClusterKind.letter, text = '$base$diacritics';
+  Cluster.space(this.text)
+      : kind = ClusterKind.space,
+        base = null,
+        diacritics = '';
+  Cluster.sign(this.text)
+      : kind = ClusterKind.sign,
+        base = null,
+        diacritics = '';
+  Cluster.letter(this.base, this.diacritics)
+      : kind = ClusterKind.letter,
+        text = '$base$diacritics';
 }
 
 List<Cluster> clusterize(String text) {
   final runes = text.runes.toList();
-  final chars = List<String>.generate(runes.length, (i) => String.fromCharCode(runes[i]));
+  final chars =
+      List<String>.generate(runes.length, (i) => String.fromCharCode(runes[i]));
   final clusters = <Cluster>[];
-  bool isLetterLike(String ch) => !_isSpaceLike(ch) && !_isCombiningMark(ch) && !_isQuranSpacingSign(ch);
+  bool isLetterLike(String ch) =>
+      !_isSpaceLike(ch) && !_isCombiningMark(ch) && !_isQuranSpacingSign(ch);
 
   int i = 0;
   while (i < chars.length) {
     final ch = chars[i];
-    if (_isSpaceLike(ch)) { clusters.add(Cluster.space(ch)); i++; continue; }
+    if (_isSpaceLike(ch)) {
+      clusters.add(Cluster.space(ch));
+      i++;
+      continue;
+    }
     if (_isQuranSpacingSign(ch)) {
       if (clusters.isNotEmpty && clusters.last.kind == ClusterKind.letter) {
         final last = clusters.removeLast();
         clusters.add(Cluster.letter(last.base!, last.diacritics + ch));
-      } else { clusters.add(Cluster.sign(ch)); }
-      i++; continue;
+      } else {
+        clusters.add(Cluster.sign(ch));
+      }
+      i++;
+      continue;
     }
     if (_isCombiningMark(ch)) {
       int j = clusters.length - 1;
-      while (j >= 0 && clusters[j].kind != ClusterKind.letter) j--;
+      while (j >= 0 && clusters[j].kind != ClusterKind.letter) {
+        j--;
+      }
       if (j >= 0) {
         final prev = clusters.removeAt(j);
         clusters.insert(j, Cluster.letter(prev.base!, prev.diacritics + ch));
-        i++; continue;
+        i++;
+        continue;
       }
       if (i + 1 < chars.length && isLetterLike(chars[i + 1])) {
         final base = chars[i + 1];
@@ -140,20 +184,30 @@ List<Cluster> clusterize(String text) {
         int k = i + 2;
         while (k < chars.length) {
           final d = chars[k];
-          if (_isCombiningMark(d) || _isQuranSpacingSign(d)) { diacritics += d; k++; continue; }
+          if (_isCombiningMark(d) || _isQuranSpacingSign(d)) {
+            diacritics += d;
+            k++;
+            continue;
+          }
           break;
         }
         clusters.add(Cluster.letter(base, diacritics));
-        i = k; continue;
+        i = k;
+        continue;
       }
-      i++; continue;
+      i++;
+      continue;
     }
     final base = ch;
     var diacritics = '';
     int j = i + 1;
     while (j < chars.length) {
       final d = chars[j];
-      if (_isCombiningMark(d) || _isQuranSpacingSign(d)) { diacritics += d; j++; continue; }
+      if (_isCombiningMark(d) || _isQuranSpacingSign(d)) {
+        diacritics += d;
+        j++;
+        continue;
+      }
       break;
     }
     clusters.add(Cluster.letter(base, diacritics));
@@ -185,14 +239,16 @@ String? colorForCluster(List<Cluster> clusters, int index) {
   }
 
   // Ghunnah
-  if ((baseLetter == _noon || baseLetter == _meem) && diacritics.contains(_shadda)) {
+  if ((baseLetter == _noon || baseLetter == _meem) &&
+      diacritics.contains(_shadda)) {
     return 'GREEN(Ghunnah)';
   }
 
   // Noon Sakin / Tanween
   final isNoonSakin = baseLetter == _noon && isSakin;
   final hasTanween = diacritics.contains(_fathatan) ||
-      diacritics.contains(_dammatan) || diacritics.contains(_kasratan);
+      diacritics.contains(_dammatan) ||
+      diacritics.contains(_kasratan);
 
   if (isNoonSakin || hasTanween) {
     int? nextIndex = nextLetterIndex(clusters, index);
@@ -204,8 +260,12 @@ String? colorForCluster(List<Cluster> clusters, int index) {
     }
     if (nextIndex != null) {
       final nextBase = clusters[nextIndex].base!;
-      if (_idghamWithGhunnahLetters.contains(nextBase)) return 'GREEN(Idgham+Ghunnah)';
-      if (_idghamWithoutGhunnahLetters.contains(nextBase)) return 'TEAL(Idgham-noGhunnah)';
+      if (_idghamWithGhunnahLetters.contains(nextBase)) {
+        return 'GREEN(Idgham+Ghunnah)';
+      }
+      if (_idghamWithoutGhunnahLetters.contains(nextBase)) {
+        return 'TEAL(Idgham-noGhunnah)';
+      }
       if (_ikhfaLetters.contains(nextBase)) return 'MAGENTA(Ikhfa)';
       if (nextBase == _ba) return 'BLUE(Iqlab)';
     }
@@ -214,7 +274,22 @@ String? colorForCluster(List<Cluster> clusters, int index) {
   // Ikhfa Shafawi
   if (baseLetter == _meem && isSakin) {
     final nextIndex = nextLetterIndex(clusters, index);
-    if (nextIndex != null && clusters[nextIndex].base == _ba) return 'ORANGE(IkhfaShafawi)';
+    if (nextIndex != null && clusters[nextIndex].base == _ba) {
+      return 'ORANGE(IkhfaShafawi)';
+    }
+  }
+
+  // Maddah letters (U+0653)
+  if (diacritics.contains('\u0653')) {
+    final nextIndex = nextLetterIndex(clusters, index);
+    if (nextIndex != null) {
+      final nextBase = clusters[nextIndex].base!;
+      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}
+          .contains(nextBase)) {
+        return 'RED(MaadMunfasil)'; // maddah before hamza
+      }
+    }
+    return 'DARK_RED(MaddLazim)'; // e.g. لٓ مٓ in الٓمٓ
   }
 
   return null;
@@ -230,8 +305,11 @@ void testText(String label, String text, Map<String, String> expected) {
     final c = clusters[i];
     final color = colorForCluster(clusters, i);
     if (c.kind == ClusterKind.letter) {
-      final baseCP = c.base!.codeUnitAt(0).toRadixString(16).toUpperCase().padLeft(4, '0');
-      final diacCP = c.diacritics.runes.map((r) => 'U+${r.toRadixString(16).toUpperCase().padLeft(4, '0')}').join(' ');
+      final baseCP =
+          c.base!.codeUnitAt(0).toRadixString(16).toUpperCase().padLeft(4, '0');
+      final diacCP = c.diacritics.runes
+          .map((r) => 'U+${r.toRadixString(16).toUpperCase().padLeft(4, '0')}')
+          .join(' ');
       final colorStr = color ?? 'none';
       print('  [$i] U+$baseCP "${c.base}" diac=[$diacCP] => $colorStr');
       if (color != null) results['$i:${c.base}'] = color;
@@ -244,7 +322,8 @@ void testText(String label, String text, Map<String, String> expected) {
     if (results[entry.key] == entry.value) {
       print('  PASS: ${entry.key} => ${entry.value}');
     } else {
-      print('  FAIL: ${entry.key} expected ${entry.value} but got ${results[entry.key] ?? "none"}');
+      print(
+          '  FAIL: ${entry.key} expected ${entry.value} but got ${results[entry.key] ?? "none"}');
       allPassed = false;
     }
   }
@@ -258,24 +337,25 @@ void main() {
 
   // Test 1: Qalqala with explicit sukun (Dal)
   testText('Qalqala: لَمْ يَلِدْ', 'لَمْ يَلِدْ وَلَمْ يُولَدْ', {
-    '5:د': 'RED(Qalqala)',    // dal+sukun in يَلِدْ
-    '14:د': 'RED(Qalqala)',   // dal+sukun in يُولَدْ
+    '5:د': 'RED(Qalqala)', // dal+sukun in يَلِدْ
+    '14:د': 'RED(Qalqala)', // dal+sukun in يُولَدْ
   });
 
   // Test 2: Qalqala should NOT trigger on voweled letters
-  testText('No false Qalqala: قُلْ هُوَ ٱللَّهُ أَحَدٌ', 'قُلْ هُوَ ٱللَّهُ أَحَدٌ', {
-    '13:د': 'RED(Qalqala-waqf)',  // dal with dammatan at END of ayah (waqf)
+  testText('No false Qalqala: قُلْ هُوَ ٱللَّهُ أَحَدٌ',
+      'قُلْ هُوَ ٱللَّهُ أَحَدٌ', {
+    '13:د': 'RED(Qalqala-waqf)', // dal with dammatan at END of ayah (waqf)
   });
 
   // Test 3: Ghunnah (noon + shadda)
   testText('Ghunnah: إِنَّ ٱللَّهَ', 'إِنَّ ٱللَّهَ', {
-    '1:ن': 'GREEN(Ghunnah)',  // noon+shadda
+    '1:ن': 'GREEN(Ghunnah)', // noon+shadda
   });
 
   // Test 4: Ghunnah (meem + shadda)
   testText('Ghunnah: وَمِمَّا', 'وَمِمَّا رَزَقْنَـٰهُمْ يُنفِقُونَ', {
-    '2:م': 'GREEN(Ghunnah)',  // meem+shadda
-    '7:ق': 'RED(Qalqala)',   // qaf+sukun
+    '2:م': 'GREEN(Ghunnah)', // meem+shadda
+    '7:ق': 'RED(Qalqala)', // qaf+sukun
   });
 
   // Test 5: Ikhfa (noon sakin before ta)
@@ -290,23 +370,36 @@ void main() {
 
   // Test 7: Iqlab (noon with small high meem before ba)
   testText('Iqlab: مِنۢ بَعْدِ', 'مِنۢ بَعْدِ', {
-    '1:ن': 'BLUE(Iqlab)',    // noon+U+06E2 before ba
+    '1:ن': 'BLUE(Iqlab)', // noon+U+06E2 before ba
   });
 
   // Test 8: Ikhfa Shafawi (meem sakin before ba)
   testText('Ikhfa Shafawi: هُمْ بِمَا', 'هُمْ بِمَا', {
-    '1:م': 'ORANGE(IkhfaShafawi)',  // meem+sukun before ba
+    '1:م': 'ORANGE(IkhfaShafawi)', // meem+sukun before ba
   });
 
   // Test 9: Idgham with Ghunnah (tanween before meem/noon/waw/ya)
   testText('Idgham: هُدًى لِّلْمُتَّقِينَ', 'هُدًى لِّلْمُتَّقِينَ', {
-    '1:د': 'TEAL(Idgham-noGhunnah)', // dal+fathatan before lam (Idgham without ghunnah)
+    '1:د':
+        'TEAL(Idgham-noGhunnah)', // dal+fathatan before lam (Idgham without ghunnah)
+  });
+
+  // Test 11: Madd Lazim - muqatta'at الٓمٓ (Baqarah 2:1)
+  testText('Madd Lazim: الٓمٓ (2:1)', ' الٓمٓ', {
+    '2:ل': 'DARK_RED(MaddLazim)', // lam with maddah (cluster 2)
+    '3:م': 'DARK_RED(MaddLazim)', // meem with maddah (cluster 3)
+  });
+
+  // Test 12: Maddah before hamza → Maad Munfasil (red)
+  testText('Maad Munfasil: بِمَآ أُنزِلَ', 'بِمَآ أُنزِلَ', {
+    '2:ا': 'RED(MaadMunfasil)', // alef+maddah (cluster 2) before hamza أ
   });
 
   // Test 10: Al-Fatiha 1:7 comprehensive
-  testText('Al-Fatiha 1:7',
-    'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
-    {});  // Just observe, no specific expectations
+  testText(
+      'Al-Fatiha 1:7',
+      'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
+      {}); // Just observe, no specific expectations
 
   print('\n\n========== SUMMARY ==========');
   print('Tests complete. Review output above for PASS/FAIL.');

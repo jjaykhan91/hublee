@@ -16,7 +16,7 @@
 /// | Meem Idgham | Green | #43A047 |
 /// | Maad Sukoon | Orange | #FB8C00 |
 /// | Maad Muttasil/Munfasil | Red | #F44336 |
-/// | Maad 6 Harakat | Dark Red | #B71C1C |
+/// | Maad 6 Harakat / Madd Lazim | Dark Red | #B71C1C |
 ///
 /// For Idgham and Iqlab, quran.com uses **two-part** colouring:
 /// the noon sakin / tanween becomes grey ("not pronounced") while
@@ -38,6 +38,10 @@ const _kasratan = '\u064D';
 const _fatha = '\u064E';
 const _damma = '\u064F';
 const _kasra = '\u0650';
+
+/// U+0653 ARABIC MADDAH ABOVE — used in muqatta'at (e.g. الٓمٓ) for
+/// Madd Lazim Harfi — letters prolonged 6 harakat.
+const _maddahAbove = '\u0653';
 
 const _noon = '\u0646';
 const _meem = '\u0645';
@@ -546,7 +550,23 @@ List<InlineSpan> tajweedSpans(
       }
     }
 
-    // ── 5. Maad (prolongation) ──────────────────────────
+    // ── 5. Maddah letters (U+0653) ───────────────────────
+    // Letters with U+0653 (مaddah above) get prolongation coloring:
+    // - If followed by hamza → Maad Muttasil/Munfasil (red).
+    // - Otherwise (e.g. لٓ مٓ in الٓمٓ) → Madd Lazim Harfi
+    //   (6 harakat, dark red).
+    if (diacritics.contains(_maddahAbove)) {
+      final nextIndex = _nextLetterIndex(clusters, index);
+      if (nextIndex != null) {
+        final nextBase = clusters[nextIndex].base!;
+        if (_hamzaVariants.contains(nextBase)) {
+          return kMaadMunfasilColor;
+        }
+      }
+      return kMaadLongColor;
+    }
+
+    // ── 6. Maad (prolongation) ──────────────────────────
     // Natural maad (2 counts, no special condition) is NOT
     // highlighted in the Madani mushaf. Only highlight when
     // followed by hamza, shadda, or sakin/end-of-ayah.

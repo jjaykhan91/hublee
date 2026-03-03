@@ -248,15 +248,19 @@ class TajweedGuidePage extends StatelessWidget {
           _TajweedRuleCard(
             index: 10,
             color: kMaadLongColor,
-            rule: 'Maad 6 Harakat (Compulsory)',
+            rule: 'Maad 6 Harakat / Madd Lazim',
             arabic:
                 '\u0645\u064E\u062F\u0651 \u0644\u064E\u0627\u0632\u0650\u0645',
             description:
-                'When a maad letter is followed by a letter with Shadda. '
-                'This creates a compulsory 6-count prolongation.',
+                'Compulsory 6-count prolongation. (1) Maad letter followed '
+                'by a letter with Shadda. (2) Madd Lazim Harfi: letters '
+                'with Maddah (\u0653) in muqatta\u02BCat like \u0627\u0644\u0653'
+                '\u0645\u0653 (Alif-Lam-Mim) — each letter is prolonged '
+                '6 counts.',
             example:
-                'Example: \u0627\u0644\u0636\u0651\u064E\u0627\u0644\u0651\u0650\u064A\u0646 '
-                '— Alef before Lam-Shadda = 6 counts',
+                'Example: \u0627\u0644\u0653\u0645\u0653 (2:1) — Lam and Meem '
+                'with Maddah; \u0627\u0644\u0636\u0651\u064E\u0627\u0644\u0651'
+                '\u0650\u064A\u0646 — Alef before Shadda',
           ),
 
           const SizedBox(height: 24),
