@@ -4,6 +4,8 @@
 /// `uthmani_tajweed` API response (CSS classes).
 ///
 /// Run: flutter test test/tajweed_baqarah_test.dart
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -57,15 +59,15 @@ void main() {
     });
 
     test('لٓ (Lam + maddah) — Madd Lazim (red)', () {
-      final lam = letters.firstWhere(
-          (l) => l.base == '\u0644' && l.text.contains('\u0653'));
+      final lam = letters
+          .firstWhere((l) => l.base == '\u0644' && l.text.contains('\u0653'));
       expect(lam.color, equals(_redLong),
           reason: 'quran.com: madda_necessary → dark red');
     });
 
     test('مٓ (Meem + maddah) — Madd Lazim (red)', () {
-      final meem = letters.firstWhere(
-          (l) => l.base == '\u0645' && l.text.contains('\u0653'));
+      final meem = letters
+          .firstWhere((l) => l.base == '\u0645' && l.text.contains('\u0653'));
       expect(meem.color, equals(_redLong),
           reason: 'quran.com: madda_necessary → dark red');
     });
@@ -91,7 +93,8 @@ void main() {
   //  [*] We can't colour ذَٰ pink because the superscript alef
   //      is a diacritic on ذ (not a separate cluster like ـٰ).
   // ============================================================
-  group('2:2 – ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ', () {
+  group('2:2 – ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ',
+      () {
     late List<TajweedClusterResult> letters;
 
     setUpAll(() async {
@@ -185,8 +188,8 @@ void main() {
     });
 
     test('هِ — no colour', () {
-      final ha = letters.firstWhere(
-          (l) => l.base == '\u0647' && l.text.contains('\u0650'));
+      final ha = letters
+          .firstWhere((l) => l.base == '\u0647' && l.text.contains('\u0650'));
       expect(ha.color, isNull);
     });
 
@@ -200,15 +203,16 @@ void main() {
     });
 
     test('دً — grey (idgham_wo_ghunnah: tanween source)', () {
-      final dal = letters.firstWhere(
-          (l) => l.base == '\u062F' && l.text.contains('\u064B'));
+      final dal = letters
+          .firstWhere((l) => l.base == '\u062F' && l.text.contains('\u064B'));
       expect(dal.color, equals(_grey),
-          reason: 'quran.com: idgham_wo_ghunnah → grey (tanween not pronounced)');
+          reason:
+              'quran.com: idgham_wo_ghunnah → grey (tanween not pronounced)');
     });
 
     test('ى (carrier after دً) — grey (part of idgham span)', () {
-      final dalIdx = letters.indexWhere(
-          (l) => l.base == '\u062F' && l.text.contains('\u064B'));
+      final dalIdx = letters
+          .indexWhere((l) => l.base == '\u062F' && l.text.contains('\u064B'));
       final alefMaq = letters[dalIdx + 1];
       expect(alefMaq.base, '\u0649');
       expect(alefMaq.color, equals(_grey),
@@ -216,17 +220,18 @@ void main() {
     });
 
     test('لِّ (receiving lam) — grey (idgham_wo_ghunnah)', () {
-      final dalIdx = letters.indexWhere(
-          (l) => l.base == '\u062F' && l.text.contains('\u064B'));
+      final dalIdx = letters
+          .indexWhere((l) => l.base == '\u062F' && l.text.contains('\u064B'));
       final receivingLam = letters[dalIdx + 2];
       expect(receivingLam.base, '\u0644');
       expect(receivingLam.color, equals(_grey),
-          reason: 'quran.com marks receiving letter grey for idgham w/o ghunnah');
+          reason:
+              'quran.com marks receiving letter grey for idgham w/o ghunnah');
     });
 
     test('لْ (second lam in لِّلْ) — no colour', () {
-      final dalIdx = letters.indexWhere(
-          (l) => l.base == '\u062F' && l.text.contains('\u064B'));
+      final dalIdx = letters
+          .indexWhere((l) => l.base == '\u062F' && l.text.contains('\u064B'));
       final secondLam = letters[dalIdx + 3];
       expect(secondLam.base, '\u0644');
       expect(secondLam.color, isNull);
@@ -234,8 +239,8 @@ void main() {
 
     test('مُ تَّ قِ — no colour', () {
       // These middle letters of المتقين have no tajweed rules
-      final dalIdx = letters.indexWhere(
-          (l) => l.base == '\u062F' && l.text.contains('\u064B'));
+      final dalIdx = letters
+          .indexWhere((l) => l.base == '\u062F' && l.text.contains('\u064B'));
       expect(letters[dalIdx + 4].color, isNull); // مُ
       expect(letters[dalIdx + 5].color, isNull); // تَّ
       expect(letters[dalIdx + 6].color, isNull); // قِ
@@ -313,7 +318,8 @@ void main() {
     test('نَ يُ ؤْ مِ نُ و نَ بِ — all default', () {
       for (int i = 4; i <= 11; i++) {
         expect(letters[i].color, isNull,
-            reason: 'Letter at index $i (${letters[i].text}) should be default');
+            reason:
+                'Letter at index $i (${letters[i].text}) should be default');
       }
     });
 
@@ -326,7 +332,8 @@ void main() {
     test('لْ غَ يْ بِ وَ يُ قِ ي مُ و نَ — all default', () {
       for (int i = 13; i <= 23; i++) {
         expect(letters[i].color, isNull,
-            reason: 'Letter at index $i (${letters[i].text}) should be default');
+            reason:
+                'Letter at index $i (${letters[i].text}) should be default');
       }
     });
 
@@ -339,7 +346,8 @@ void main() {
     test('ل (before صَّ) — grey (laam_shamsiyah)', () {
       expect(letters[25].base, '\u0644');
       expect(letters[25].color, equals(_grey),
-          reason: 'quran.com: laam_shamsiyah → grey (assimilated before sun letter ص)');
+          reason:
+              'quran.com: laam_shamsiyah → grey (assimilated before sun letter ص)');
     });
 
     test('صَّ — no colour', () {
@@ -434,8 +442,7 @@ void main() {
     });
 
     test('total letter count is 47', () {
-      expect(letters.length, 47,
-          reason: 'Verse 2:3 has 47 letter clusters');
+      expect(letters.length, 47, reason: 'Verse 2:3 has 47 letter clusters');
     });
   });
 
@@ -478,35 +485,38 @@ void main() {
     test('لَّ ذِ ي نَ — all default', () {
       for (int i = 2; i <= 5; i++) {
         expect(letters[i].color, isNull,
-            reason: 'Letter at index $i (${letters[i].text}) should be default');
+            reason:
+                'Letter at index $i (${letters[i].text}) should be default');
       }
     });
 
     test('يُ ؤْ مِ نُ و نَ بِ مَ — all default', () {
       for (int i = 6; i <= 13; i++) {
         expect(letters[i].color, isNull,
-            reason: 'Letter at index $i (${letters[i].text}) should be default');
+            reason:
+                'Letter at index $i (${letters[i].text}) should be default');
       }
     });
 
     test('آ (ا + maddah in بِمَآ) — dark pink (madda_obligatory)', () {
-      final alefMaddah = letters.firstWhere(
-          (l) => l.base == '\u0627' && l.text.contains('\u0653'));
+      final alefMaddah = letters
+          .firstWhere((l) => l.base == '\u0627' && l.text.contains('\u0653'));
       expect(alefMaddah.color, equals(_darkPink),
-          reason: 'quran.com: madda_obligatory → dark pink (Connected madd before hamza)');
+          reason:
+              'quran.com: madda_obligatory → dark pink (Connected madd before hamza)');
     });
 
     test('أُ (after first مَآ) — no colour', () {
-      final idx = letters.indexWhere(
-          (l) => l.base == '\u0627' && l.text.contains('\u0653'));
+      final idx = letters
+          .indexWhere((l) => l.base == '\u0627' && l.text.contains('\u0653'));
       final hamza = letters[idx + 1];
       expect(hamza.base, '\u0623');
       expect(hamza.color, isNull);
     });
 
     test('first نز — green (ikhafa, both letters)', () {
-      final firstNunIdx = letters.indexWhere(
-          (l) => l.base == '\u0646' && l.color == _green);
+      final firstNunIdx =
+          letters.indexWhere((l) => l.base == '\u0646' && l.color == _green);
       expect(firstNunIdx, isNot(-1),
           reason: 'Should find noon with green (ikhfa)');
       expect(letters[firstNunIdx + 1].base, '\u0632');
@@ -528,8 +538,8 @@ void main() {
     });
 
     test('مِن قَ — green (ikhafa, noon sakin before qaf)', () {
-      final lastGroup = letters.lastIndexWhere(
-          (l) => l.base == '\u0646' && l.color == _green);
+      final lastGroup = letters
+          .lastIndexWhere((l) => l.base == '\u0646' && l.color == _green);
       expect(lastGroup, isNot(-1));
       final qaf = letters[lastGroup + 1];
       expect(qaf.base, '\u0642');
@@ -538,16 +548,15 @@ void main() {
     });
 
     test('بْ (in قَبْلِكَ) — blue (qalaqah)', () {
-      final baWithSukun = letters.firstWhere(
-          (l) => l.base == '\u0628' && !_hasVowelTest(l.text));
+      final baWithSukun = letters
+          .firstWhere((l) => l.base == '\u0628' && !_hasVowelTest(l.text));
       expect(baWithSukun.color, equals(_blue),
           reason: 'quran.com: qalaqah → blue');
     });
 
     test('ٱ (in وَبِٱلْ) — grey (ham_wasl)', () {
-      final hamzaWaslInstances = letters
-          .where((l) => l.base == '\u0671' && l.color == _grey)
-          .toList();
+      final hamzaWaslInstances =
+          letters.where((l) => l.base == '\u0671' && l.color == _grey).toList();
       expect(hamzaWaslInstances.length, greaterThanOrEqualTo(2),
           reason: 'Verse 2:4 has at least 2 ham_wasl instances');
     });
@@ -611,7 +620,8 @@ void main() {
     test('ـٰٓ (tatweel + maddah before ئ) — dark pink (madda_obligatory)', () {
       expect(letters[3].base, '\u0640');
       expect(letters[3].color, equals(_darkPink),
-          reason: 'quran.com: madda_obligatory → dark pink (Connected madd before hamza ئ)');
+          reason:
+              'quran.com: madda_obligatory → dark pink (Connected madd before hamza ئ)');
     });
 
     test('ئِ كَ — no colour', () {
@@ -659,7 +669,8 @@ void main() {
     test('رَّ (receiving ra) — grey (idgham_wo_ghunnah)', () {
       expect(letters[14].base, '\u0631');
       expect(letters[14].color, equals(_grey),
-          reason: 'quran.com: idgham_wo_ghunnah marks receiving letter grey too');
+          reason:
+              'quran.com: idgham_wo_ghunnah marks receiving letter grey too');
     });
 
     test('بِّ هِ مْ — no colour', () {
@@ -714,7 +725,8 @@ void main() {
     test('لْ مُ فْ لِ — no colour', () {
       for (int i = 28; i <= 31; i++) {
         expect(letters[i].color, isNull,
-            reason: 'Letter at index $i (${letters[i].text}) should be default');
+            reason:
+                'Letter at index $i (${letters[i].text}) should be default');
       }
     });
 
@@ -735,8 +747,7 @@ void main() {
     });
 
     test('total letter count is 35', () {
-      expect(letters.length, 35,
-          reason: 'Verse 2:5 has 35 letter clusters');
+      expect(letters.length, 35, reason: 'Verse 2:5 has 35 letter clusters');
     });
   });
 
@@ -771,8 +782,7 @@ void main() {
               );
               for (final span in spans) {
                 expect(span, isA<TextSpan>(),
-                    reason:
-                        'WidgetSpan breaks Arabic letter joining. '
+                    reason: 'WidgetSpan breaks Arabic letter joining. '
                         'All spans must be TextSpan.');
               }
             }
@@ -800,8 +810,7 @@ void main() {
       for (final text in verseTexts) {
         final clusters = tajweedColorAssignments(text);
         final reassembled = clusters.map((c) => c.text).join();
-        final inputMaddahCount =
-            text.runes.where((r) => r == 0x0653).length;
+        final inputMaddahCount = text.runes.where((r) => r == 0x0653).length;
         final outputMaddahCount =
             reassembled.runes.where((r) => r == 0x0653).length;
         expect(outputMaddahCount, equals(inputMaddahCount),
@@ -813,10 +822,8 @@ void main() {
       for (final text in verseTexts) {
         final clusters = tajweedColorAssignments(text);
         final reassembled = clusters.map((c) => c.text).join();
-        final inputCount =
-            text.runes.where((r) => r == 0x06DF).length;
-        final outputCount =
-            reassembled.runes.where((r) => r == 0x06DF).length;
+        final inputCount = text.runes.where((r) => r == 0x06DF).length;
+        final outputCount = reassembled.runes.where((r) => r == 0x06DF).length;
         expect(outputCount, equals(inputCount),
             reason: 'U+06DF (small high rounded zero) must not be stripped');
       }
@@ -843,8 +850,7 @@ void main() {
       final greys = letters.where((l) => l.color == _grey).length;
       final pinks = letters.where((l) => l.color == _pink).length;
       final oranges = letters.where((l) => l.color == _orange).length;
-      expect(greys, 4,
-          reason: '1 ham_wasl + 3 idgham_wo_ghunnah (دًى+لِّ)');
+      expect(greys, 4, reason: '1 ham_wasl + 3 idgham_wo_ghunnah (دًى+لِّ)');
       expect(pinks, 1, reason: '1 madda_normal (ـٰ)');
       expect(oranges, 1, reason: '1 madda_permissible (ي in المتقين)');
     });
@@ -889,8 +895,7 @@ void main() {
       final darkPinks = letters.where((l) => l.color == _darkPink).length;
       final oranges = letters.where((l) => l.color == _orange).length;
       expect(greys, 7,
-          reason:
-              '2 slnt waw + 1 ham_wasl + '
+          reason: '2 slnt waw + 1 ham_wasl + '
               'idgham_ghunnah(دً+ى) + idgham_wo_ghunnah(ن+رَّ)');
       expect(greens, 1, reason: '1 idgham_ghunnah receiving (مِّ)');
       expect(darkPinks, 2, reason: '2 madda_obligatory (ـٰٓ×2)');

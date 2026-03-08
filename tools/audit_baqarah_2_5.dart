@@ -162,8 +162,9 @@ String? colorFor(List<Cluster> clusters, int idx) {
     final ni = nextLetterIndex(clusters, idx);
     if (ni != null) {
       final nb = clusters[ni].base;
-      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}.contains(nb))
+      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}.contains(nb)) {
         return 'MaadMunfasil';
+      }
     }
     return 'MaddLazim';
   }
@@ -173,13 +174,17 @@ String? colorFor(List<Cluster> clusters, int idx) {
   if (!_hasVowel(d)) {
     int? pi;
     for (int j = idx - 1; j >= 0; j--) {
-      if (clusters[j].base.length == 1 && !_isSpaceLike(clusters[j].base)) { pi = j; break; }
+      if (clusters[j].base.length == 1 && !_isSpaceLike(clusters[j].base)) {
+        pi = j;
+        break;
+      }
     }
     if (pi != null) {
       final pd = clusters[pi].diacritics;
       if (base == '\u0627' && pd.contains(_fatha)) isMaad = true;
       if (base == '\u0648' && pd.contains(_damma)) isMaad = true;
-      if ((base == '\u064A' || base == '\u0649') && pd.contains(_kasra)) isMaad = true;
+      if ((base == '\u064A' || base == '\u0649') && pd.contains(_kasra))
+        isMaad = true;
     }
     if (base == '\u0622') isMaad = true;
     if (base == '\u0640' && d.contains('\u0670')) {
@@ -191,8 +196,9 @@ String? colorFor(List<Cluster> clusters, int idx) {
     if (ni != null) {
       final nb = clusters[ni].base;
       final nd = clusters[ni].diacritics;
-      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}.contains(nb))
+      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}.contains(nb)) {
         return 'MaadMunfasil';
+      }
       if (nd.contains(_shadda)) return 'Maad6';
       if (nd.contains(_sukun)) return 'MaadSukoon';
       if (nextLetterIndex(clusters, ni) == null) return 'MaadSukoon';
