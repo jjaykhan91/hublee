@@ -25,19 +25,20 @@ Custom GitHub-inspired dark palette (not auto-generated from seed):
 - Light: rounded corners (16px), elevation 1
 - Dark: no elevation, uses border instead (`#233042`)
 
-## TajweedTheme Extension
+## Tajweed Colours
 
-`TajweedTheme` is a `ThemeExtension` providing colors for Quranic tajweed rules:
+Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, matching quran.com's Madani mushaf scheme. They are NOT theme-dependent (same on light and dark).
 
-- Qalqala: red
-- Ghunnah: green
-- Ikhfaa: magenta
-- Idgham: teal
-- Iqlab: blue
-- Ikhfaa Meemi: orange
+| Rule | Constant | Colour | Hex |
+|------|----------|--------|-----|
+| Qalqala (echo) | `kQalqalaColor` | Light Blue | #0091EA |
+| Ghunnah / Ikhfa / Idgham-gh / Iqlab / Meem rules | `kGhunnahColor` | Green | #43A047 |
+| Normal Madd (2 counts) | `kNormalMaadColor` | Pink | #E91E8C |
+| Separated Madd / Aridh (2/4/6) | `kMaadSukoonColor` | Orange | #FB8C00 |
+| Connected Madd (4/5, before hamza) | `kMaadConnectedColor` | Dark Pink | #D81B60 |
+| Necessary Madd / Lazim (6 counts) | `kMaadLongColor` | Red | #F44336 |
+| Silent / not pronounced | `kNotPronouncedColor()` | Grey | #9E9E9E (dark) / #BDBDBD (light) |
 
-Both light and dark palettes are defined. Access via:
+`kNotPronouncedColor(Brightness)` is the only brightness-aware colour — returns a different grey for readability on dark vs light backgrounds.
 
-```dart
-Theme.of(context).extension<TajweedTheme>()
-```
+> **Legacy:** `TajweedTheme` (`lib/theme/tajweed_extension.dart`) is still registered in both light and dark `ThemeData` but is **not used** by the tajweed engine. The engine reads colours from the constants above.

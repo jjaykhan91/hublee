@@ -15,6 +15,7 @@ alwaysApply: true
 | `bookmarks_page.dart` | `BookmarksPage` | Bookmarks tab |
 | `settings_page.dart` | `SettingsPage` | Settings tab |
 | `global_search_page.dart` | `SearchPage` | Full-screen global search |
+| `tajweed_guide_page.dart` | `TajweedGuidePage` | Full-screen tajweed colour legend & rules guide |
 | `app_shell.dart` | `AppShell` | Bottom nav shell (5 tabs) |
 
 ## Navigation
@@ -87,7 +88,8 @@ Each surah card shows a Makki/Madani badge (amber for Makki, teal for Madani).
 
 ## Reusable Widgets
 
-- `ArabicText` -- Arabic rendering with Tajweed support
+- `ArabicText` -- Arabic rendering with optional Tajweed coloring (uses `tajweedSpans()` internally)
+- `tajweedSpans()` -- Public API in `lib/ui/widgets/tajweed.dart` that converts raw Qur'anic text into colour-coded `InlineSpan`s. Also exposes `tajweedColorAssignments()` for unit testing without `BuildContext`.
 - `GradientTile` -- Card with gradient background, icon, title, subtitle
 - `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)
 - `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`

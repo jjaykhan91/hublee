@@ -30,7 +30,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `lib/router.dart` -- GoRouter config with StatefulShellRoute
 - `lib/ui/app_shell.dart` -- Bottom navigation shell
 - `lib/ui/` -- Pages and shared widgets
-- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `ReaderSettingsSheet`, `ScrollScrubber`, `Tajweed`
+- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `ReaderSettingsSheet`, `ScrollScrubber`, `tajweed.dart` (colour engine with `tajweedSpans()` and `tajweedColorAssignments()` testing API)
 - `lib/quran/` -- Quran data models and repositories
 - `lib/hadith/` -- Hadith data models and repository
 - `lib/services/` -- Settings, theme, bookmarks, scopes, search models, daily content
@@ -39,4 +39,5 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `assets/quran/` -- Arabic text JSON, surah metadata JSON, ClearQuran English translations
 - `assets/hadith/` -- Hadith collection JSON files (forties, 9 books, others)
 - `tools/` -- Build-time Dart scripts for fetching and processing data
+- `test/tajweed_baqarah_test.dart` -- 93 unit tests verifying tajweed coloring for Surah Al-Baqarah 2:1-5 against quran.com's API
 - `.cursor/rules/coding-standards.mdc` -- Naming, commenting, and formatting rules

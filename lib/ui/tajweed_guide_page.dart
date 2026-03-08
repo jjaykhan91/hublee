@@ -220,30 +220,31 @@ class TajweedGuidePage extends StatelessWidget {
           _TajweedRuleCard(
             index: 8,
             color: kMaadSukoonColor,
-            rule: 'Maad Sukoon (Prolongation)',
+            rule: 'Separated Madd (2/4/6)',
             arabic:
                 '\u0645\u064E\u062F\u0651 \u0639\u064E\u0627\u0631\u0636',
             description:
-                'A maad letter (Alef, Waw, Ya) followed by a letter '
-                'with sukun or at the end of an ayah. The sound is '
-                'prolonged 2–6 counts.',
+                'A maad letter (Alef, Waw, Ya) before a sukun or at '
+                'the end of an ayah (Maad Aridh). Prolonged 2\u20136 '
+                'counts at the reader\u2019s discretion.',
             example: 'Example: \u0627\u0644\u0631\u064E\u062D\u0650\u064A'
-                '\u0645\u0650 at end of ayah — Ya is prolonged',
+                '\u0645\u0650 at end of ayah \u2014 Ya is prolonged',
           ),
           _TajweedRuleCard(
             index: 9,
-            color: kMaadMunfasilColor,
-            rule: 'Maad Muttasil / Munfasil',
+            color: kMaadConnectedColor,
+            rule: 'Connected Madd (4/5)',
             arabic:
                 '\u0645\u064E\u062F\u0651 \u0645\u064F\u062A\u0651\u064E'
                 '\u0635\u0650\u0644',
             description:
-                'When a maad letter is followed by a Hamza (ء). '
-                'Muttasil = within the same word (compulsory 4–5 counts). '
-                'Munfasil = across two words (optional 4–5 counts).',
+                'When a maad letter is followed by a Hamza (\u0621). '
+                'Prolonged 4\u20135 counts. Quran.com applies this colour '
+                'to all maad-before-hamza cases regardless of word boundary.',
             example:
                 'Example: \u062C\u064E\u0627\u0621\u064E (came) — Alef '
-                'before Hamza',
+                'before Hamza; \u0627\u0644\u0633\u0651\u064E\u0645\u064E'
+                '\u0627\u0621 (the sky)',
           ),
           _TajweedRuleCard(
             index: 10,
@@ -261,6 +262,41 @@ class TajweedGuidePage extends StatelessWidget {
                 'Example: \u0627\u0644\u0653\u0645\u0653 (2:1) — Lam and Meem '
                 'with Maddah; \u0627\u0644\u0636\u0651\u064E\u0627\u0644\u0651'
                 '\u0650\u064A\u0646 — Alef before Shadda',
+          ),
+
+          _TajweedRuleCard(
+            index: 11,
+            color: kNormalMaadColor,
+            rule: 'Normal Madd (2 Counts)',
+            arabic:
+                '\u0645\u064E\u062F\u0651 \u0637\u064E\u0628\u0650\u064A\u0639\u0650\u064A',
+            description:
+                'A dedicated madd indicator (tatweel + superscript alef, '
+                '\u0640\u0670) with no special condition following. '
+                'Prolonged 2 counts.',
+            example:
+                'Example: \u0643\u0650\u062A\u064E\u0640\u0670\u0628 '
+                '(Book) — superscript alef indicates normal madd',
+          ),
+
+          const SizedBox(height: 10),
+
+          // ─── Silent / Assimilated Letters ───
+          _TajweedRuleCard(
+            index: 12,
+            color: kNotPronouncedColor(Brightness.dark),
+            rule: 'Hamza Wasl / Lam Shamsiyah / Silent Letters',
+            arabic:
+                '\u0647\u064E\u0645\u0652\u0632\u064E\u0629 \u0627\u0644\u0652\u0648\u064E\u0635\u0652\u0644',
+            description:
+                'Grey marks letters that are written but not '
+                'pronounced in connected reading: Hamza Wasl (\u0671), '
+                'Lam in \u0627\u0644 before sun letters, and '
+                'orthographic silent letters (e.g. waw in '
+                '\u0627\u0644\u0635\u0644\u0648\u0629).',
+            example:
+                'Example: \u0628\u0650\u0671\u0644\u0652\u063A\u064E\u064A\u0652'
+                '\u0628\u0650 — Hamza Wasl is silent',
           ),
 
           const SizedBox(height: 24),

@@ -20,7 +20,7 @@ alwaysApply: true
 ## Theming
 
 - Never hardcode colors -- always use `Theme.of(context).colorScheme`
-- Access tajweed colors via `Theme.of(context).extension<TajweedTheme>()`
+- Tajweed colors are standalone constants in `lib/ui/widgets/tajweed.dart` (e.g. `kQalqalaColor`, `kGhunnahColor`, `kMaadConnectedColor`). The legacy `TajweedTheme` extension exists but is **not used** by the tajweed engine.
 - Font sizes for Arabic/English are user-configurable via `SettingsScope.of(context)`
 
 ## Arabic Text

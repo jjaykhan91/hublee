@@ -51,27 +51,40 @@ Tajweed colours follow the **Madani mushaf** scheme used by quran.com (github.co
 
 The engine works with standard Uthmanic Arabic text from `assets/quran/ar/`. When tajweed is enabled, the reader always uses standard Uthmanic text regardless of font selection (so the KFGQPC font also gets tajweed). When tajweed is OFF and KFGQPC font is selected, PUA glyph text is used for optimal rendering.
 
-Currently implemented rules (11 rule types) using **two-part colouring** for idgham/iqlab (matching quran.com):
+Currently implemented rules verified against quran.com's `uthmani_tajweed` API for Surah Al-Baqarah 2:1-5:
+
+**Core rules:**
 - **Qalqala** (light blue #0091EA): qalqala letter (ق ط ب ج د) with no vowel (sakin), or at end of ayah. Skips qalqala if next letter is same letter with shadda (idgham).
 - **Ghunnah** (green #43A047): noon/meem with shadda
-- **Idgham with Ghunnah** (two-part): noon/tanween → grey "not pronounced" (#EEEEEE dark / #CCCCCC light); receiving letter (ي ن م و) → green #43A047
-- **Idgham without Ghunnah**: noon/tanween → grey "not pronounced" only
-- **Ikhfa** (yellow #EACE00): noon sakin/tanween before 15 ikhfa letters (noon only)
-- **Iqlab** (two-part): noon/tanween → grey "not pronounced"; receiving ba → green #43A047
-- **Meem Ikhfa / Shafawi** (yellow #EACE00): meem sakin before ba
+- **Idgham with Ghunnah** (two-part): noon/tanween+carrier → grey #9E9E9E; receiving letter (ي ن م و) → green #43A047
+- **Idgham without Ghunnah**: noon/tanween+carrier+receiving letter (ر ل) → ALL grey #9E9E9E
+- **Ikhfa** (green #43A047): noon sakin/tanween before 15 ikhfa letters — BOTH noon AND receiving letter coloured green (matching quran.com)
+- **Iqlab** (two-part): noon/tanween+carrier → grey; receiving ba → green #43A047
+- **Meem Ikhfa / Shafawi** (green #43A047): meem sakin before ba
 - **Meem Idgham** (green #43A047): meem sakin before meem
-- **Maad Sukoon** (orange #FB8C00): maad letter before explicit sukun or at end of ayah (maad aridh lil sukoon)
-- **Maad Muttasil/Munfasil** (red #F44336): maad letter before hamza
-- **Maad 6 Harakat** (dark red #B71C1C): maad letter before letter with shadda
+- **Separated Madd / Aridh** (orange #FB8C00): maad letter before explicit sukun or at end of ayah (quran.com: `madda_permissible`)
+- **Connected Madd** (dark pink #D81B60): maad letter before hamza — all cases regardless of word boundary (quran.com: `madda_obligatory`)
+- **Necessary Madd / Madd Lazim** (red #F44336): maad letter before shadda, or letters with U+0653 maddah (الٓمٓ) (quran.com: `madda_necessary`)
+- **Normal Madd** (pink #E91E8C): dedicated orthographic madd indicators (tatweel + superscript alef ـٰ)
+
+**Silent/assimilated letter rules:**
+- **U+06DF marker** (grey #9E9E9E): any letter with ARABIC SMALL HIGH ROUNDED ZERO → silent (e.g. waw in أُو۟لَـٰٓئِكَ)
+- **Hamza Wasl** (grey #9E9E9E): ٱ (U+0671) not at the start of the ayah → silent in connected reading
+- **Lam Shamsiyah** (grey #9E9E9E): لْ in ال before a sun letter with shadda → assimilated/silent
+- **Silent Waw** (grey #9E9E9E): waw + superscript alef (U+0670) where previous letter has fatha — e.g. الصلوة
+
+**Not implemented (from quran.com legend but not applied in their API):**
+- **Tafkhim** (dark blue): heavy letters — quran.com shows this in the legend but does not emit `tafkhim` tags in their `uthmani_tajweed` API.
 
 **Key implementation notes:**
 - `_hasVowel()` checks for fatha, kasra, damma, all three tanween, and shadda.
 - `_hasExplicitSukun()` checks for U+0652 / U+06E1 — used for maad detection (bare letters without marks do NOT count as explicit sukun).
 - `_isMaadLetter()` detects alef/waw/ya preceded by corresponding vowel, tatweel with superscript alef (U+0670), and alef-madda (U+0622). Alef-wasla (U+0671) is explicitly excluded.
 - Alef-wasla is skipped when checking what follows a maad letter (it's silent in continuous reading).
-- Natural maad (2 counts, no special condition following) is NOT highlighted (matches Madani mushaf).
-- Tanween carrier alef/alef-maqsura is skipped for Idgham/Ikhfa/Iqlab detection.
+- Tanween carrier alef/alef-maqsura is greyed out for Idgham/Iqlab detection (matching quran.com).
 - Two-part coloring uses an `overrides` map: when processing noon/tanween, the receiving letter index is pre-assigned its colour.
+- **Never use WidgetSpan** in tajweed spans — WidgetSpan breaks Arabic cursive letter joining because each inline widget is shaped independently. All spans must be TextSpan so the paragraph-level text shaper can join letters across span boundaries. U+0653 and U+06DF characters are kept in the text as-is and rendered natively by the font.
+- 102 unit tests in `test/tajweed_baqarah_test.dart` verify every letter position in 2:1-5 against quran.com's API, plus span type integrity and colour summary counts.
 
 A full **Tajweed Guide** page (`tajweed_guide_page.dart`) is accessible from Settings and the reader settings sheet.
 
