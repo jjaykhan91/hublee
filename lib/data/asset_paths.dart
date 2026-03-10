@@ -52,6 +52,12 @@ class AssetPaths {
   /// Static surah metadata (revelation type, order, juz ranges).
   static const surahMetadata = 'assets/quran/surah_metadata.json';
 
+  /// English translated names for surah titles (e.g. "The Opener"), from Quran.com.
+  static const surahTranslatedNames = 'assets/quran/surah_translated_names.json';
+
+  /// Arabic surah names with full tashkeel (vowelled), for display like Quran.com.
+  static const surahArabicVowelled = 'assets/quran/surah_arabic_vowelled.json';
+
   /// Surah info summaries (short_text + full text) for all 114 surahs.
   static const surahInfo = 'assets/quran/surah_info.json';
 }

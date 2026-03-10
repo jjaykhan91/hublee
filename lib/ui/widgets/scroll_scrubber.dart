@@ -13,6 +13,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../../theme/app_tokens.dart';
+
 /// Overlay scrubber that sits on the right edge of the reader.
 ///
 /// Wrap your [ScrollablePositionedList] and this widget in a [Stack].
@@ -238,13 +240,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
                   decoration: BoxDecoration(
                     color: colorScheme.inverseSurface,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(-2, 2),
-                      ),
-                    ],
+                    boxShadow: AppShadows.scrubber,
                   ),
                   child: Text(
                     widget.labelBuilder(_currentIndex),

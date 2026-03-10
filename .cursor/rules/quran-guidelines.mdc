@@ -18,12 +18,18 @@ These rules reflect Islamic scholarly requirements for properly displaying the Q
 - Use Arabic-Indic numerals (٠١٢٣٤٥٦٧٨٩) or standard numerals -- be consistent
 - Ayah numbers should be visually distinct (e.g., circled, colored, or in a badge)
 
-## Surah Header
+## Surah Header (reader page)
 
 - Show the surah name in both Arabic and English
 - Include the total ayah count
 - Consider showing: revelation type (Meccan/Medinan), surah number, juz info
 - The surah header should be visually prominent and separate from the ayah text
+
+## Surah list cards (Quran tab)
+
+- Use **only** vowelled Arabic surah names from `surah_arabic_vowelled.json` (or fallback `nameArabic`). Do **not** use first-ayah images, CDN images, or any external chapter icons.
+- Layout: left = surah number badge + English name (and translation / revelation order when applicable); **center** = Arabic surah name (large, bold); **right** = ayah count (e.g. "7 Ayahs").
+- Arabic on the card: `headlineSmall` (or equivalent), `FontWeight.bold`, Quranic font; centered in the card.
 
 ## Text Encoding and Fonts
 
@@ -53,28 +59,26 @@ The engine works with standard Uthmanic Arabic text from `assets/quran/ar/`. Whe
 
 Currently implemented rules verified against quran.com's `uthmani_tajweed` API for Surah Al-Baqarah 2:1-5:
 
-**Core rules:**
-- **Qalqala** (light blue #0091EA): qalqala letter (ق ط ب ج د) with no vowel (sakin), or at end of ayah. Skips qalqala if next letter is same letter with shadda (idgham).
-- **Ghunnah** (green #43A047): noon/meem with shadda
-- **Idgham with Ghunnah** (two-part): noon/tanween+carrier → grey #9E9E9E; receiving letter (ي ن م و) → green #43A047
-- **Idgham without Ghunnah**: noon/tanween+carrier+receiving letter (ر ل) → ALL grey #9E9E9E
-- **Ikhfa** (green #43A047): noon sakin/tanween before 15 ikhfa letters — BOTH noon AND receiving letter coloured green (matching quran.com)
-- **Iqlab** (two-part): noon/tanween+carrier → grey; receiving ba → green #43A047
-- **Meem Ikhfa / Shafawi** (green #43A047): meem sakin before ba
-- **Meem Idgham** (green #43A047): meem sakin before meem
-- **Separated Madd / Aridh** (orange #FB8C00): maad letter before explicit sukun or at end of ayah (quran.com: `madda_permissible`)
-- **Connected Madd** (dark pink #D81B60): maad letter before hamza — all cases regardless of word boundary (quran.com: `madda_obligatory`)
-- **Necessary Madd / Madd Lazim** (red #F44336): maad letter before shadda, or letters with U+0653 maddah (الٓمٓ) (quran.com: `madda_necessary`)
-- **Normal Madd** (pink #E91E8C): dedicated orthographic madd indicators (tatweel + superscript alef ـٰ)
+**Core rules (match Quran.com legend):**
+- **Silent letter** (grey #9E9E9E): U+06DF marker, Hamza Wasl (ٱ) non-initial, Lam Shamsiyah, Silent Waw (e.g. الصلوة).
+- **Normal madd (2)** (pink #E91E8C): tatweel + superscript alef (ـٰ); lam-alif (لَا).
+- **Separated madd (2/4/6)** (orange #FB8C00): maad letter before explicit sukun, end of phrase, or any following letter that is not hamza/shadda (permissible madd).
+- **Connected madd (4/5)** (dark pink #D81B60): maad letter before hamza.
+- **Necessary madd (6)** (red #F44336): maad letter before shadda; letters with U+0653 (الٓمٓ).
+- **Ghunnah / Ikhfa’** (green #43A047): noon/meem with shadda; idgham with ghunnah (receiving letter); ikhfa (noon + receiving letter both green); iqlab (ba); meem ikhfa/idgham.
+- **Qalqala (echo)** (cyan #00BCD4): ق ط ب ج د with sukun or at end of ayah (skips if next is same letter with shadda).
+- **Tafkhim (heavy)** (dark blue #1565C0): Qaaf (ق) with vowel; Raa (ر) with fatha or damma; seven heavy letters (ص ض ط ظ ق غ خ) when they have a vowel (ط/ق sakin stay qalqala).
 
-**Silent/assimilated letter rules:**
-- **U+06DF marker** (grey #9E9E9E): any letter with ARABIC SMALL HIGH ROUNDED ZERO → silent (e.g. waw in أُو۟لَـٰٓئِكَ)
-- **Hamza Wasl** (grey #9E9E9E): ٱ (U+0671) not at the start of the ayah → silent in connected reading
-- **Lam Shamsiyah** (grey #9E9E9E): لْ in ال before a sun letter with shadda → assimilated/silent
-- **Silent Waw** (grey #9E9E9E): waw + superscript alef (U+0670) where previous letter has fatha — e.g. الصلوة
+**Idgham / silent (two-part):**
+- **Idgham with Ghunnah**: noon/tanween+carrier → grey; receiving letter (ي ن م و) → green.
+- **Idgham without Ghunnah**: noon/tanween+carrier+receiving letter (ر ل) → all grey.
+- **Iqlab**: noon/tanween+carrier → grey; receiving ba → green.
 
-**Not implemented (from quran.com legend but not applied in their API):**
-- **Tafkhim** (dark blue): heavy letters — quran.com shows this in the legend but does not emit `tafkhim` tags in their `uthmani_tajweed` API.
+**Silent/assimilated:**
+- **U+06DF marker** (grey): letter with ARABIC SMALL HIGH ROUNDED ZERO → silent.
+- **Hamza Wasl** (grey): ٱ (U+0671) not at start of ayah.
+- **Lam Shamsiyah** (grey): لْ in ال before sun letter with shadda.
+- **Silent Waw** (grey): waw + U+0670 where previous has fatha (e.g. الصلوة).
 
 **Key implementation notes:**
 - `_hasVowel()` checks for fatha, kasra, damma, all three tanween, and shadda.
@@ -86,24 +90,37 @@ Currently implemented rules verified against quran.com's `uthmani_tajweed` API f
 - **Never use WidgetSpan** in tajweed spans — WidgetSpan breaks Arabic cursive letter joining because each inline widget is shaped independently. All spans must be TextSpan so the paragraph-level text shaper can join letters across span boundaries. U+0653 and U+06DF characters are kept in the text as-is and rendered natively by the font.
 - 102 unit tests in `test/tajweed_baqarah_test.dart` verify every letter position in 2:1-5 against quran.com's API, plus span type integrity and colour summary counts.
 
-A full **Tajweed Guide** page (`tajweed_guide_page.dart`) is accessible from Settings and the reader settings sheet.
+- **Quran Reading & Tajweed guide:** opened from the surah reader app bar (book icon `Icons.menu_book_rounded`) via `showQuranReadingGuideSheet()`. It shows Sajdah, Waqf signs, Tajweed colour legend, and recitation tips; includes a button to open the full Tajweed Guide.
+- **Full Tajweed Guide** page (`tajweed_guide_page.dart`) is accessible from Settings, the reader settings sheet, and from within the Quran Reading guide sheet.
 
-## Waqf Signs (Stop Marks)
+## Quran Reading Rules (in-app guide)
 
-These symbols guide recitation pausing. If present in the text data, they must be preserved and ideally explained:
-- **مـ** (Waqf Lazim): mandatory stop -- meaning changes if you continue
-- **لا** (La Taqif): do not stop -- phrase is incomplete
-- **ج** (Waqf Jaiz): permissible to stop or continue
-- **قلى** (Qeela Alayhil-Waqf): stopping is preferred
-- **صلى** (Qeelal-Waslu): continuing is preferred
-- **س** (Saktah): brief pause without breathing
-- **∴** (Mu'anaqah): stop at one of two marked positions, not both
+The **Quran Reading & Tajweed** guide is opened from the surah reader app bar (book icon, next to the info icon). It is implemented in `lib/ui/widgets/quran_reading_guide_sheet.dart` and must reflect the rules below. Keep this section and the sheet content in sync.
 
-## Sajdah Markers
+### Sajdah (Prostration) — سجد
 
-- There are 15 sajdah (prostration) ayahs in the Quran
-- Mark these ayahs with a visible sajdah icon (۩) or indicator
-- Consider showing a tooltip explaining that prostration is recommended
+- There are **15 sajdah ayahs** in the Quran; they are marked with the symbol ۩ in the text.
+- **What to do:** Make one prostration (sujūd): forehead, nose, hands, knees and toes on the ground, facing qibla.
+- **What to recite in prostration (Arabic):** سَجَدَ وَجْهِي لِلَّذِي خَلَقَهُ وَشَقَّ سَمْعَهُ وَبَصَرَهُ بِحَوْلِهِ وَقُوَّتِهِ (Sajada wajhī lilladhī khalaqahu wa-shaqqa samʿahu wa-baṣarahu bi-ḥawlihī wa-quwwatihī). **Meaning:** My face prostrated to the One who created it, gave it hearing and sight by His might and power.
+- In the reader UI: show a visible sajdah icon/indicator and consider a tooltip that prostration is recommended.
+
+### Waqf (Stop) Signs — أعلام الوقف
+
+If present in the text data, preserve them and explain in the guide:
+- **مـ** (Waqf Lazim): mandatory stop — meaning changes if you continue.
+- **لا** (La Taqif): do not stop — phrase is incomplete.
+- **ج** (Waqf Jaiz): permissible to stop or continue.
+- **قلى** (Qeela Alayhil-Waqf): stopping is preferred.
+- **صلى** (Qeelal-Waslu): continuing is preferred.
+- **س** (Saktah): brief pause without breathing.
+- **∴** (Mu'anaqah): stop at one of two marked positions, not both.
+
+### Recitation
+
+- Seek refuge before reciting: Aʿūdhū billāhi minash-shayṭānir-rajīm.
+- Begin with Bismillah at the start of each surah (except At-Tawbah).
+- Respect stop signs: mandatory stops require a pause; do not stop at "La" (لا) signs.
+- Preserve the Quran: avoid contexts where it could be disrespected; do not truncate Arabic mid-word.
 
 ## Juz, Hizb, and Ruku Divisions
 

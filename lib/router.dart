@@ -19,6 +19,7 @@ import 'ui/global_search_page.dart';
 import 'ui/bookmarks_page.dart';
 import 'ui/settings_page.dart';
 import 'ui/tajweed_guide_page.dart';
+import 'ui/splash_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
 /// Used by detail pages that should push above the shell.
@@ -27,8 +28,15 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 /// The application's router configuration.
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/home',
+  initialLocation: '/splash',
   routes: [
+    // ── Splash (shows 3s then redirects to /home) ─────────────────
+    GoRoute(
+      path: '/splash',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SplashPage(),
+    ),
+
     // ── Bottom navigation shell ──────────────────────────────────
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

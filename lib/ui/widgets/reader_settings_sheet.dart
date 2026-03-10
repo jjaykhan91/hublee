@@ -7,9 +7,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../router_paths.dart';
 import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
 import '../../services/app_scope.dart';
+import '../../theme/app_tokens.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -43,14 +45,8 @@ class _ReaderSettingsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        borderRadius: AppRadius.sheetTop,
+        boxShadow: AppShadows.sheet,
       ),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       child: Column(
@@ -146,7 +142,7 @@ class _ReaderSettingsSheet extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.of(context).pop(); // close sheet
-                context.push('/tajweed-guide');
+                context.push(AppRoute.tajweedGuide);
               },
               colorScheme: colorScheme,
             ),

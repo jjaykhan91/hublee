@@ -16,8 +16,15 @@ class ChapterMeta {
   /// English transliteration (e.g. "Al-Fatiha").
   final String nameSimple;
 
-  /// Arabic script name (e.g. "الفاتحة").
+  /// English meaning/translation of the surah name (e.g. "The Opener").
+  /// From Quran.com; null if not loaded.
+  final String? nameTranslated;
+
+  /// Arabic script name (e.g. "الفاتحة"). From source data; may be unvowelled.
   final String nameArabic;
+
+  /// Arabic name with full tashkeel (e.g. "الْفَاتِحَة") for display; null if not loaded.
+  final String? nameArabicVowelled;
 
   /// Total number of ayat in this surah.
   final int versesCount;
@@ -37,7 +44,9 @@ class ChapterMeta {
   const ChapterMeta({
     required this.id,
     required this.nameSimple,
+    this.nameTranslated,
     required this.nameArabic,
+    this.nameArabicVowelled,
     required this.versesCount,
     this.revelationType = 'Meccan',
     this.revelationOrder = 0,

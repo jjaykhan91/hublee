@@ -11,6 +11,8 @@ import 'package:go_router/go_router.dart';
 
 import '../quran/quran_chapters_repository.dart';
 import '../quran/models.dart';
+import '../router_paths.dart';
+import '../theme/app_tokens.dart';
 
 /// Juz names (commonly used Arabic names for the 30 parts).
 const _juzNames = <int, String>{
@@ -396,21 +398,26 @@ class _SurahCard extends StatelessWidget {
         : 'assets/images/masjid_nabawi_madani.png';
     const textColor = Color(0xFFF5F0E8);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.push('/quran/${chapter.id}'),
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: bgGradient,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.card,
+        boxShadow: AppShadows.card(context),
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadius.card,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.push(AppRoute.surah(chapter.id)),
+            child: Container(
+              height: showRevelationOrder ? 96 : (chapter.nameTranslated != null ? 88 : 80),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: bgGradient,
+                ),
               ),
-            ),
             child: Stack(
               children: [
                 // Full-width background image.
@@ -432,7 +439,7 @@ class _SurahCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      // Surah number in modern circular badge.
+                      // Surah number in modern circular badge (3D shadow).
                       Container(
                         width: 44,
                         height: 44,
@@ -441,6 +448,7 @@ class _SurahCard extends StatelessWidget {
                           border:
                               Border.all(color: accentColor, width: 1.5),
                           color: accentColor.withValues(alpha: 0.15),
+                          boxShadow: AppShadows.badge,
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -457,7 +465,7 @@ class _SurahCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      // Name + ayah count.
+                      // English name + translation + ayah count (Quran.com style).
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -473,16 +481,18 @@ class _SurahCard extends StatelessWidget {
                                     color: textColor,
                                   ),
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${chapter.versesCount} Ayahs',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
-                                  ),
-                            ),
+                            if (chapter.nameTranslated != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                chapter.nameTranslated!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: textColor.withValues(alpha: 0.75),
+                                    ),
+                              ),
+                            ],
                             if (showRevelationOrder) ...[
                               const SizedBox(height: 2),
                               Text(
@@ -499,15 +509,34 @@ class _SurahCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Arabic surah name.
-                      Text(
-                        chapter.nameArabic,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                      // Arabic surah name (vowelled) centered, big and bold.
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            chapter.nameArabicVowelled ?? chapter.nameArabic,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                   color: accentColor,
                                 ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ),
+                      ),
+                      // Ayah count to the right.
+                      Text(
+                        '${chapter.versesCount} Ayahs',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(
+                              color: textColor.withValues(alpha: 0.6),
+                            ),
                       ),
                     ],
                   ),
@@ -517,6 +546,7 @@ class _SurahCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

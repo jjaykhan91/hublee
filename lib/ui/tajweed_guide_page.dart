@@ -180,12 +180,27 @@ class TajweedGuidePage extends StatelessWidget {
             example: 'Example: \u0627\u0642\u0652\u0631\u064E\u0623\u0652 '
                 '(Read!) — Qaf with sukun has qalqalah',
           ),
+          _TajweedRuleCard(
+            index: 6,
+            color: kTafkhimColor,
+            rule: 'Tafkhim (Heavy)',
+            arabic: '\u062A\u0641\u062E\u064A\u0645',
+            description:
+                'Heavy or thick articulation. Applied to: Qaaf (\u0642) '
+                'with a vowel; Raa (\u0631) with fatha or damma; and the '
+                'seven heavy letters (\u0635 \u0636 \u0637 \u0638 \u0642 '
+                '\u063A \u062E) when they have a vowel. Raa with kasra '
+                'is light (tarqeeq).',
+            example:
+                'Example: \u0644\u064E\u0627 \u0631\u064E\u064A\u0652\u0628\u064E '
+                '— Ra with fatha is heavy (dark blue)',
+          ),
 
           const SizedBox(height: 10),
 
           // ─── Meem Rules ───
           _TajweedRuleCard(
-            index: 6,
+            index: 7,
             color: kMeemIkhfaColor,
             rule: 'Ikhfa Shafawi (Labial Concealment)',
             arabic:
@@ -200,7 +215,7 @@ class TajweedGuidePage extends StatelessWidget {
                 'Meem before Ba',
           ),
           _TajweedRuleCard(
-            index: 7,
+            index: 8,
             color: kMeemIdghamColor,
             rule: 'Meem Idgham (Meem Merging)',
             arabic:
@@ -218,7 +233,7 @@ class TajweedGuidePage extends StatelessWidget {
 
           // ─── Maad Rules ───
           _TajweedRuleCard(
-            index: 8,
+            index: 9,
             color: kMaadSukoonColor,
             rule: 'Separated Madd (2/4/6)',
             arabic:
@@ -231,7 +246,7 @@ class TajweedGuidePage extends StatelessWidget {
                 '\u0645\u0650 at end of ayah \u2014 Ya is prolonged',
           ),
           _TajweedRuleCard(
-            index: 9,
+            index: 10,
             color: kMaadConnectedColor,
             rule: 'Connected Madd (4/5)',
             arabic:
@@ -247,7 +262,7 @@ class TajweedGuidePage extends StatelessWidget {
                 '\u0627\u0621 (the sky)',
           ),
           _TajweedRuleCard(
-            index: 10,
+            index: 11,
             color: kMaadLongColor,
             rule: 'Maad 6 Harakat / Madd Lazim',
             arabic:
@@ -265,25 +280,26 @@ class TajweedGuidePage extends StatelessWidget {
           ),
 
           _TajweedRuleCard(
-            index: 11,
+            index: 12,
             color: kNormalMaadColor,
             rule: 'Normal Madd (2 Counts)',
             arabic:
                 '\u0645\u064E\u062F\u0651 \u0637\u064E\u0628\u0650\u064A\u0639\u0650\u064A',
             description:
-                'A dedicated madd indicator (tatweel + superscript alef, '
-                '\u0640\u0670) with no special condition following. '
-                'Prolonged 2 counts.',
+                'Natural madd 2 counts: (1) Tatweel + superscript alef '
+                '(\u0640\u0670). (2) Lam-alif (\u0644\u064E\u0627 \u2014 '
+                '\u0644\u064E + \u0627) as in \u0644\u064E\u0627 '
+                '\u0631\u064E\u064A\u0652\u0628\u064E.',
             example:
-                'Example: \u0643\u0650\u062A\u064E\u0640\u0670\u0628 '
-                '(Book) — superscript alef indicates normal madd',
+                'Example: \u0643\u0650\u062A\u064E\u0640\u0670\u0628 (Book); '
+                '\u0644\u064E\u0627 (\u201cno\u201d)',
           ),
 
           const SizedBox(height: 10),
 
           // ─── Silent / Assimilated Letters ───
           _TajweedRuleCard(
-            index: 12,
+            index: 13,
             color: kNotPronouncedColor(Brightness.dark),
             rule: 'Hamza Wasl / Lam Shamsiyah / Silent Letters',
             arabic:

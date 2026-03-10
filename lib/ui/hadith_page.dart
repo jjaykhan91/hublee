@@ -11,6 +11,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../hadith/hadith_repository.dart';
+import '../router_paths.dart';
 
 /// Main Hadith tab displaying all hadith books grouped by
 /// collection.
@@ -233,10 +234,11 @@ class _BookTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          context.push(
-            '/hadith/$collectionId/${book.file}'
-            '?title=${Uri.encodeComponent(book.title)}',
-          );
+          context.push(AppRoute.hadithBook(
+            collectionId: collectionId,
+            bookFile: book.file,
+            bookTitle: book.title,
+          ));
         },
         child: Padding(
           padding: const EdgeInsets.all(14),

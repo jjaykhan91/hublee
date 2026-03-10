@@ -27,6 +27,7 @@ import '../services/bookmark_service.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
+import 'widgets/quran_reading_guide_sheet.dart';
 
 /// Displays all ayahs of a single surah with bookmarking and
 /// tajweed rendering.
@@ -307,13 +308,35 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     );
   }
 
-  /// Normal app bar with title, search icon, and Arabic name.
+  /// Normal app bar: English title on the left, Arabic name calligraphic in the center.
   PreferredSizeWidget _buildNormalAppBar(
     BuildContext context,
     ChapterMeta? chapterMeta,
   ) {
+    final isMeccan = chapterMeta?.isMeccan ?? true;
+
     return AppBar(
-      title: Text(chapterMeta?.nameSimple ?? 'Surah'),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            chapterMeta?.nameSimple ?? 'Surah',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          Expanded(
+            child: Center(
+              child: chapterMeta != null
+                  ? _AppBarArabicTitle(
+                      nameArabic: chapterMeta.nameArabicVowelled ?? chapterMeta.nameArabic,
+                      isMeccan: isMeccan,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
       actions: [
         if (chapterMeta != null)
           Builder(builder: (ctx) {
@@ -324,6 +347,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               onPressed: () => _showSurahInfo(ctx, chapter),
             );
           }),
+        IconButton(
+          icon: const Icon(Icons.menu_book_rounded),
+          tooltip: 'Quran reading & Tajweed guide',
+          onPressed: () => showQuranReadingGuideSheet(context),
+        ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this surah',
@@ -337,17 +365,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             showTajweedToggle: true,
           ),
         ),
-        if (chapterMeta != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Text(
-              chapterMeta.nameArabic,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-          ),
       ],
     );
   }
@@ -485,6 +502,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                     snippet: englishText,
                   ));
                 },
+                isMeccan: chapterMeta.isMeccan,
               );
             },
           ),
@@ -592,6 +610,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               snippet: englishText,
             ));
           },
+          isMeccan: chapterMeta.isMeccan,
         );
       },
     );
@@ -659,6 +678,7 @@ class _AyahCard extends StatelessWidget {
   final bool isBookmarked;
   final bool tajweedEnabled;
   final VoidCallback onBookmarkToggle;
+  final bool isMeccan;
 
   const _AyahCard({
     required this.ayahNumber,
@@ -669,18 +689,27 @@ class _AyahCard extends StatelessWidget {
     required this.isBookmarked,
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
+    required this.isMeccan,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Subtle Makki/Madani accent backgrounds to mirror the Quran list cards.
+    const makkiBg = Color(0xFFFFF7EC); // light warm parchment
+    const madaniBg = Color(0xFFE9F6F1); // light cool green
+
+    final cardColor = Theme.of(context).brightness == Brightness.dark
+        ? colorScheme.surface
+        : (isMeccan ? makkiBg : madaniBg);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      color: colorScheme.surface,
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         child: Column(
@@ -814,9 +843,9 @@ Widget _buildSurahInfoHeader(BuildContext context, ChapterMeta chapter) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Arabic name.
+                // Arabic name (vowelled when available).
                 Text(
-                  chapter.nameArabic,
+                  chapter.nameArabicVowelled ?? chapter.nameArabic,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontFamily: 'KFGQPCQuranicFontHafsSmart',
                     color: textColor,
@@ -989,4 +1018,75 @@ Widget _buildInfoSection(
       ],
     ),
   );
+}
+
+/// Calligraphic Arabic surah name for the app bar, centered with a decorative
+/// frame that reflects Makki (amber) vs Madani (green) colouring, matching
+/// the Quran list cards.
+class _AppBarArabicTitle extends StatelessWidget {
+  const _AppBarArabicTitle({
+    required this.nameArabic,
+    required this.isMeccan,
+  });
+
+  final String nameArabic;
+  final bool isMeccan;
+
+  @override
+  Widget build(BuildContext context) {
+    // Match the Makki/Madani accent colours from the Quran list cards.
+    const makkiAccent = Color(0xFFD4A054); // warm amber
+    const madaniAccent = Color(0xFF4CAF7D); // cool green
+
+    final accent = isMeccan ? makkiAccent : madaniAccent;
+    final outline = accent.withValues(alpha: 0.45);
+    final fill = accent.withValues(alpha: 0.10);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: outline, width: 1.2),
+          color: fill,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '\u06DE', // ۞ ornamental star
+              style: TextStyle(
+                fontFamily: 'KFGQPCQuranicFontHafsSmart',
+                fontSize: 14,
+                color: outline,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              nameArabic,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontFamily: 'KFGQPCQuranicFontHafsSmart',
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                    height: 1.25,
+                  ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '\u06DE',
+              style: TextStyle(
+                fontFamily: 'KFGQPCQuranicFontHafsSmart',
+                fontSize: 14,
+                color: outline,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

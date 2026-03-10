@@ -31,6 +31,8 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.3
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
@@ -38,6 +40,8 @@ flutter:
   assets:
     - assets/quran/KFGQPCQuranMushaf_smart_v8.json
     - assets/quran/surah_metadata.json
+    - assets/quran/surah_translated_names.json
+    - assets/quran/surah_arabic_vowelled.json
     - assets/quran/ar/
     - assets/quran/surah_info.json
     - assets/quran/en.clearquran/
@@ -48,8 +52,26 @@ flutter:
     - assets/hadith/the_9_books/
     - assets/images/kaaba_makki.png
     - assets/images/masjid_nabawi_madani.png
+    - assets/images/HubleeAppLogo.png
+    - assets/images/HubleeBackground.png
 
   fonts:
     - family: KFGQPCQuranicFontHafsSmart
       fonts:
         - asset: assets/fonts/KFGQPCQuranicFontHafsSmart_08.ttf
+
+# Native splash screen (logo shown at app launch before Flutter loads).
+flutter_native_splash:
+  image: assets/images/HubleeAppLogo.png
+  color: "#0B4D5C"
+  color_dark: "#0B4D5C"
+
+# App launcher icon (replaces default Flutter icon on device home screen).
+# Adaptive icon: logo fills the space (no padding); background matches if edges show.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/HubleeAppLogo.png
+  adaptive_icon_background: "#0B4D5C"
+  adaptive_icon_foreground: assets/images/HubleeAppLogo.png
+  adaptive_icon_foreground_inset: 0

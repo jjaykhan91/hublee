@@ -8,11 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
+import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../services/daily_content_service.dart';
 import '../services/settings_controller.dart';
+import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/gradient_tile.dart';
+import 'widgets/hublee_card.dart';
 
 /// Home tab content with daily content, search, continue-reading.
 class HomePage extends StatefulWidget {
@@ -64,19 +67,33 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: AppSpacing.page,
           children: [
-            // ── Search shortcut ──────────────────────────────
+            // ── Search shortcut (3D shadow) ─────────────────
             GestureDetector(
-              onTap: () => context.push('/search'),
+              onTap: () => context.push(AppRoute.search),
               child: AbsorbPointer(
-                child: TextField(
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    hintText: 'Search Quran and Hadith',
-                    suffixIcon: Icon(
-                      Icons.arrow_forward_rounded,
-                      color: colorScheme.onSurface.withValues(alpha: 0.4),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
+                    borderRadius: AppRadius.input,
+                    boxShadow: AppShadows.input,
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      hintText: 'Search Quran and Hadith',
+                      suffixIcon: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                     ),
                   ),
                 ),
@@ -139,10 +156,10 @@ class _HomePageState extends State<HomePage> {
                     '${bookmarkService.lastReadQuran!['ayah']}',
                 onTap: () {
                   final lastRead = bookmarkService.lastReadQuran!;
-                  context.push(
-                    '/quran/${lastRead['surahId']}'
-                    '?ayah=${lastRead['ayah']}',
-                  );
+                  context.push(AppRoute.surah(
+                    lastRead['surahId'] as int,
+                    ayah: lastRead['ayah'] as int?,
+                  ));
                 },
               ),
               const SizedBox(height: 10),
@@ -154,12 +171,12 @@ class _HomePageState extends State<HomePage> {
                 detail: '${bookmarkService.lastReadHadith!['bookTitle']}',
                 onTap: () {
                   final lastRead = bookmarkService.lastReadHadith!;
-                  context.push(
-                    '/hadith/${lastRead['collectionId']}'
-                    '/${lastRead['bookFile']}'
-                    '?title=${Uri.encodeComponent(lastRead['bookTitle'] ?? '')}'
-                    '&index=${lastRead['hadithIndex']}',
-                  );
+                  context.push(AppRoute.hadithBook(
+                    collectionId: lastRead['collectionId'] as String,
+                    bookFile: lastRead['bookFile'] as String,
+                    bookTitle: lastRead['bookTitle'] as String? ?? '',
+                    index: lastRead['hadithIndex'] as int?,
+                  ));
                 },
               ),
               const SizedBox(height: 10),
@@ -207,7 +224,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icons.menu_book_rounded,
               title: 'Quran',
               subtitle: 'Read by surah with translations and tajweed',
-              onTap: () => context.go('/quran'),
+              onTap: () => context.go(AppRoute.quran),
             )
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 400.ms)
@@ -217,7 +234,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icons.library_books_rounded,
               title: 'Hadith',
               subtitle: 'Forties, The Nine Books, and more',
-              onTap: () => context.go('/hadith'),
+              onTap: () => context.go(AppRoute.hadith),
             )
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 500.ms)
@@ -241,9 +258,7 @@ class _VerseOfTheDayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        '/quran/${verse.surahId}?ayah=${verse.ayah}',
-      ),
+      onTap: () => context.push(AppRoute.surah(verse.surahId, ayah: verse.ayah)),
       child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -251,14 +266,8 @@ class _VerseOfTheDayCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF4338CA).withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: AppRadius.featureCard,
+          boxShadow: AppShadows.featureCardShadow(const Color(0xFF4338CA)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -271,7 +280,8 @@ class _VerseOfTheDayCard extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.badge,
+                    boxShadow: AppShadows.badge,
                   ),
                   child: const Icon(
                     Icons.auto_stories_rounded,
@@ -379,11 +389,12 @@ class _HadithOfTheDayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        '/hadith/${hadith.collectionId}/${hadith.bookFile}'
-        '?title=${Uri.encodeComponent(hadith.bookTitle)}'
-        '&index=${hadith.hadithIndex}',
-      ),
+      onTap: () => context.push(AppRoute.hadithBook(
+        collectionId: hadith.collectionId,
+        bookFile: hadith.bookFile,
+        bookTitle: hadith.bookTitle,
+        index: hadith.hadithIndex,
+      )),
       child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -391,14 +402,8 @@ class _HadithOfTheDayCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF047857).withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: AppRadius.featureCard,
+          boxShadow: AppShadows.featureCardShadow(const Color(0xFF047857)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -411,7 +416,8 @@ class _HadithOfTheDayCard extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.badge,
+                    boxShadow: AppShadows.badge,
                   ),
                   child: const Icon(
                     Icons.library_books_rounded,
@@ -548,58 +554,50 @@ class _ContinueReadingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
+    return HubleeCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: AppRadius.chip,
+            ),
+            child: Icon(
+              icon,
+              color: colorScheme.primary,
+              size: 22,
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.primary,
-                  size: 22,
+                Text(
+                  detail,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    Text(
-                      detail,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+        ],
       ),
     );
   }

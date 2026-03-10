@@ -7,6 +7,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_tokens.dart';
+
 /// Gradient-filled card with an icon, title, and subtitle.
 class GradientTile extends StatelessWidget {
   /// Icon displayed in a rounded badge on the left.
@@ -33,21 +35,12 @@ class GradientTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Resolve the card's border radius from the theme, falling
-    // back to a default of 16 px.
-    final shape = Theme.of(context).cardTheme.shape;
-    final BorderRadius borderRadius = switch (shape) {
-      final RoundedRectangleBorder r when r.borderRadius is BorderRadius =>
-        r.borderRadius as BorderRadius,
-      _ => const BorderRadius.all(Radius.circular(16)),
-    };
-
     return InkWell(
-      borderRadius: borderRadius,
+      borderRadius: AppRadius.card,
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          borderRadius: borderRadius,
+          borderRadius: AppRadius.card,
           border: Border.all(
             color: colorScheme.outline.withValues(alpha: 0.9),
             width: 1,
@@ -63,25 +56,20 @@ class GradientTile extends StatelessWidget {
               ),
             ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: AppShadows.gradientTile,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.card,
           child: Row(
             children: [
-              // Icon badge
+              // Icon badge with 3D shadow
               Container(
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.chip,
+                  boxShadow: AppShadows.badge,
                 ),
                 child: Icon(icon, color: colorScheme.primary),
               ),

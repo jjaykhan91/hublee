@@ -11,11 +11,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../hadith/hadith_repository.dart';
-import '../quran/quran_chapters_repository.dart';
-import '../quran/quran_arabic_repository.dart';
-import '../quran/quran_translation_repository.dart';
+import '../router_paths.dart';
+import '../services/hadith_search_service.dart';
+import '../services/quran_search_service.dart';
 import '../services/search_models.dart';
+import '../theme/app_tokens.dart';
+import 'widgets/section_header.dart';
+import 'widgets/hublee_card.dart';
 
 /// Global search across Quran and Hadith with debounced input.
 class SearchPage extends StatefulWidget {
@@ -27,6 +29,8 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _queryController = TextEditingController();
+  final _quranSearch = const QuranSearchService();
+  final _hadithSearch = const HadithSearchService();
 
   /// Timer for debouncing search input (300 ms delay).
   Timer? _debounceTimer;
@@ -64,12 +68,8 @@ class _SearchPageState extends State<SearchPage> {
 
     setState(() => _isSearching = true);
     try {
-      // Search hadith collections.
-      final hadithRepo = const HadithRepository();
-      final hadithHits = await hadithRepo.searchHadith(query, limit: 100);
-
-      // Search Quran ayahs across all surahs.
-      final quranHits = await _searchQuranAyahs(query);
+      final hadithHits = await _hadithSearch.search(query, limit: 100);
+      final quranHits = await _quranSearch.search(query, limit: 150);
 
       if (!mounted) return;
       setState(() {
@@ -83,78 +83,6 @@ class _SearchPageState extends State<SearchPage> {
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }
-  }
-
-  /// Iterates all 114 surahs to find ayahs matching [query].
-  Future<List<QuranSearchHit>> _searchQuranAyahs(
-    String query,
-  ) async {
-    final chaptersRepo = const QuranChaptersRepository();
-    final arabicRepo = const QuranArabicRepository();
-    final translationRepo = const QuranTranslationRepository();
-
-    final chapters = await chaptersRepo.loadChapters();
-    final hits = <QuranSearchHit>[];
-    final queryLower = query.toLowerCase();
-
-    for (final chapter in chapters) {
-      Map<String, String> arabicAyahs = const {};
-      Map<String, String> englishAyahs = const {};
-      try {
-        arabicAyahs = await arabicRepo.loadArabicSurah(chapter.id);
-        englishAyahs = await translationRepo.loadClearQuran(chapter.id);
-      } catch (_) {
-        continue;
-      }
-
-      for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
-        final key = '$ayahNum';
-        final arabicText = arabicAyahs[key] ?? '';
-        final englishText = englishAyahs[key] ?? '';
-
-        final isMatch = arabicText.contains(query) ||
-            englishText.toLowerCase().contains(queryLower);
-        if (!isMatch) continue;
-
-        // Build a snippet around the match.
-        final snippet = _buildSnippet(
-          englishText,
-          queryLower,
-          query.length,
-        );
-
-        hits.add(QuranSearchHit(
-          surahId: chapter.id,
-          ayah: ayahNum,
-          surahName: chapter.nameSimple,
-          snippet: snippet,
-        ));
-
-        if (hits.length >= 150) return hits;
-      }
-      if (hits.length >= 150) break;
-    }
-    return hits;
-  }
-
-  /// Extracts a snippet window around the first match in [text].
-  String? _buildSnippet(
-    String text,
-    String queryLower,
-    int queryLength,
-  ) {
-    if (text.isEmpty) return null;
-
-    final matchIndex = text.toLowerCase().indexOf(queryLower);
-    if (matchIndex >= 0) {
-      final start = (matchIndex - 40).clamp(0, text.length);
-      final end = (matchIndex + queryLength + 60).clamp(0, text.length);
-      var snippet = text.substring(start, end).trim();
-      if (start > 0) snippet = '\u2026$snippet';
-      if (end < text.length) snippet = '$snippet\u2026';
-      return snippet;
-    }
-    return text;
   }
 
   @override
@@ -215,13 +143,12 @@ class _SearchPageState extends State<SearchPage> {
   ) {
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      padding: AppSpacing.list,
       children: [
         if (_quranResults.isNotEmpty) ...[
-          _ResultSectionHeader(
+          SectionHeader(
+            'Quran (${_quranResults.length})',
             icon: Icons.menu_book_rounded,
-            label: 'Quran (${_quranResults.length})',
-            colorScheme: colorScheme,
           ),
           ..._quranResults.map(
             (hit) => _QuranResultTile(hit: hit),
@@ -229,10 +156,9 @@ class _SearchPageState extends State<SearchPage> {
           const SizedBox(height: 16),
         ],
         if (_hadithResults.isNotEmpty) ...[
-          _ResultSectionHeader(
+          SectionHeader(
+            'Hadith (${_hadithResults.length})',
             icon: Icons.library_books_rounded,
-            label: 'Hadith (${_hadithResults.length})',
-            colorScheme: colorScheme,
           ),
           ..._hadithResults.map(
             (hit) => _HadithResultTile(hit: hit),
@@ -244,44 +170,8 @@ class _SearchPageState extends State<SearchPage> {
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Private sub-widgets
+//  Private result tiles
 // ────────────────────────────────────────────────────────────────
-
-/// Section header for search result groups.
-class _ResultSectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final ColorScheme colorScheme;
-
-  const _ResultSectionHeader({
-    required this.icon,
-    required this.label,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 8,
-        horizontal: 4,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// A search-result tile for a hadith match.
 class _HadithResultTile extends StatelessWidget {
@@ -293,19 +183,16 @@ class _HadithResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          context.push(
-            '/hadith/${hit.collectionId}/${hit.bookFile}'
-            '?title=${Uri.encodeComponent(hit.bookTitle ?? hit.bookFile)}'
-            '&index=${hit.hadithIndex}',
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+    return HubleeCard(
+      onTap: () {
+        context.push(AppRoute.hadithBook(
+          collectionId: hit.collectionId,
+          bookFile: hit.bookFile,
+          bookTitle: hit.bookTitle ?? hit.bookFile,
+          index: hit.hadithIndex,
+        ));
+      },
+      child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(
@@ -338,8 +225,6 @@ class _HadithResultTile extends StatelessWidget {
               const Icon(Icons.chevron_right),
             ],
           ),
-        ),
-      ),
     );
   }
 }
@@ -352,15 +237,9 @@ class _QuranResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(
-          '/quran/${hit.surahId}?ayah=${hit.ayah}',
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+    return HubleeCard(
+      onTap: () => context.push(AppRoute.surah(hit.surahId, ayah: hit.ayah)),
+      child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(Icons.menu_book_outlined, size: 24),
@@ -390,8 +269,6 @@ class _QuranResultTile extends StatelessWidget {
               const Icon(Icons.chevron_right),
             ],
           ),
-        ),
-      ),
     );
   }
 }

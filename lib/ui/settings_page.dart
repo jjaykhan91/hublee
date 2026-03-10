@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
+import '../router_paths.dart';
 import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
@@ -179,7 +180,7 @@ class SettingsPage extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => context.push('/tajweed-guide'),
+              onTap: () => context.push(AppRoute.tajweedGuide),
             ),
           )
               .animate()

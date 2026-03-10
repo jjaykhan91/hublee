@@ -125,10 +125,11 @@ ThemeData buildLightTheme() {
     colorScheme: _lightScheme,
     textTheme: textTheme,
     scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-    cardTheme: const CardThemeData(
+    cardTheme: CardThemeData(
       surfaceTintColor: Colors.transparent,
-      elevation: 1,
-      shape: RoundedRectangleBorder(
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
@@ -153,6 +154,29 @@ ThemeData buildLightTheme() {
         borderRadius: BorderRadius.all(Radius.circular(14)),
         borderSide: BorderSide.none,
       ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.15),
+      height: 68,
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
@@ -194,15 +218,39 @@ ThemeData buildDarkTheme() {
       ),
       systemOverlayStyle: SystemUiOverlayStyle.light,
     ),
-    cardTheme: const CardThemeData(
+    cardTheme: CardThemeData(
       color: _darkSurfaceElevated,
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.35),
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
         side: BorderSide(color: _darkOutline, width: 1),
       ),
       margin: EdgeInsets.zero,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.4),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.4),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.4),
+      height: 68,
     ),
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,

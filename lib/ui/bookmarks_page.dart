@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
+import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
@@ -186,15 +187,17 @@ class BookmarksPage extends StatelessWidget {
     bool isQuran,
   ) {
     if (isQuran) {
-      context.push(
-        '/quran/${bookmark.surahId}?ayah=${bookmark.ayah}',
-      );
+      context.push(AppRoute.surah(
+        bookmark.surahId as int,
+        ayah: bookmark.ayah as int?,
+      ));
     } else {
-      context.push(
-        '/hadith/${bookmark.collectionId}/${bookmark.bookFile}'
-        '?title=${Uri.encodeComponent(bookmark.bookTitle ?? '')}'
-        '&index=${bookmark.hadithIndex}',
-      );
+      context.push(AppRoute.hadithBook(
+        collectionId: bookmark.collectionId as String,
+        bookFile: bookmark.bookFile as String,
+        bookTitle: bookmark.bookTitle as String? ?? '',
+        index: bookmark.hadithIndex as int?,
+      ));
     }
   }
 }

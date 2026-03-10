@@ -31,13 +31,14 @@ Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, m
 
 | Rule | Constant | Colour | Hex |
 |------|----------|--------|-----|
-| Qalqala (echo) | `kQalqalaColor` | Light Blue | #0091EA |
-| Ghunnah / Ikhfa / Idgham-gh / Iqlab / Meem rules | `kGhunnahColor` | Green | #43A047 |
+| Silent letter | `kNotPronouncedColor()` | Grey | #9E9E9E (dark) / #BDBDBD (light) |
 | Normal Madd (2 counts) | `kNormalMaadColor` | Pink | #E91E8C |
-| Separated Madd / Aridh (2/4/6) | `kMaadSukoonColor` | Orange | #FB8C00 |
+| Separated Madd (2/4/6) | `kMaadSukoonColor` | Orange | #FB8C00 |
 | Connected Madd (4/5, before hamza) | `kMaadConnectedColor` | Dark Pink | #D81B60 |
-| Necessary Madd / Lazim (6 counts) | `kMaadLongColor` | Red | #F44336 |
-| Silent / not pronounced | `kNotPronouncedColor()` | Grey | #9E9E9E (dark) / #BDBDBD (light) |
+| Necessary Madd (6 counts) | `kMaadLongColor` | Red | #F44336 |
+| Ghunnah / Ikhfa / Idgham-gh / Iqlab / Meem | `kGhunnahColor` | Green | #43A047 |
+| Qalqala (echo) | `kQalqalaColor` | Cyan | #00BCD4 |
+| Tafkhim (heavy) | `kTafkhimColor` | Dark Blue | #1565C0 |
 
 `kNotPronouncedColor(Brightness)` is the only brightness-aware colour — returns a different grey for readability on dark vs light backgrounds.
 

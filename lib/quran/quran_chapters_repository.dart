@@ -20,20 +20,38 @@ class QuranChaptersRepository {
   /// Merges per-ayah name/verse data with static metadata for
   /// revelation type, revelation order, and juz ranges.
   Future<List<ChapterMeta>> loadChapters() async {
-    // Load both sources in parallel.
+    // Load all sources in parallel.
     final results = await Future.wait([
       rootBundle.loadString(AssetPaths.kfgqpcQuranMushafSmartV8),
       rootBundle.loadString(AssetPaths.surahMetadata),
+      rootBundle.loadString(AssetPaths.surahTranslatedNames),
+      rootBundle.loadString(AssetPaths.surahArabicVowelled),
     ]);
 
     final List<dynamic> rows = json.decode(results[0]);
     final List<dynamic> metaRows = json.decode(results[1]);
+    final List<dynamic> translatedRows = json.decode(results[2]);
+    final List<dynamic> vowelledRows = json.decode(results[3]);
 
     // Index static metadata by surah id.
     final metaById = <int, Map<String, dynamic>>{};
     for (final row in metaRows) {
       final map = row as Map<String, dynamic>;
       metaById[map['id'] as int] = map;
+    }
+
+    // Index translated names (English meaning) by surah id.
+    final translatedByNameById = <int, String>{};
+    for (final row in translatedRows) {
+      final map = row as Map<String, dynamic>;
+      translatedByNameById[map['id'] as int] = map['name'] as String;
+    }
+
+    // Index Arabic names with tashkeel (vowelled) by surah id.
+    final vowelledByNameById = <int, String>{};
+    for (final row in vowelledRows) {
+      final map = row as Map<String, dynamic>;
+      vowelledByNameById[map['id'] as int] = map['name'] as String;
     }
 
     // Accumulate verse counts and names per surah from ayah data.
@@ -50,13 +68,15 @@ class QuranChaptersRepository {
       bucket.verseCount++;
     }
 
-    // Merge both sources into ChapterMeta objects.
+    // Merge all sources into ChapterMeta objects.
     final chapters = accumulator.entries.map((entry) {
       final meta = metaById[entry.key];
       return ChapterMeta(
         id: entry.key,
         nameSimple: entry.value.nameEn,
+        nameTranslated: translatedByNameById[entry.key],
         nameArabic: entry.value.nameAr,
+        nameArabicVowelled: vowelledByNameById[entry.key],
         versesCount: entry.value.verseCount,
         revelationType: (meta?['revelationType'] as String?) ?? 'Meccan',
         revelationOrder: (meta?['revelationOrder'] as int?) ?? 0,

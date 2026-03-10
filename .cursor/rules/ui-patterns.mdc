@@ -55,6 +55,7 @@ Both reader pages share these features:
 - **Auto-save**: Last-read position saved once per visit
 
 ### Surah Reader specifics
+- **App bar:** Info (surah details), Quran Reading & Tajweed guide (book icon → `showQuranReadingGuideSheet()`), in-page search, settings
 - Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
 - Arabic with tajweed coloring
 - Tajweed legend at the bottom
@@ -71,7 +72,7 @@ Both reader pages share these features:
 - **Type**: Two sections (Meccan, Medinan)
 - **Revelation**: Sorted by chronological revelation order
 
-Each surah card shows a Makki/Madani badge (amber for Makki, teal for Madani).
+Each surah card: left = number badge + English name (and translation on some tabs); center = Arabic surah name (vowelled, big and bold); right = ayah count. Makki/Madani badge (amber/teal). No CDN or first-ayah images — Arabic text only.
 
 ## Hadith Page (Tab)
 

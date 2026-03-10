@@ -11,13 +11,14 @@
 /// | Idgham with Ghunnah (receiving) | Green | #43A047 |
 /// | Idgham / silent letter | Grey | #9E9E9E |
 /// | Iqlab (ba) | Green | #43A047 |
-/// | Qalqalah | Light Blue | #0091EA |
+/// | Qalqalah | Cyan | #00BCD4 |
 /// | Meem Ikhfa (Shafawi) | Green | #43A047 |
 /// | Meem Idgham | Green | #43A047 |
 /// | Normal Madd (2) | Pink | #E91E8C |
 /// | Maad Aridh / Sukoon | Orange | #FB8C00 |
 /// | Maad Connected (before hamza) | Dark Pink | #D81B60 |
 /// | Maad 6 Harakat / Madd Lazim | Red | #F44336 |
+/// | Tafkhim (heavy) | Dark Blue | #1565C0 |
 /// | Hamza Wasl (silent) | Grey | #9E9E9E |
 /// | Lam Shamsiyah (silent) | Grey | #9E9E9E |
 /// | Silent letters | Grey | #9E9E9E |
@@ -109,6 +110,19 @@ const _sunLetters = {
   '\u0638', // ظ
   '\u0644', // ل
   '\u0646', // ن
+};
+
+/// Heavy letters (tafkhim): always thick articulation. ص ض ط ظ ق غ خ.
+/// Qaaf and Taa (ط) are also qalqala when sakin — we apply tafkhim when
+/// they have a vowel. Raa (ر) is heavy with fatha/damma, light (tarqeeq) with kasra.
+const _tafkhimHeavyLetters = {
+  '\u0635', // ص
+  '\u0636', // ض
+  '\u0637', // ط
+  '\u0638', // ظ
+  '\u0642', // ق
+  '\u063A', // غ
+  '\u062E', // خ
 };
 
 
@@ -403,7 +417,7 @@ bool _isMaadLetter(List<_Cluster> clusters, int index) {
 //  Tajweed rule colours (Madani mushaf scheme from quran.com)
 // ────────────────────────────────────────────────────────────────
 
-const kQalqalaColor = Color(0xFF0091EA); // light blue
+const kQalqalaColor = Color(0xFF00BCD4); // cyan
 const kGhunnahColor = Color(0xFF43A047); // green
 const kIdghamGhunnahColor = Color(0xFF43A047); // green (receiving letter)
 const kIkhfaColor = Color(0xFF43A047); // green (matches quran.com ghunna/ikhfa)
@@ -414,6 +428,10 @@ const kNormalMaadColor = Color(0xFFE91E8C); // pink (Normal madd 2 counts)
 const kMaadSukoonColor = Color(0xFFFB8C00); // orange (Separated / Aridh)
 const kMaadConnectedColor = Color(0xFFD81B60); // dark pink (Connected madd 4/5 — before hamza)
 const kMaadLongColor = Color(0xFFF44336); // red (Necessary madd 6 — Madd Lazim)
+
+/// Tafkhim (heavy/thick articulation) — dark blue. Applied to Qaaf with vowel,
+/// Raa with fatha/damma, and the seven heavy letters (ص ض ط ظ ق غ خ).
+const kTafkhimColor = Color(0xFF1565C0); // dark blue
 
 /// "Not pronounced" colour for noon/tanween in idgham & iqlab.
 /// Clearly muted compared to surrounding text so the silent letter
@@ -525,6 +543,22 @@ List<InlineSpan> tajweedSpans(
       if (next == null) return kQalqalaColor;
     }
 
+    // ── 1b. Tafkhim (heavy letters) ─────────────────────
+    // Qaaf (ق) with vowel, Raa (ر) with fatha/damma, and the seven
+    // heavy letters (ص ض ط ظ ق غ خ) when they have a vowel (ط/ق sakin
+    // are already handled by Qalqala above).
+    if (baseLetter == '\u0642' && _hasVowel(diacritics)) return kTafkhimColor;
+    if (baseLetter == '\u0631' &&
+        (diacritics.contains(_fatha) || diacritics.contains(_damma))) {
+      return kTafkhimColor;
+    }
+    if (_tafkhimHeavyLetters.contains(baseLetter)) {
+      // ص ض ظ غ خ: always heavy. ط with vowel (sakin = qalqala already).
+      if (baseLetter != '\u0637' || _hasVowel(diacritics)) {
+        return kTafkhimColor;
+      }
+    }
+
     // ── 2. Ghunnah: Noon/Meem + Shadda ──────────────────
     if ((baseLetter == _noon || baseLetter == _meem) &&
         diacritics.contains(_shadda)) {
@@ -605,10 +639,19 @@ List<InlineSpan> tajweedSpans(
 
     // ── 6. Maad (prolongation) ──────────────────────────
     if (_isMaadLetter(clusters, index)) {
-      int? nextIndex = _nextLetterIndex(clusters, index);
+      // 6a. Normal Madd (2 counts) — check first so ـٰ and لَا get pink.
+      if (baseLetter == '\u0640' && diacritics.contains('\u0670')) {
+        return kNormalMaadColor;
+      }
+      final prevIdx = _prevLetterIndex(clusters, index);
+      if (baseLetter == '\u0627' &&
+          prevIdx != null &&
+          clusters[prevIdx].base == '\u0644' &&
+          clusters[prevIdx].diacritics.contains(_fatha)) {
+        return kNormalMaadColor; // لَا
+      }
 
-      // Skip alef-wasla (ٱ, U+0671) — it's silent in
-      // continuous reading and shouldn't affect maad analysis.
+      int? nextIndex = _nextLetterIndex(clusters, index);
       if (nextIndex != null && clusters[nextIndex].base == '\u0671') {
         nextIndex = _nextLetterIndex(clusters, nextIndex);
       }
@@ -625,16 +668,9 @@ List<InlineSpan> tajweedSpans(
         if (_hasExplicitSukun(nextDiac)) return kMaadSukoonColor;
         final afterNext = _nextLetterIndex(clusters, nextIndex);
         if (afterNext == null) return kMaadSukoonColor;
+        return kMaadSukoonColor; // permissible: next has vowel
       }
-
-      // ── 6b. Normal Madd (2 counts) ──────────────────
-      // quran.com class: madda_normal. Only for dedicated
-      // orthographic madd indicators: tatweel + superscript
-      // alef (ـٰ, U+0640+U+0670). Regular alef/waw/ya madd
-      // letters are NOT highlighted per quran.com behaviour.
-      if (baseLetter == '\u0640' && diacritics.contains('\u0670')) {
-        return kNormalMaadColor;
-      }
+      return kMaadSukoonColor; // end of phrase
     }
 
     return null;
@@ -759,6 +795,18 @@ List<TajweedClusterResult> tajweedColorAssignments(
       if (next == null) return kQalqalaColor;
     }
 
+    // Tafkhim (heavy letters)
+    if (baseLetter == '\u0642' && _hasVowel(diacritics)) return kTafkhimColor;
+    if (baseLetter == '\u0631' &&
+        (diacritics.contains(_fatha) || diacritics.contains(_damma))) {
+      return kTafkhimColor;
+    }
+    if (_tafkhimHeavyLetters.contains(baseLetter)) {
+      if (baseLetter != '\u0637' || _hasVowel(diacritics)) {
+        return kTafkhimColor;
+      }
+    }
+
     if ((baseLetter == _noon || baseLetter == _meem) &&
         diacritics.contains(_shadda)) {
       return kGhunnahColor;
@@ -822,6 +870,16 @@ List<TajweedClusterResult> tajweedColorAssignments(
     }
 
     if (_isMaadLetter(clusters, index)) {
+      if (baseLetter == '\u0640' && diacritics.contains('\u0670')) {
+        return kNormalMaadColor;
+      }
+      final prevIdx = _prevLetterIndex(clusters, index);
+      if (baseLetter == '\u0627' &&
+          prevIdx != null &&
+          clusters[prevIdx].base == '\u0644' &&
+          clusters[prevIdx].diacritics.contains(_fatha)) {
+        return kNormalMaadColor; // لَا
+      }
       int? nextIndex = _nextLetterIndex(clusters, index);
       if (nextIndex != null && clusters[nextIndex].base == '\u0671') {
         nextIndex = _nextLetterIndex(clusters, nextIndex);
@@ -835,10 +893,9 @@ List<TajweedClusterResult> tajweedColorAssignments(
         if (_hasExplicitSukun(nextDiac)) return kMaadSukoonColor;
         final afterNext = _nextLetterIndex(clusters, nextIndex);
         if (afterNext == null) return kMaadSukoonColor;
+        return kMaadSukoonColor; // permissible: next has vowel
       }
-      if (baseLetter == '\u0640' && diacritics.contains('\u0670')) {
-        return kNormalMaadColor;
-      }
+      return kMaadSukoonColor; // end of phrase
     }
 
     return null;

@@ -183,8 +183,9 @@ String? colorFor(List<Cluster> clusters, int idx) {
       final pd = clusters[pi].diacritics;
       if (base == '\u0627' && pd.contains(_fatha)) isMaad = true;
       if (base == '\u0648' && pd.contains(_damma)) isMaad = true;
-      if ((base == '\u064A' || base == '\u0649') && pd.contains(_kasra))
+      if ((base == '\u064A' || base == '\u0649') && pd.contains(_kasra)) {
         isMaad = true;
+      }
     }
     if (base == '\u0622') isMaad = true;
     if (base == '\u0640' && d.contains('\u0670')) {
