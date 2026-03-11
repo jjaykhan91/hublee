@@ -152,7 +152,11 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     HadithBook? book,
   ) {
     return AppBar(
-      title: Text(book?.title ?? widget.title),
+      title: Text(
+        book?.title ?? widget.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.search_rounded),

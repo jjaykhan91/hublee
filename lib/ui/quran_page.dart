@@ -85,7 +85,7 @@ class _QuranPageState extends State<QuranPage>
         title: const Text('Quran'),
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: false,
+          isScrollable: true,
           labelPadding: const EdgeInsets.symmetric(horizontal: 8),
           indicatorSize: TabBarIndicatorSize.label,
           tabs: _tabs.map((label) => Tab(text: label)).toList(),
@@ -509,16 +509,16 @@ class _SurahCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Arabic surah name (vowelled) centered, big and bold.
+                      // Calligraphic Arabic surah name (Tarteel surah-name-v4 ligature).
                       Expanded(
                         child: Center(
                           child: Text(
-                            chapter.nameArabicVowelled ?? chapter.nameArabic,
+                            'surah${chapter.id.toString().padLeft(3, '0')}',
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineSmall
                                 ?.copyWith(
-                                  fontFamily: 'KFGQPCQuranicFontHafsSmart',
+                                  fontFamily: 'SurahNameV4',
                                   fontWeight: FontWeight.bold,
                                   color: accentColor,
                                 ),

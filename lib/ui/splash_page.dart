@@ -27,11 +27,19 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Image.asset(
-        'assets/images/HubleeBackground.png',
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
+      backgroundColor: const Color(0xFF0D3B3B), // Dark teal to match artwork letterboxing
+      body: SizedBox.expand(
+        child: Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            // Show full image without cropping; letterboxing uses scaffold background.
+            Image.asset(
+              'assets/images/HubleeBackground.png',
+              fit: BoxFit.contain,
+            ),
+          ],
+        ),
       ),
     );
   }

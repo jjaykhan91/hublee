@@ -46,29 +46,33 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Hublee'),
         centerTitle: true,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: const [0.0, 0.3, 0.7, 1.0],
-            colors: [
-              Color.alphaBlend(
-                colorScheme.primary.withValues(alpha: 0.06),
-                colorScheme.surface,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Container(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.3, 0.7, 1.0],
+                colors: [
+                  Color.alphaBlend(
+                    colorScheme.primary.withValues(alpha: 0.06),
+                    colorScheme.surface,
+                  ),
+                  colorScheme.surface,
+                  colorScheme.surface,
+                  Color.alphaBlend(
+                    colorScheme.tertiary.withValues(alpha: 0.04),
+                    colorScheme.surface,
+                  ),
+                ],
               ),
-              colorScheme.surface,
-              colorScheme.surface,
-              Color.alphaBlend(
-                colorScheme.tertiary.withValues(alpha: 0.04),
-                colorScheme.surface,
-              ),
-            ],
-          ),
-        ),
-        child: ListView(
-          padding: AppSpacing.page,
-          children: [
+            ),
+            child: ListView(
+              padding: AppSpacing.page,
+              children: [
             // ── Search shortcut (3D shadow) ─────────────────
             GestureDetector(
               onTap: () => context.push(AppRoute.search),
@@ -239,8 +243,10 @@ class _HomePageState extends State<HomePage> {
                 .animate()
                 .fadeIn(duration: 500.ms, delay: 500.ms)
                 .slideY(begin: 0.04, end: 0, duration: 500.ms, delay: 500.ms),
-          ],
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -67,6 +67,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
 
+  /// Cycle index for header title: 0=Arabic, 1=English, 2=Meaning, 3=Revelation.
+  int _titleCycleIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -308,35 +311,33 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     );
   }
 
-  /// Normal app bar: English title on the left, Arabic name calligraphic in the center.
+  /// Normal app bar: single clickable title that cycles Arabic → English → Meaning → Revelation.
   PreferredSizeWidget _buildNormalAppBar(
     BuildContext context,
     ChapterMeta? chapterMeta,
   ) {
-    final isMeccan = chapterMeta?.isMeccan ?? true;
+    final theme = Theme.of(context);
 
     return AppBar(
-      title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            chapterMeta?.nameSimple ?? 'Surah',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          Expanded(
-            child: Center(
-              child: chapterMeta != null
-                  ? _AppBarArabicTitle(
-                      nameArabic: chapterMeta.nameArabicVowelled ?? chapterMeta.nameArabic,
-                      isMeccan: isMeccan,
-                    )
-                  : const SizedBox.shrink(),
+      toolbarHeight: 72,
+      titleSpacing: 16,
+      leadingWidth: 48,
+      title: chapterMeta == null
+          ? Text(
+              'Surah',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          : _CyclingSurahTitle(
+              chapter: chapterMeta,
+              cycleIndex: _titleCycleIndex,
+              onTap: () {
+                setState(() {
+                  _titleCycleIndex = (_titleCycleIndex + 1) % 4;
+                });
+              },
             ),
-          ),
-        ],
-      ),
       actions: [
         if (chapterMeta != null)
           Builder(builder: (ctx) {
@@ -345,17 +346,27 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               icon: const Icon(Icons.info_outline_rounded),
               tooltip: 'Surah info',
               onPressed: () => _showSurahInfo(ctx, chapter),
+              style: IconButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
             );
           }),
+        const SizedBox(width: 4),
         IconButton(
           icon: const Icon(Icons.menu_book_rounded),
           tooltip: 'Quran reading & Tajweed guide',
           onPressed: () => showQuranReadingGuideSheet(context),
+          style: IconButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this surah',
           onPressed: _openSearch,
+          style: IconButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.tune_rounded),
@@ -364,7 +375,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             context,
             showTajweedToggle: true,
           ),
+          style: IconButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+          ),
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -1020,73 +1035,114 @@ Widget _buildInfoSection(
   );
 }
 
-/// Calligraphic Arabic surah name for the app bar, centered with a decorative
-/// frame that reflects Makki (amber) vs Madani (green) colouring, matching
-/// the Quran list cards.
-class _AppBarArabicTitle extends StatelessWidget {
-  const _AppBarArabicTitle({
-    required this.nameArabic,
-    required this.isMeccan,
+/// Single tappable title in the app bar. Cycles: Arabic → English → Meaning → Revelation.
+class _CyclingSurahTitle extends StatelessWidget {
+  const _CyclingSurahTitle({
+    required this.chapter,
+    required this.cycleIndex,
+    required this.onTap,
   });
 
-  final String nameArabic;
-  final bool isMeccan;
+  final ChapterMeta chapter;
+  final int cycleIndex;
+  final VoidCallback onTap;
+
+  static const _makkiAccent = Color(0xFFD4A054);
+  static const _madaniAccent = Color(0xFF4CAF7D);
 
   @override
   Widget build(BuildContext context) {
-    // Match the Makki/Madani accent colours from the Quran list cards.
-    const makkiAccent = Color(0xFFD4A054); // warm amber
-    const madaniAccent = Color(0xFF4CAF7D); // cool green
+    final theme = Theme.of(context);
+    final isMeccan = chapter.isMeccan;
+    final accent = isMeccan ? _makkiAccent : _madaniAccent;
+    final outline = accent.withValues(alpha: 0.4);
+    final fill = accent.withValues(alpha: 0.08);
 
-    final accent = isMeccan ? makkiAccent : madaniAccent;
-    final outline = accent.withValues(alpha: 0.45);
-    final fill = accent.withValues(alpha: 0.10);
+    final content = _buildContent(context, theme, accent);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: outline, width: 1.2),
-          color: fill,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '\u06DE', // ۞ ornamental star
-              style: TextStyle(
-                fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                fontSize: 14,
-                color: outline,
-                height: 1.2,
-              ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: outline, width: 1.2),
+              color: fill,
             ),
-            const SizedBox(width: 8),
-            Text(
-              nameArabic,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                    fontWeight: FontWeight.w600,
-                    color: accent,
-                    height: 1.25,
-                  ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '\u06DE',
-              style: TextStyle(
-                fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                fontSize: 14,
-                color: outline,
-                height: 1.2,
-              ),
-            ),
-          ],
+            child: content,
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    Color accent,
+  ) {
+    switch (cycleIndex % 4) {
+      case 0:
+        // Tarteel QUL surah-name-v4 font: ligatures surah001–surah114 render calligraphic Arabic names.
+        final ligature = 'surah${chapter.id.toString().padLeft(3, '0')}';
+        return Text(
+          ligature,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: 'SurahNameV4',
+            fontWeight: FontWeight.w600,
+            fontSize: 24,
+            color: accent,
+            height: 1.3,
+          ),
+          textDirection: TextDirection.rtl,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      case 1:
+        return Text(
+          chapter.nameSimple,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: accent,
+            letterSpacing: 0.3,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      case 2:
+        final meaning = chapter.nameTranslated ?? '—';
+        return Text(
+          meaning,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+            color: accent.withValues(alpha: 0.95),
+            fontStyle: FontStyle.italic,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      case 3:
+        final place = chapter.isMeccan ? 'Meccan' : 'Medinan';
+        return Text(
+          place,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: accent,
+            letterSpacing: 0.5,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }

@@ -160,8 +160,10 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     _scheduleHide();
   }
 
-  static const _kThumbSize = 44.0;
-  static const _kTrackWidth = 28.0;
+  // Slightly smaller thumb + narrow track so the touchable area is compact
+  // and less likely to occlude content.
+  static const _kThumbSize = 36.0;
+  static const _kTrackWidth = 20.0;
 
   @override
   Widget build(BuildContext context) {
@@ -172,10 +174,13 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     final thumbTop = _position * trackHeight.clamp(0.0, double.infinity);
 
     return Positioned(
-      right: 2,
+      // Pin to the left edge so it does not overlap the Arabic text.
+      left: 2,
       top: 8,
       bottom: 8,
-      width: _kTrackWidth + 100, // Extra width for label tooltip
+      // Compact hit area: just wider than the track + thumb, label floats
+      // outside this region.
+      width: _kTrackWidth + 24,
       child: GestureDetector(
         onVerticalDragStart: _onDragStart,
         onVerticalDragUpdate: _onDragUpdate,
@@ -187,7 +192,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
           children: [
             // Track line
             Positioned(
-              right: _kTrackWidth / 2 - 1.5,
+              left: _kTrackWidth / 2 - 1.5,
               top: _kThumbSize / 2,
               bottom: _kThumbSize / 2,
               child: Container(
@@ -203,7 +208,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
 
             // Thumb
             Positioned(
-              right: 0,
+              left: 0,
               top: thumbTop,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
@@ -228,7 +233,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
 
             // Label tooltip (shows on drag/tap)
             Positioned(
-              right: _kTrackWidth + 8,
+              left: _kTrackWidth + 8,
               top: thumbTop + (_kThumbSize - 36) / 2,
               child: FadeTransition(
                 opacity: _fadeAnimation,

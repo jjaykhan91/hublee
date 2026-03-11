@@ -59,6 +59,11 @@ flutter:
     - family: KFGQPCQuranicFontHafsSmart
       fonts:
         - asset: assets/fonts/KFGQPCQuranicFontHafsSmart_08.ttf
+    # Tarteel QUL Surah name font v4 (calligraphic surah names via ligatures surah001–surah114).
+    # Download TTF from: https://qul.tarteel.ai/resources/font/457 (Download ttf).
+    - family: SurahNameV4
+      fonts:
+        - asset: assets/fonts/surah-name-v4.ttf
 
 # Native splash screen (logo shown at app launch before Flutter loads).
 flutter_native_splash:
