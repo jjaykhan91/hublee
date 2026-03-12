@@ -1,7 +1,7 @@
 /// Bottom sheet for quick reader settings accessible from reading
 /// pages. Provides live-preview sliders for Arabic and English
 /// font sizes, an Arabic font picker, a theme toggle, and
-/// optionally a tajweed toggle with guide link.
+/// optionally a V4 tajweed toggle with guide link.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ import '../../theme/app_tokens.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
-/// If [showTajweedToggle] is true, a tajweed on/off switch and a
+/// If [showTajweedToggle] is true, a V4 tajweed on/off switch and a
 /// "Tajweed Guide" info button are included (Quran reader only).
 void showReaderSettingsSheet(
   BuildContext context, {

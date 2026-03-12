@@ -2,8 +2,8 @@
 ///
 /// Uses the user-selected Arabic font (defaulting to KFGQPC Hafs
 /// Smart v8) with OpenType features for correct mark placement.
-/// When [tajweed] is `true`, the text is rendered as a [RichText]
-/// with colour-coded tajweed spans from [tajweedSpans].
+/// When [v4FontFamily] is set, that font is used (V4 font-based
+/// tajweed). Otherwise plain text is rendered with no colour coding.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,7 +11,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
-import 'tajweed.dart';
 
 /// Resolves the [TextStyle] for the given [ArabicFontOption].
 ///
@@ -34,17 +33,16 @@ TextStyle _resolveArabicFontStyle(ArabicFontOption font) {
 /// Renders Arabic text in the user-selected Arabic font.
 ///
 /// Key properties:
-/// - [tajweed]: when `true`, colour-codes recitation rules.
 /// - [fontSize] / [size]: font size in logical pixels (default 26).
 /// - [weight]: font weight (default `w600`).
 /// - [align]: text alignment (default `TextAlign.right` for RTL).
 /// - [color]: overrides the default `onSurface` colour.
 /// - [fontOverride]: force a specific font, ignoring user settings.
+/// - [v4FontFamily]: when set, use QPC V4 page font (tajweed in font).
 class ArabicText extends StatelessWidget {
   final String text;
   final double? fontSize;
   final FontWeight? weight;
-  final bool tajweed;
   final double? size;
   final TextAlign? align;
   final TextStyle? style;
@@ -55,12 +53,14 @@ class ArabicText extends StatelessWidget {
   /// When non-null, overrides the user's font setting.
   final ArabicFontOption? fontOverride;
 
+  /// When non-null, use this font family (e.g. QPC V4 page font).
+  final String? v4FontFamily;
+
   const ArabicText(
     this.text, {
     super.key,
     this.fontSize,
     this.weight,
-    this.tajweed = false,
     this.size,
     this.align,
     this.style,
@@ -68,6 +68,7 @@ class ArabicText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.fontOverride,
+    this.v4FontFamily,
   });
 
   @override
@@ -86,28 +87,30 @@ class ArabicText extends StatelessWidget {
       }
     }
 
-    final baseFontStyle = _resolveArabicFontStyle(font);
+    // When V4 font is set, use it and do not apply software tajweed.
+    final useV4Font = v4FontFamily != null && v4FontFamily!.isNotEmpty;
+    final effectiveFontStyle = useV4Font
+        ? TextStyle(fontFamily: v4FontFamily)
+        : _resolveArabicFontStyle(font);
 
-    // Build the base style with the resolved font and required
-    // OpenType features for correct mark/ligature rendering.
     final TextStyle resolvedStyle =
-        (style ?? const TextStyle()).merge(baseFontStyle).copyWith(
+        (style ?? const TextStyle()).merge(effectiveFontStyle).copyWith(
       fontSize: resolvedFontSize,
       fontWeight: weight ?? FontWeight.w600,
       height: 2.0,
       color: color ?? Theme.of(context).colorScheme.onSurface,
-      fontFeatures: const <FontFeature>[
-        FontFeature.enable('mark'),
-        FontFeature.enable('mkmk'),
-        FontFeature.enable('rlig'),
-        FontFeature.enable('calt'),
-      ],
+      fontFeatures: useV4Font
+          ? null
+          : const <FontFeature>[
+              FontFeature.enable('mark'),
+              FontFeature.enable('mkmk'),
+              FontFeature.enable('rlig'),
+              FontFeature.enable('calt'),
+            ],
     );
 
-    // Strut style ensures consistent line height across different
-    // character compositions.
     final strutStyle = StrutStyle(
-      fontFamily: baseFontStyle.fontFamily,
+      fontFamily: effectiveFontStyle.fontFamily,
       fontSize: resolvedFontSize,
       height: 2.0,
       forceStrutHeight: true,
@@ -115,38 +118,16 @@ class ArabicText extends StatelessWidget {
 
     final resolvedAlign = align ?? TextAlign.right;
 
-    // Without tajweed: render as a simple Text widget.
-    if (!tajweed) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: Text(
-          text,
-          textDirection: TextDirection.rtl,
-          textAlign: resolvedAlign,
-          style: resolvedStyle,
-          strutStyle: strutStyle,
-          maxLines: maxLines,
-          overflow: overflow,
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
-          ),
-        ),
-      );
-    }
-
-    // With tajweed: render as RichText with colour-coded spans.
     return Align(
       alignment: Alignment.centerRight,
-      child: RichText(
+      child: Text(
+        text,
         textDirection: TextDirection.rtl,
         textAlign: resolvedAlign,
-        text: TextSpan(
-          children: tajweedSpans(context, text, resolvedStyle),
-        ),
+        style: resolvedStyle,
         strutStyle: strutStyle,
         maxLines: maxLines,
-        overflow: overflow ?? TextOverflow.visible,
+        overflow: overflow,
         textHeightBehavior: const TextHeightBehavior(
           applyHeightToFirstAscent: false,
           applyHeightToLastDescent: false,

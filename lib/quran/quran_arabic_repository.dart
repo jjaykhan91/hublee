@@ -6,10 +6,8 @@
 ///   bundled KFGQPCQuranicFontHafsSmart font. Not parseable for
 ///   tajweed because it uses Private Use Area characters.
 /// - **Standard Uthmanic** (`assets/quran/ar/{surahId}.json`) —
-///   standard Arabic Unicode with full tashkeel, downloaded from
-///   the quran.com API `text_uthmani` field. Works with any Arabic
-///   font (Amiri, Scheherazade, Noto Naskh) and supports tajweed
-///   colour analysis.
+///   standard Arabic Unicode with full tashkeel, from quran.com
+///   `text_uthmani`. Works with any Arabic font (Amiri, Scheherazade, Noto Naskh).
 /// - **Imla'i** (`aya_text_emlaey`) — simplified spelling for
 ///   search indexing only.
 library;

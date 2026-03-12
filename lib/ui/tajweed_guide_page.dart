@@ -69,9 +69,9 @@ class TajweedGuidePage extends StatelessWidget {
                     'Tajweed (\u062A\u062C\u0648\u064A\u062F) is the set of '
                     'rules governing the correct pronunciation of the '
                     'Quran during recitation. The word means '
-                    '"to make better" or "to beautify". When enabled, '
-                    'Hublee colour-codes the Arabic text following the '
-                    'Madani mushaf colour scheme used by quran.com.',
+                    '"to make better" or "to beautify". Hublee uses '
+                    'QPC V4 font-based tajweed (Madani mushaf colour '
+                    'scheme) when enabled in the reader.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           height: 1.6,
                         ),
@@ -353,7 +353,7 @@ class TajweedGuidePage extends StatelessWidget {
                     context,
                     Icons.color_lens_rounded,
                     'Use colour coding',
-                    'Enable tajweed colours in the reader to visualise '
+                    'Enable V4 tajweed in the reader to visualise '
                         'where rules apply as you recite.',
                   ),
                   const SizedBox(height: 14),

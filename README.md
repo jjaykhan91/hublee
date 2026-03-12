@@ -1,19 +1,21 @@
-# hublee
+# Hublee
 
-A new Flutter project.
+A cross-platform Flutter app for reading the Quran and Hadith. Offline-first, with V4 font-based tajweed, word-by-word translation, and bookmarks.
 
-## Getting Started
+## Getting started
 
-This project is a starting point for a Flutter application.
+- **Flutter**: Install [Flutter](https://docs.flutter.dev/get-started/install) (3.4+).
+- **Run**: `flutter pub get` then `flutter run`.
+- **V4 tajweed**: Download the [V4 script](https://qul.tarteel.ai/resources/quran-script/47) (Save as `assets/quran/qpc-v4.json`) and run `dart run tools/download_v4_tajweed.dart` for fonts. See [docs/V4_TAJWEED_SOURCES.md](docs/V4_TAJWEED_SOURCES.md).
 
-A few resources to get you started if this is your first Flutter project:
+## Project layout
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- `lib/` — app code (UI, Quran/Hadith repos, services, theme).
+- `assets/quran/` — Quran text, translations, V4 script; `assets/hadith/` — hadith collections.
+- `tools/` — scripts (e.g. download V4 fonts).
+- `docs/` — architecture and V4 data sources.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Docs
 
-
-Docs: token endpoint + headers + base URLs + scope come from Quran Foundation quick start; you must send x-auth-token and x-client-id with each call.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layers, navigation, theming.
+- [docs/V4_TAJWEED_SOURCES.md](docs/V4_TAJWEED_SOURCES.md) — where to get V4 script and fonts.

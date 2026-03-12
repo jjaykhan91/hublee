@@ -488,7 +488,6 @@ class _HadithCard extends StatelessWidget {
                 hadith.arabic!,
                 fontSize: 34 * arabicZoom,
                 weight: FontWeight.w800,
-                tajweed: false,
               ),
             if (hadith.arabic?.isNotEmpty == true) const SizedBox(height: 14),
 

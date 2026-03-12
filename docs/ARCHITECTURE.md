@@ -26,7 +26,7 @@ All route paths are built via [AppRoute](lib/router_paths.dart). Use `AppRoute.s
 ## Scopes and state
 
 - `AppScope`: Theme toggle and app-level state.
-- `SettingsScope`: Font zoom, tajweed, Arabic font — provided by `SettingsController`.
+- `SettingsScope`: Font zoom, V4 tajweed toggle, Arabic font — provided by `SettingsController`.
 - `BookmarkScope`: Bookmarks and last-read positions — provided by `BookmarkService`.
 
 Access via `XxxScope.of(context)`; do not pass controllers deep down by hand.

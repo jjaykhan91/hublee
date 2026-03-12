@@ -8,8 +8,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'tajweed_extension.dart';
-
 // ── Dark-mode palette ────────────────────────────────────────────
 const _darkCanvas = Color(0xFF0B0F14);
 const _darkSurface = Color(0xFF11161C);
@@ -113,8 +111,8 @@ TextTheme _addArabicFontFallback(TextTheme base) {
 
 // ── Public theme builders ────────────────────────────────────────
 
-/// Builds the light [ThemeData] with Material 3 colour scheme,
-/// Arabic text tweaks, and the [TajweedTheme] extension.
+/// Builds the light [ThemeData] with Material 3 colour scheme
+/// and Arabic text tweaks.
 ThemeData buildLightTheme() {
   final base = ThemeData.light(useMaterial3: true);
   final textTheme = _addArabicFontFallback(
@@ -184,12 +182,11 @@ ThemeData buildLightTheme() {
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
-    extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
   );
 }
 
-/// Builds the dark [ThemeData] with an AMOLED-friendly palette,
-/// Arabic text tweaks, and the [TajweedTheme] extension.
+/// Builds the dark [ThemeData] with an AMOLED-friendly palette
+/// and Arabic text tweaks.
 ThemeData buildDarkTheme() {
   final base = ThemeData.dark(useMaterial3: true);
   final textTheme = _addArabicFontFallback(
@@ -275,6 +272,5 @@ ThemeData buildDarkTheme() {
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
-    extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
   );
 }

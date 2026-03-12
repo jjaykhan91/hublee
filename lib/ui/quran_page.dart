@@ -126,35 +126,54 @@ class _QuranPageState extends State<QuranPage>
 //  Tab 1: Flat surah list (default)
 // ────────────────────────────────────────────────────────────────
 
-class _SurahListView extends StatelessWidget {
+class _SurahListView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _SurahListView({required this.chapters, required this.colorScheme});
 
   @override
+  State<_SurahListView> createState() => _SurahListViewState();
+}
+
+class _SurahListViewState extends State<_SurahListView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+    final chapters = widget.chapters;
+    final colorScheme = widget.colorScheme;
+
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       itemCount: chapters.length,
       separatorBuilder: (_, __) => const SizedBox(height: 6),
-      itemBuilder: (context, index) => _SurahCard(
-        chapter: chapters[index],
-        colorScheme: colorScheme,
-      )
-          .animate()
-          .fadeIn(
-            duration: 400.ms,
-            delay: (30 * index).clamp(0, 600).ms,
-          )
-          .slideX(
-            begin: 0.03,
-            end: 0,
-            duration: 400.ms,
-            delay: (30 * index).clamp(0, 600).ms,
-            curve: Curves.easeOut,
-          ),
+      itemBuilder: (context, index) {
+        final card = _SurahCard(
+          chapter: chapters[index],
+          colorScheme: colorScheme,
+        );
+        // Keep animations light: only animate the first ~25 items.
+        if (index > 24) return card;
+        final delay = (30 * index).clamp(0, 480);
+        return card
+            .animate()
+            .fadeIn(
+              duration: 300.ms,
+              delay: delay.ms,
+            )
+            .slideX(
+              begin: 0.03,
+              end: 0,
+              duration: 300.ms,
+              delay: delay.ms,
+              curve: Curves.easeOut,
+            );
+      },
     );
   }
 }
@@ -163,14 +182,27 @@ class _SurahListView extends StatelessWidget {
 //  Tab 2: Grouped by Juz
 // ────────────────────────────────────────────────────────────────
 
-class _JuzGroupView extends StatelessWidget {
+class _JuzGroupView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _JuzGroupView({required this.chapters, required this.colorScheme});
 
   @override
+  State<_JuzGroupView> createState() => _JuzGroupViewState();
+}
+
+class _JuzGroupViewState extends State<_JuzGroupView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+    final chapters = widget.chapters;
+    final colorScheme = widget.colorScheme;
+
     // Build juz -> list of surahs mapping.
     final juzMap = <int, List<ChapterMeta>>{};
     for (final chapter in chapters) {
@@ -221,14 +253,27 @@ class _JuzGroupView extends StatelessWidget {
 //  Tab 3: Makki / Madani
 // ────────────────────────────────────────────────────────────────
 
-class _MakkiMadaniView extends StatelessWidget {
+class _MakkiMadaniView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _MakkiMadaniView({required this.chapters, required this.colorScheme});
 
   @override
+  State<_MakkiMadaniView> createState() => _MakkiMadaniViewState();
+}
+
+class _MakkiMadaniViewState extends State<_MakkiMadaniView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+    final chapters = widget.chapters;
+    final colorScheme = widget.colorScheme;
+
     final meccan = chapters.where((c) => c.isMeccan).toList();
     final medinan = chapters.where((c) => c.isMedinan).toList();
 
@@ -272,7 +317,7 @@ class _MakkiMadaniView extends StatelessWidget {
 //  Tab 4: Revelation Order
 // ────────────────────────────────────────────────────────────────
 
-class _RevelationOrderView extends StatelessWidget {
+class _RevelationOrderView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
@@ -280,8 +325,18 @@ class _RevelationOrderView extends StatelessWidget {
       {required this.chapters, required this.colorScheme});
 
   @override
+  State<_RevelationOrderView> createState() => _RevelationOrderViewState();
+}
+
+class _RevelationOrderViewState extends State<_RevelationOrderView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
-    final sorted = List<ChapterMeta>.from(chapters)
+    super.build(context);
+    final sorted = List<ChapterMeta>.from(widget.chapters)
       ..sort((a, b) => a.revelationOrder.compareTo(b.revelationOrder));
 
     return ListView.separated(
@@ -293,7 +348,7 @@ class _RevelationOrderView extends StatelessWidget {
         final chapter = sorted[index];
         return _SurahCard(
           chapter: chapter,
-          colorScheme: colorScheme,
+          colorScheme: widget.colorScheme,
           showRevelationOrder: true,
         );
       },

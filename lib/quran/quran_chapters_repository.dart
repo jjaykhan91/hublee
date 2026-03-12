@@ -15,11 +15,19 @@ import 'models.dart';
 class QuranChaptersRepository {
   const QuranChaptersRepository();
 
+  static Future<List<ChapterMeta>>? _chaptersCache;
+
   /// Loads all 114 chapters sorted by surah number.
+  /// Result is cached for the app session so Quran tab and reader reuse it.
   ///
   /// Merges per-ayah name/verse data with static metadata for
   /// revelation type, revelation order, and juz ranges.
   Future<List<ChapterMeta>> loadChapters() async {
+    _chaptersCache ??= _loadChaptersImpl();
+    return _chaptersCache!;
+  }
+
+  static Future<List<ChapterMeta>> _loadChaptersImpl() async {
     // Load all sources in parallel.
     final results = await Future.wait([
       rootBundle.loadString(AssetPaths.kfgqpcQuranMushafSmartV8),

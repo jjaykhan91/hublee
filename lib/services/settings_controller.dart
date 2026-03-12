@@ -1,5 +1,5 @@
 /// Manages user-configurable display settings (font zoom levels,
-/// tajweed toggle, Arabic font family) and persists them in
+/// V4 tajweed toggle, Arabic font family) and persists them in
 /// [SharedPreferences].
 library;
 
@@ -52,7 +52,7 @@ class SettingsController extends ChangeNotifier {
   /// Current English text zoom factor (1.0 = 100%).
   double get englishZoom => _englishZoom;
 
-  /// Whether tajweed colour-coding is enabled for Quran text.
+  /// Whether V4 font-based tajweed is enabled for Quran text.
   bool get tajweedEnabled => _tajweedEnabled;
 
   /// Currently selected Arabic font family.

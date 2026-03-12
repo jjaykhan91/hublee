@@ -31,7 +31,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `lib/router.dart` -- GoRouter config with StatefulShellRoute
 - `lib/ui/app_shell.dart` -- Bottom navigation shell
 - `lib/ui/` -- Pages and shared widgets
-- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `HubleeCard`, `SectionHeader`, `ReaderSettingsSheet`, `ScrollScrubber`, `tajweed.dart` (colour engine with `tajweedSpans()` and `tajweedColorAssignments()` testing API)
+- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `HubleeCard`, `SectionHeader`, `ReaderSettingsSheet`, `ScrollScrubber`, `tajweed.dart` (tajweed colour constants for the Tajweed Guide)
 - `lib/router_paths.dart` -- Typed route paths (`AppRoute`); single source for all navigation URLs.
 - `lib/quran/` -- Quran data models and repositories
 - `lib/hadith/` -- Hadith data models and repository
@@ -41,6 +41,11 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `assets/quran/` -- Arabic text JSON, surah metadata JSON, ClearQuran English translations
 - `assets/hadith/` -- Hadith collection JSON files (forties, 9 books, others)
 - `tools/` -- Build-time Dart scripts for fetching and processing data
-- `test/tajweed_baqarah_test.dart` -- Unit tests for tajweed coloring (Surah Al-Baqarah 2:1-5). `test/router_paths_test.dart` -- Tests for `AppRoute` path building.
+- `test/router_paths_test.dart` — `AppRoute` path building.
+- `test/asset_paths_test.dart` — Asset path format and V4 font page clamping.
+- `test/tajweed_colors_test.dart` — Tajweed Guide colour constants.
+- `test/word_by_word_repository_test.dart` — Word-by-word verse parsing.
+- `test/quran_v4_tajweed_repository_test.dart` — V4 script loading and verse data.
+- `test/quran_chapters_repository_test.dart` — 114 chapters and metadata.
 - `docs/ARCHITECTURE.md` -- Layer boundaries, navigation, tokens, and how to add pages or hadith collections.
 - `.cursor/rules/coding-standards.mdc` -- Naming, commenting, and formatting rules

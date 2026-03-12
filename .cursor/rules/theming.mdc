@@ -27,7 +27,7 @@ Custom GitHub-inspired dark palette (not auto-generated from seed):
 
 ## Tajweed Colours
 
-Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, matching quran.com's Madani mushaf scheme. They are NOT theme-dependent (same on light and dark).
+Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, used by the Tajweed Guide page (legend). The reader uses only V4 font-based tajweed; no software engine. Constants match the Madani scheme (quran.com / V4).
 
 | Rule | Constant | Colour | Hex |
 |------|----------|--------|-----|
@@ -41,5 +41,3 @@ Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, m
 | Tafkhim (heavy) | `kTafkhimColor` | Dark Blue | #1565C0 |
 
 `kNotPronouncedColor(Brightness)` is the only brightness-aware colour — returns a different grey for readability on dark vs light backgrounds.
-
-> **Legacy:** `TajweedTheme` (`lib/theme/tajweed_extension.dart`) is still registered in both light and dark `ThemeData` but is **not used** by the tajweed engine. The engine reads colours from the constants above.

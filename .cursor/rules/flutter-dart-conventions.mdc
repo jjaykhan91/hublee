@@ -20,12 +20,12 @@ alwaysApply: true
 ## Theming
 
 - Never hardcode colors -- always use `Theme.of(context).colorScheme`
-- Tajweed colors are standalone constants in `lib/ui/widgets/tajweed.dart` (e.g. `kQalqalaColor`, `kGhunnahColor`, `kMaadConnectedColor`). The legacy `TajweedTheme` extension exists but is **not used** by the tajweed engine.
+- Tajweed colours are standalone constants in `lib/ui/widgets/tajweed.dart` (e.g. `kQalqalaColor`, `kGhunnahColor`) used by the Tajweed Guide. The reader uses only V4 font-based tajweed.
 - Font sizes for Arabic/English are user-configurable via `SettingsScope.of(context)`
 
 ## Arabic Text
 
-- Always use the `ArabicText` widget for rendering Arabic content (handles font, RTL, OpenType features, and optional Tajweed coloring)
+- Always use the `ArabicText` widget for rendering Arabic content (handles font, RTL, OpenType features; set `v4FontFamily` for V4 tajweed in the reader)
 - Do not use raw `Text` widgets for Arabic strings
 - **Never strip diacritics** from Quran Arabic text -- they are essential for correct recitation
 - Use `aya_text` (Uthmani) for display; use `aya_text_emlaey` only for search indexing

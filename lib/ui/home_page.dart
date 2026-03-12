@@ -330,7 +330,6 @@ class _VerseOfTheDayCard extends StatelessWidget {
             if (verse.arabic.isNotEmpty)
               ArabicText(
                 verse.arabic,
-                tajweed: false,
                 fontSize: 20,
                 weight: FontWeight.bold,
                 align: TextAlign.center,
@@ -484,9 +483,8 @@ class _HadithOfTheDayCard extends StatelessWidget {
 
             // Arabic text (compact)
             if (hadith.arabic.isNotEmpty)
-              ArabicText(
-                hadith.arabic,
-                tajweed: false,
+                ArabicText(
+                  hadith.arabic,
                 fontSize: 18,
                 weight: FontWeight.bold,
                 align: TextAlign.center,

@@ -3,7 +3,7 @@
 /// Loads Arabic text (Uthmanic glyph) and ClearQuran English
 /// translation. Supports:
 /// - Bismillah header (except for Al-Fatiha and At-Tawba)
-/// - Tajweed-coloured Arabic rendering
+/// - V4 font-based tajweed (when script + fonts are present)
 /// - Per-ayah bookmarking
 /// - Scroll-to-ayah via query parameter
 /// - In-surah search (filters ayahs within the current surah)
@@ -16,6 +16,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
+import '../quran/quran_v4_tajweed_repository.dart';
+import '../quran/word_by_word_repository.dart';
 import '../quran/surah_info_repository.dart';
 import '../quran/models.dart';
 
@@ -23,10 +25,12 @@ import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../services/qpc_v4_font_loader.dart';
 
 import 'widgets/arabic_text.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
+import 'widgets/tappable_arabic_words.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
 
 /// Displays all ayahs of a single surah with bookmarking and
@@ -52,8 +56,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   final _scrollController = ItemScrollController();
   final _positionsListener = ItemPositionsListener.create();
 
-  /// Cached future so rebuilds don't re-fetch data.
+  /// Cached future for essential data only (chapters, arabic, translation, uthmani, wbw).
+  /// V4 is loaded in the background so the reader can show content immediately.
   late final Future<List<dynamic>> _dataFuture;
+
+  /// V4 tajweed data; populated in background after initial content is shown.
+  Map<int, V4VerseData> _v4SurahData = const {};
 
   /// Ensures last-read is saved only once per page visit.
   bool _hasPersistedLastRead = false;
@@ -70,17 +78,35 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   /// Cycle index for header title: 0=Arabic, 1=English, 2=Meaning, 3=Revelation.
   int _titleCycleIndex = 0;
 
+  // Global selected word state (single active selection across the page).
+  int? _selectedAyahNumber;
+  int? _selectedWordPosition;
+  String? _selectedWordTranslation;
+
   @override
   void initState() {
     super.initState();
-    // Load PUA glyph text (for KFGQPC font), standard Uthmanic
-    // text (for Google Fonts + tajweed), and English translation.
+    // Essential data only so the reader appears quickly. V4 loads in background.
+    final wbwRepo = WordByWordRepository();
     _dataFuture = Future.wait([
       const QuranChaptersRepository().loadChapters(),
       const QuranArabicRepository().loadArabicSurah(widget.surahId),
       const QuranTranslationRepository().loadClearQuran(widget.surahId),
       const QuranArabicRepository().loadUthmaniStandard(widget.surahId),
+      wbwRepo.loadSurah(widget.surahId),
     ]);
+    _loadV4InBackground();
+  }
+
+  /// Loads V4 surah data and page fonts in the background; updates UI when done.
+  void _loadV4InBackground() {
+    final repo = QuranV4TajweedRepository();
+    repo.loadV4Surah(widget.surahId).then((map) {
+      if (!mounted || map.isEmpty) return;
+      final pages = map.values.map((v) => v.pageNumber).toSet();
+      setState(() => _v4SurahData = map);
+      loadV4PageFonts(pages); // Don't await; fonts load in background
+    });
   }
 
   @override
@@ -106,6 +132,20 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _isSearching = false;
       _searchQuery = '';
       _searchController.clear();
+    });
+  }
+
+  void _onWordSelected(int ayahNumber, WordByWordItem? word) {
+    setState(() {
+      if (word == null) {
+        _selectedAyahNumber = null;
+        _selectedWordPosition = null;
+        _selectedWordTranslation = null;
+        return;
+      }
+      _selectedAyahNumber = ayahNumber;
+      _selectedWordPosition = word.position;
+      _selectedWordTranslation = word.translation;
     });
   }
 
@@ -240,8 +280,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         Map<String, String> arabicGlyphAyahs = const {};
         Map<String, String> englishAyahs = const {};
         Map<String, String> arabicStandardAyahs = const {};
+        Map<int, List<WordByWordItem>> wordByWordSurah = const {};
 
-        if (snapshot.hasData) {
+        if (snapshot.hasData && snapshot.data!.length >= 5) {
           final chapters = snapshot.data![0] as List<ChapterMeta>;
           chapterMeta = chapters.firstWhere(
             (chapter) => chapter.id == widget.surahId,
@@ -249,7 +290,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           arabicGlyphAyahs = snapshot.data![1] as Map<String, String>;
           englishAyahs = snapshot.data![2] as Map<String, String>;
           arabicStandardAyahs = snapshot.data![3] as Map<String, String>;
+          wordByWordSurah =
+              snapshot.data![4] as Map<int, List<WordByWordItem>>? ?? const {};
         }
+        // V4 data comes from state (loaded in background).
+        final v4SurahData = _v4SurahData;
 
         return Scaffold(
           appBar: _isSearching
@@ -268,6 +313,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               );
             }
 
+            final hasAnyWordByWord = wordByWordSurah.isNotEmpty;
+            final topInset = hasAnyWordByWord ? 62.0 : 0.0;
+
             if (_isSearching && _searchQuery.isNotEmpty) {
               return _buildSearchResults(
                 context,
@@ -275,6 +323,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 arabicGlyphAyahs,
                 englishAyahs,
                 arabicStandardAyahs,
+                v4SurahData,
+                wordByWordSurah,
+                topInset,
               );
             }
 
@@ -290,7 +341,52 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   arabicGlyphAyahs,
                   englishAyahs,
                   arabicStandardAyahs,
+                  v4SurahData,
+                  wordByWordSurah,
+                  topInset,
                 ),
+                if (hasAnyWordByWord)
+                  Positioned(
+                    top: 8,
+                    left: 16,
+                    right: 16,
+                    child: IgnorePointer(
+                      child: Center(
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _selectedWordTranslation ?? 'Word translation',
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: _selectedWordTranslation != null
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                      fontWeight: _selectedWordTranslation != null
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                    ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ScrollScrubber(
                   itemCount: itemCount,
                   labelBuilder: (index) {
@@ -424,6 +520,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     Map<String, String> arabicGlyphAyahs,
     Map<String, String> englishAyahs,
     Map<String, String> arabicStandardAyahs,
+    Map<int, V4VerseData> v4SurahData,
+    Map<int, List<WordByWordItem>> wordByWordSurah,
+    double topInset,
   ) {
     final queryLower = _searchQuery.toLowerCase();
     final settings = SettingsScope.of(context);
@@ -487,16 +586,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         Expanded(
           child: ListView.separated(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 4 + topInset, 16, 24),
             itemCount: matches.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ayahNumber = matches[index];
-              // When tajweed is on, always use standard text.
               final usePua = isUthmanic && !settings.tajweedEnabled;
-              final arabicText = usePua
-                  ? arabicGlyphAyahs['$ayahNumber']
-                  : arabicStandardAyahs['$ayahNumber'];
+              final v4 = v4SurahData[ayahNumber];
+              final arabicText = (v4 != null && settings.tajweedEnabled)
+                  ? v4.text
+                  : (usePua
+                      ? arabicGlyphAyahs['$ayahNumber']
+                      : arabicStandardAyahs['$ayahNumber']);
               final englishText = englishAyahs['$ayahNumber'];
               final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
               final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
@@ -509,6 +610,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 englishZoom: settings.englishZoom,
                 isBookmarked: isBookmarked,
                 tajweedEnabled: settings.tajweedEnabled,
+                v4Page: v4?.pageNumber,
+                wordByWord: wordByWordSurah[ayahNumber],
+                selectedWordPosition:
+                    _selectedAyahNumber == ayahNumber ? _selectedWordPosition : null,
+                onWordSelected: (w) => _onWordSelected(ayahNumber, w),
                 onBookmarkToggle: () {
                   bookmarkService.toggleBookmark(Bookmark.quran(
                     surahId: widget.surahId,
@@ -534,6 +640,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     Map<String, String> arabicGlyphAyahs,
     Map<String, String> englishAyahs,
     Map<String, String> arabicStandardAyahs,
+    Map<int, V4VerseData> v4SurahData,
+    Map<int, List<WordByWordItem>> wordByWordSurah,
+    double topInset,
   ) {
     final totalAyahs = chapterMeta.versesCount;
 
@@ -584,7 +693,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       itemScrollController: _scrollController,
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 12 + topInset, 16, 24),
       itemCount: itemCount,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -598,13 +707,13 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         // Normal ayah card.
         final ayahIndex = index - (hasBismillah ? 1 : 0);
         final ayahNumber = ayahIndex + 1;
-        // When tajweed is enabled, always use standard Uthmanic text
-        // (parseable Arabic with full tashkeel). When tajweed is off,
-        // KFGQPC uses PUA glyph text for its optimised rendering.
+        final v4 = v4SurahData[ayahNumber];
         final usePua = isUthmanic && !settings.tajweedEnabled;
-        final arabicText = usePua
-            ? arabicGlyphAyahs['$ayahNumber']
-            : arabicStandardAyahs['$ayahNumber'];
+        final arabicText = (v4 != null && settings.tajweedEnabled)
+            ? v4.text
+            : (usePua
+                ? arabicGlyphAyahs['$ayahNumber']
+                : arabicStandardAyahs['$ayahNumber']);
         final englishText = englishAyahs['$ayahNumber'];
         final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
         final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
@@ -617,6 +726,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           englishZoom: settings.englishZoom,
           isBookmarked: isBookmarked,
           tajweedEnabled: settings.tajweedEnabled,
+          v4Page: v4?.pageNumber,
+          wordByWord: wordByWordSurah[ayahNumber],
+          selectedWordPosition:
+              _selectedAyahNumber == ayahNumber ? _selectedWordPosition : null,
+          onWordSelected: (w) => _onWordSelected(ayahNumber, w),
           onBookmarkToggle: () {
             bookmarkService.toggleBookmark(Bookmark.quran(
               surahId: widget.surahId,
@@ -671,7 +785,6 @@ class _BismillahHeader extends StatelessWidget {
           '\u0627\u0644\u0644\u0651\u064E\u0647\u0650 '
           '\u0627\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 '
           '\u0627\u0644\u0631\u0651\u064E\u062D\u0650\u064A\u0645\u0650',
-          tajweed: false,
           fontSize: 32 * arabicZoom,
           weight: FontWeight.bold,
           align: TextAlign.center,
@@ -683,8 +796,11 @@ class _BismillahHeader extends StatelessWidget {
 }
 
 /// A single ayah card showing the ayah number badge, Arabic text
-/// with tajweed, English translation, and a bookmark toggle.
-class _AyahCard extends StatelessWidget {
+/// (tappable word-by-word when data exists, else block text; V4 tajweed when on),
+/// English translation, and a bookmark toggle.
+/// When word-by-word is enabled, a fixed "Word translation" bar at the top
+/// shows the default label or the selected word's translation.
+class _AyahCard extends StatefulWidget {
   final int ayahNumber;
   final String? arabic;
   final String? english;
@@ -692,6 +808,12 @@ class _AyahCard extends StatelessWidget {
   final double englishZoom;
   final bool isBookmarked;
   final bool tajweedEnabled;
+  /// When non-null and tajweed is on, Arabic is rendered with QPC V4 font.
+  final int? v4Page;
+  /// When non-null and non-empty, Arabic is shown as tappable words.
+  final List<WordByWordItem>? wordByWord;
+  final int? selectedWordPosition;
+  final ValueChanged<WordByWordItem?>? onWordSelected;
   final VoidCallback onBookmarkToggle;
   final bool isMeccan;
 
@@ -703,10 +825,19 @@ class _AyahCard extends StatelessWidget {
     required this.englishZoom,
     required this.isBookmarked,
     this.tajweedEnabled = true,
+    this.v4Page,
+    this.wordByWord,
+    this.selectedWordPosition,
+    this.onWordSelected,
     required this.onBookmarkToggle,
     required this.isMeccan,
   });
 
+  @override
+  State<_AyahCard> createState() => _AyahCardState();
+}
+
+class _AyahCardState extends State<_AyahCard> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -717,7 +848,30 @@ class _AyahCard extends StatelessWidget {
 
     final cardColor = Theme.of(context).brightness == Brightness.dark
         ? colorScheme.surface
-        : (isMeccan ? makkiBg : madaniBg);
+        : (widget.isMeccan ? makkiBg : madaniBg);
+
+    final hasWordByWord =
+        widget.wordByWord != null && widget.wordByWord!.isNotEmpty;
+
+    // Local copy we can safely modify (e.g. to inject Arabic from the verse text).
+    List<WordByWordItem> localWbw = widget.wordByWord ?? const [];
+
+    // If we have WBW data but no Arabic per-word yet, derive it by splitting the verse text.
+    if (hasWordByWord && widget.arabic != null && widget.arabic!.isNotEmpty) {
+      final raw = widget.arabic!;
+      final arabicWords =
+          raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      localWbw = [
+        for (var i = 0; i < localWbw.length; i++)
+          WordByWordItem(
+            position: localWbw[i].position,
+            arabic: i < arabicWords.length && localWbw[i].arabic.isEmpty
+                ? arabicWords[i]
+                : localWbw[i].arabic,
+            translation: localWbw[i].translation,
+          ),
+      ];
+    }
 
     return Card(
       elevation: 0,
@@ -742,7 +896,7 @@ class _AyahCard extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    '$ayahNumber',
+                    '${widget.ayahNumber}',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.w700,
@@ -752,37 +906,54 @@ class _AyahCard extends StatelessWidget {
                 const Spacer(),
                 IconButton(
                   icon: Icon(
-                    isBookmarked
+                    widget.isBookmarked
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_outline_rounded,
-                    color: isBookmarked
+                    color: widget.isBookmarked
                         ? colorScheme.primary
                         : colorScheme.onSurface.withValues(alpha: 0.3),
                     size: 22,
                   ),
-                  onPressed: onBookmarkToggle,
+                  onPressed: widget.onBookmarkToggle,
                   visualDensity: VisualDensity.compact,
-                  tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                  tooltip:
+                      widget.isBookmarked ? 'Remove bookmark' : 'Bookmark',
                 ),
               ],
             ),
             const SizedBox(height: 10),
 
-            // Arabic text with tajweed colouring
-            if (arabic != null && arabic!.isNotEmpty)
-              ArabicText(
-                arabic!,
-                tajweed: tajweedEnabled,
-                fontSize: 34 * arabicZoom,
-                weight: FontWeight.bold,
-              ),
-            if (arabic != null && arabic!.isNotEmpty)
+            // Arabic: tappable word-by-word (when data exists) or block with tajweed
+            if (widget.arabic != null && widget.arabic!.isNotEmpty)
+              (hasWordByWord)
+                  ? TappableArabicWords(
+                      words: localWbw,
+                      fontSize: 34 * widget.arabicZoom,
+                      fontWeight: FontWeight.bold,
+                      v4FontFamily:
+                          (widget.tajweedEnabled && widget.v4Page != null)
+                              ? v4PageFontFamily(widget.v4Page!)
+                              : null,
+                      color: colorScheme.onSurface,
+                      selectedWordPosition: widget.selectedWordPosition,
+                      onWordSelected: widget.onWordSelected,
+                    )
+                  : ArabicText(
+                      widget.arabic!,
+                      fontSize: 34 * widget.arabicZoom,
+                      weight: FontWeight.bold,
+                      v4FontFamily:
+                          (widget.tajweedEnabled && widget.v4Page != null)
+                              ? v4PageFontFamily(widget.v4Page!)
+                              : null,
+                    ),
+            if (widget.arabic != null && widget.arabic!.isNotEmpty)
               const SizedBox(height: 20),
 
             // English translation
-            if (english != null && english!.isNotEmpty)
+            if (widget.english != null && widget.english!.isNotEmpty)
               Text(
-                english!,
+                widget.english!,
                 textAlign: TextAlign.left,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
@@ -791,7 +962,7 @@ class _AyahCard extends StatelessWidget {
                         'Arial',
                         'sans-serif',
                       ],
-                      fontSize: 17 * englishZoom,
+                      fontSize: 17 * widget.englishZoom,
                       height: 1.5,
                       letterSpacing: 0.1,
                       color: colorScheme.onSurface.withValues(alpha: 0.85),

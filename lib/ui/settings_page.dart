@@ -50,7 +50,6 @@ class SettingsPage extends StatelessWidget {
               '\u0627\u0644\u0644\u0651\u064E\u0647\u0650 '
               '\u0627\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 '
               '\u0627\u0644\u0631\u0651\u064E\u062D\u0650\u064A\u0645\u0650',
-              tajweed: false,
               fontSize: 26 * settings.arabicZoom,
               weight: FontWeight.bold,
             ),
@@ -147,7 +146,7 @@ class SettingsPage extends StatelessWidget {
               title: const Text('Tajweed Colors'),
               subtitle: Text(
                 settings.tajweedEnabled
-                    ? 'Colour-coded tajweed rules shown'
+                    ? 'V4 font-based tajweed shown'
                     : 'Plain Arabic text displayed',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
@@ -176,7 +175,7 @@ class SettingsPage extends StatelessWidget {
               ),
               title: const Text('Tajweed Guide'),
               subtitle: Text(
-                'Learn tajweed rules and color coding',
+                'Learn tajweed rules and colour legend',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               trailing: const Icon(Icons.chevron_right_rounded),

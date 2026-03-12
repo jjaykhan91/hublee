@@ -53,13 +53,13 @@ When tajweed is **enabled**, always display standard Uthmanic text (`ar/{surahId
 
 ## Tajweed Coloring
 
-Tajweed colours follow the **Madani mushaf** scheme used by quran.com (github.com/quran/tajweed). Colors are defined as public constants in `lib/ui/widgets/tajweed.dart`.
+**QPC V4 Tajweed only** — font-based tajweed from Tarteel QUL ([font](https://qul.tarteel.ai/resources/font/240), [script](https://qul.tarteel.ai/resources/quran-script/47)). Same approach as Quran.com: tajweed is baked into the font. Add script as `assets/quran/qpc-v4.json` and fonts via `dart run tools/download_v4_tajweed.dart`. When V4 data is loaded for a surah and tajweed is enabled, the reader uses V4 glyph text + page font; otherwise it shows plain Arabic (no colour coding).
 
-The engine works with standard Uthmanic Arabic text from `assets/quran/ar/`. When tajweed is enabled, the reader always uses standard Uthmanic text regardless of font selection (so the KFGQPC font also gets tajweed). When tajweed is OFF and KFGQPC font is selected, PUA glyph text is used for optimal rendering.
+Colour constants for the **Tajweed Guide** page (legend only) remain in `lib/ui/widgets/tajweed.dart` (e.g. `kQalqalaColor`, `kGhunnahColor`) so the guide can display the same Madani scheme as the V4 font.
 
-Currently implemented rules verified against quran.com's `uthmani_tajweed` API for Surah Al-Baqarah 2:1-5:
+Colour legend (Madani scheme, matches V4 font and quran.com) for the Tajweed Guide:
 
-**Core rules (match Quran.com legend):**
+**Core rules:**
 - **Silent letter** (grey #9E9E9E): U+06DF marker, Hamza Wasl (ٱ) non-initial, Lam Shamsiyah, Silent Waw (e.g. الصلوة).
 - **Normal madd (2)** (pink #E91E8C): tatweel + superscript alef (ـٰ); lam-alif (لَا).
 - **Separated madd (2/4/6)** (orange #FB8C00): maad letter before explicit sukun, end of phrase, or any following letter that is not hamza/shadda (permissible madd).
@@ -79,16 +79,6 @@ Currently implemented rules verified against quran.com's `uthmani_tajweed` API f
 - **Hamza Wasl** (grey): ٱ (U+0671) not at start of ayah.
 - **Lam Shamsiyah** (grey): لْ in ال before sun letter with shadda.
 - **Silent Waw** (grey): waw + U+0670 where previous has fatha (e.g. الصلوة).
-
-**Key implementation notes:**
-- `_hasVowel()` checks for fatha, kasra, damma, all three tanween, and shadda.
-- `_hasExplicitSukun()` checks for U+0652 / U+06E1 — used for maad detection (bare letters without marks do NOT count as explicit sukun).
-- `_isMaadLetter()` detects alef/waw/ya preceded by corresponding vowel, tatweel with superscript alef (U+0670), and alef-madda (U+0622). Alef-wasla (U+0671) is explicitly excluded.
-- Alef-wasla is skipped when checking what follows a maad letter (it's silent in continuous reading).
-- Tanween carrier alef/alef-maqsura is greyed out for Idgham/Iqlab detection (matching quran.com).
-- Two-part coloring uses an `overrides` map: when processing noon/tanween, the receiving letter index is pre-assigned its colour.
-- **Never use WidgetSpan** in tajweed spans — WidgetSpan breaks Arabic cursive letter joining because each inline widget is shaped independently. All spans must be TextSpan so the paragraph-level text shaper can join letters across span boundaries. U+0653 and U+06DF characters are kept in the text as-is and rendered natively by the font.
-- 102 unit tests in `test/tajweed_baqarah_test.dart` verify every letter position in 2:1-5 against quran.com's API, plus span type integrity and colour summary counts.
 
 - **Quran Reading & Tajweed guide:** opened from the surah reader app bar (book icon `Icons.menu_book_rounded`) via `showQuranReadingGuideSheet()`. It shows Sajdah, Waqf signs, Tajweed colour legend, and recitation tips; includes a button to open the full Tajweed Guide.
 - **Full Tajweed Guide** page (`tajweed_guide_page.dart`) is accessible from Settings, the reader settings sheet, and from within the Quran Reading guide sheet.

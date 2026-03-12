@@ -54,6 +54,9 @@ flutter:
     - assets/images/masjid_nabawi_madani.png
     - assets/images/HubleeAppLogo.png
     - assets/images/HubleeBackground.png
+    - assets/quran/qpc-v4.json
+    - assets/quran/english-wbw-translation.json
+    - assets/fonts/qpc_v4_tajweed/
 
   fonts:
     - family: KFGQPCQuranicFontHafsSmart

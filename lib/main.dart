@@ -13,6 +13,7 @@ import 'services/settings_scope.dart';
 import 'services/app_scope.dart';
 import 'services/bookmark_service.dart';
 import 'services/bookmark_scope.dart';
+import 'quran/quran_chapters_repository.dart';
 import 'router.dart';
 
 void main() {
@@ -44,6 +45,10 @@ class _HubleeAppState extends State<HubleeApp> {
     _themeModeService.load().then((mode) => setState(() => _themeMode = mode));
     _settingsController.load();
     _bookmarkService.load();
+    // Preload chapters cache so Quran tab and reader open faster.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      const QuranChaptersRepository().loadChapters();
+    });
   }
 
   /// Toggles between light and dark theme, then persists the choice.

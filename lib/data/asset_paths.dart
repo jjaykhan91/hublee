@@ -27,7 +27,7 @@ class AssetPaths {
   /// full tashkeel): `assets/quran/ar/<surahId>.json`.
   ///
   /// Downloaded from quran.com API `text_uthmani` field. Use for
-  /// non-KFGQPC fonts and tajweed colour analysis.
+  /// non-KFGQPC fonts and plain display.
   static String quranUthmaniStandard(int surahId) =>
       '$quranRoot/ar/$surahId.json';
 
@@ -45,7 +45,7 @@ class AssetPaths {
   ///
   /// Contains all 6236 ayat with `aya_text` (Uthmanic glyph),
   /// `aya_text_emlaey` (plain Arabic), surah metadata, juz/page
-  /// info, and tajweed colour mappings.
+  /// info.
   static const kfgqpcQuranMushafSmartV8 =
       'assets/quran/KFGQPCQuranMushaf_smart_v8.json';
 
@@ -60,4 +60,18 @@ class AssetPaths {
 
   /// Surah info summaries (short_text + full text) for all 114 surahs.
   static const surahInfo = 'assets/quran/surah_info.json';
+
+  /// QPC V4 Tajweed script (word-level or verse-level JSON). From Tarteel QUL script 47. Add via tools/download_v4_tajweed.dart.
+  static const quranV4TajweedScript = 'assets/quran/qpc-v4.json';
+
+  /// QPC V4 Tajweed font for a given mushaf page (1–604).
+  /// Fonts live under assets/fonts/qpc_v4_tajweed/p1.ttf … p604.ttf.
+  static String quranV4TajweedFont(int page) =>
+      'assets/fonts/qpc_v4_tajweed/p${page.clamp(1, 604)}.ttf';
+
+  /// Word-by-word translation (verse_key -> { words: [ { position, text/arabic, translation } ] }).
+  /// From QUL Resources (Translations → Word by word). Add JSON to enable tap-word popup.
+  static const quranWordByWordTranslation =
+      'assets/quran/english-wbw-translation.json';
+
 }

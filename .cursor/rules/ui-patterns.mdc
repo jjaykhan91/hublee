@@ -89,8 +89,8 @@ Each surah card: left = number badge + English name (and translation on some tab
 
 ## Reusable Widgets
 
-- `ArabicText` -- Arabic rendering with optional Tajweed coloring (uses `tajweedSpans()` internally)
-- `tajweedSpans()` -- Public API in `lib/ui/widgets/tajweed.dart` that converts raw Qur'anic text into colour-coded `InlineSpan`s. Also exposes `tajweedColorAssignments()` for unit testing without `BuildContext`.
+- `ArabicText` -- Arabic rendering; when `v4FontFamily` is set, uses QPC V4 font (tajweed in font). No software tajweed.
+- `tajweed.dart` -- Tajweed colour constants only (for the Tajweed Guide page legend). Reader uses V4 font-based tajweed only.
 - `GradientTile` -- Card with gradient background, icon, title, subtitle
 - `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)
 - `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`
