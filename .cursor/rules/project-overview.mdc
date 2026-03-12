@@ -14,7 +14,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - **Navigation**: go_router with `StatefulShellRoute.indexedStack` for bottom navigation
 - **Local storage**: `SharedPreferences` for settings, bookmarks, and last-read positions
 - **UI**: Material Design 3, custom light/dark themes, NavigationBar (5 tabs)
-- **Arabic rendering**: Custom `KFGQPCQuranicFontHafsSmart` font with Tajweed coloring
+- **Arabic rendering**: `KFGQPCQuranicFontHafsSmart` + QPC V4 page fonts for font-based tajweed
 - **Animations**: `flutter_animate` for staggered list entry and card animations
 
 ## Architecture
@@ -24,7 +24,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - **Service layer**: `ThemeModeService`, `SettingsController`, `BookmarkService`, `DailyContentService`, `QuranSearchService`, `HadithSearchService` handle business logic and persistence.
 - **Router**: `lib/router.dart` defines all routes using go_router. Use the typed **`AppRoute`** API in `lib/router_paths.dart` for all navigation (e.g. `context.push(AppRoute.surah(id))`, `AppRoute.hadithBook(...)`). Do not hard-code path strings.
 - **Design tokens**: `lib/theme/app_tokens.dart` — use `AppRadius`, `AppSpacing`, and `AppShadows` for consistent layout and shadows.
-- **Pages**: `QuranPage` (surah list with Juz/Makki-Madani/Revelation tabs), `SurahReaderPage` (reading with scrubber + settings sheet), `HadithPage` (all books flat), `HadithReaderPage` (reading with scrubber + settings sheet), `SearchPage`, `BookmarksPage`, `SettingsPage`, `HomePage` (with Verse/Hadith of the Day)
+- **Pages**: `QuranPage` (surah list with Juz/Makki-Madani/Revelation tabs), `SurahReaderPage` (reading with scrubber + settings sheet + single floating word-by-word translation bar), `HadithPage` (all books flat), `HadithReaderPage` (reading with scrubber + settings sheet), `SearchPage`, `BookmarksPage`, `SettingsPage`, `HomePage` (with Verse/Hadith of the Day)
 
 ## Key Directories
 
@@ -36,9 +36,9 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `lib/quran/` -- Quran data models and repositories
 - `lib/hadith/` -- Hadith data models and repository
 - `lib/services/` -- Settings, theme, bookmarks, scopes, search models, daily content
-- `lib/theme/` -- Light/dark theme config and Tajweed color extension
+- `lib/theme/` -- Light/dark theme configuration
 - `lib/data/` -- `AssetPaths` helper for asset file paths
-- `assets/quran/` -- Arabic text JSON, surah metadata JSON, ClearQuran English translations
+- `assets/quran/` -- Arabic text JSON, surah metadata JSON, ClearQuran English translations, WBW English (`english-wbw-translation.json`)
 - `assets/hadith/` -- Hadith collection JSON files (forties, 9 books, others)
 - `tools/` -- Build-time Dart scripts for fetching and processing data
 - `test/router_paths_test.dart` — `AppRoute` path building.

@@ -43,6 +43,7 @@ alwaysApply: true
 
 - Use repository classes to load data from assets -- never call `rootBundle` directly in widgets
 - Asset paths are centralized in the `AssetPaths` class (`lib/data/asset_paths.dart`)
+- Quran word-by-word uses `assets/quran/english-wbw-translation.json` (`s:a:w` keys). Keep UI plain-English only with a single floating translation bar in the reader.
 
 ## Bookmarks
 

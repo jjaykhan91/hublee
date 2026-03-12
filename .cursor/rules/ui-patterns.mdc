@@ -59,6 +59,11 @@ Both reader pages share these features:
 - Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
 - Arabic with tajweed coloring
 - Tajweed legend at the bottom
+- **Word-by-word UX (plain English):**
+  - One **global floating translation bar** at the top of the reader (`Word translation` default).
+  - Tapping an Arabic word updates that single bar with the selected word translation.
+  - Only one selected word is active at a time across the page; selecting another word clears the previous selection.
+  - No per-ayah translation chips/rows; translation appears only in the floating bar.
 
 ### Hadith Reader specifics
 - Narrator shown in a distinct container

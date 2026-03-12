@@ -314,7 +314,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             }
 
             final hasAnyWordByWord = wordByWordSurah.isNotEmpty;
-            final topInset = hasAnyWordByWord ? 62.0 : 0.0;
+            final topInset = hasAnyWordByWord ? 74.0 : 0.0;
 
             if (_isSearching && _searchQuery.isNotEmpty) {
               return _buildSearchResults(
@@ -347,7 +347,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 ),
                 if (hasAnyWordByWord)
                   Positioned(
-                    top: 8,
+                    top: 8 + MediaQuery.of(context).padding.top * 0.15,
                     left: 16,
                     right: 16,
                     child: IgnorePointer(
@@ -355,33 +355,83 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                         child: Container(
                           constraints: const BoxConstraints(maxWidth: 420),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
+                            horizontal: 14,
+                            vertical: 9,
                           ),
                           decoration: BoxDecoration(
                             color: Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest
-                                .withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(12),
+                                .withValues(alpha: 0.86),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant
+                                  .withValues(alpha: 0.32),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            _selectedWordTranslation ?? 'Word translation',
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: _selectedWordTranslation != null
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                      fontWeight: _selectedWordTranslation != null
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.translate_rounded,
+                                size: 16,
+                                color: _selectedWordTranslation != null
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.55),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 160),
+                                  transitionBuilder: (child, animation) =>
+                                      FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                  child: Text(
+                                    _selectedWordTranslation ??
+                                        'Word translation',
+                                    key: ValueKey<String>(
+                                      _selectedWordTranslation ??
+                                          'Word translation',
                                     ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color:
+                                              _selectedWordTranslation != null
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.7),
+                                          fontWeight:
+                                              _selectedWordTranslation != null
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

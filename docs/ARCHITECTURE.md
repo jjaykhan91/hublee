@@ -22,6 +22,7 @@ All route paths are built via [AppRoute](lib/router_paths.dart). Use `AppRoute.s
 - [HubleeCard](lib/ui/widgets/hublee_card.dart): Standard card with optional tap and consistent padding.
 - [SectionHeader](lib/ui/widgets/section_header.dart): Section titles with optional icon.
 - [GradientTile](lib/ui/widgets/gradient_tile.dart): Explore-style tiles on the home page.
+- Surah reader WBW behavior: one global floating "Word translation" bar at the top; tap any Arabic word to update it (single active selection only).
 
 ## Scopes and state
 
