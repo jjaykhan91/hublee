@@ -31,7 +31,7 @@ class SettingsPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           // ── Display section ──────────────────────────────
-          _SectionHeader(
+          const _SectionHeader(
             'Display',
             icon: Icons.text_fields_rounded,
           )
@@ -155,8 +155,7 @@ class SettingsPage extends StatelessWidget {
                 value: settings.tajweedEnabled,
                 onChanged: (v) => settings.tajweedEnabled = v,
               ),
-              onTap: () =>
-                  settings.tajweedEnabled = !settings.tajweedEnabled,
+              onTap: () => settings.tajweedEnabled = !settings.tajweedEnabled,
             ),
           )
               .animate()
@@ -189,7 +188,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // ── Appearance section ───────────────────────────
-          _SectionHeader(
+          const _SectionHeader(
             'Appearance',
             icon: Icons.palette_outlined,
           )
@@ -228,7 +227,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────
-          _SectionHeader(
+          const _SectionHeader(
             'About',
             icon: Icons.info_outline_rounded,
           )

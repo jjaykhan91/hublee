@@ -59,7 +59,7 @@ class _QuranReadingGuideContent extends StatelessWidget {
         const SizedBox(height: 20),
 
         // ─── Sajdah (Prostration) ───
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.pan_tool_rounded,
           title: 'Sajdah (Prostration)',
           arabic: '\u0633\u062C\u0648\u062F',
@@ -136,50 +136,50 @@ class _QuranReadingGuideContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ─── Waqf (Stop) Signs ───
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.flag_rounded,
           title: 'Waqf (Stop) Signs',
           arabic:
               '\u0623\u0639\u0644\u0627\u0645 \u0627\u0644\u0648\u0642\u0641',
         ),
         const SizedBox(height: 8),
-        Card(
+        const Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u0645\u0640',
                   name: 'Waqf Lazim',
                   meaning: 'Mandatory stop. Meaning changes if you continue.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u0644\u0627',
                   name: 'La Taqif',
                   meaning: 'Do not stop. Phrase is incomplete.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u062C',
                   name: 'Waqf Jaiz',
                   meaning: 'Permissible to stop or continue.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u0642\u0644\u0649',
                   name: 'Qeela Alayhil-Waqf',
                   meaning: 'Stopping is preferred.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u0635\u0644\u0649',
                   name: 'Qeelal-Waslu',
                   meaning: 'Continuing is preferred.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u0633',
                   name: 'Saktah',
                   meaning: 'Brief pause without breathing.',
                 ),
-                const _WaqfRow(
+                _WaqfRow(
                   symbol: '\u2234',
                   name: 'Mu\'anaqah',
                   meaning: 'Stop at one of two marked positions, not both.',
@@ -191,7 +191,7 @@ class _QuranReadingGuideContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ─── Tajweed Colour Legend ───
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.palette_rounded,
           title: 'Tajweed Colours',
           arabic:
@@ -208,28 +208,29 @@ class _QuranReadingGuideContent extends StatelessWidget {
                   color: kNotPronouncedColor(Theme.of(context).brightness),
                   rule: 'Silent letter',
                 ),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
                   color: kNormalMaadColor,
                   rule: 'Normal madd (2)',
                 ),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
                   color: kMaadSukoonColor,
                   rule: 'Separated madd (2/4/6)',
                 ),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
                   color: kMaadConnectedColor,
                   rule: 'Connected madd (4/5)',
                 ),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
                   color: kMaadLongColor,
                   rule: 'Necessary madd (6)',
                 ),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
                   color: kGhunnahColor,
                   rule: 'Ghunnah / Ikhfa\'',
                 ),
-                _TajweedLegendRow(color: kQalqalaColor, rule: 'Qalqala (echo)'),
-                _TajweedLegendRow(
+                const _TajweedLegendRow(
+                    color: kQalqalaColor, rule: 'Qalqala (echo)'),
+                const _TajweedLegendRow(
                   color: kTafkhimColor,
                   rule: 'Tafkhim (heavy)',
                 ),
@@ -252,7 +253,7 @@ class _QuranReadingGuideContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ─── Recitation tips ───
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.record_voice_over_rounded,
           title: 'Recitation',
           arabic: '\u0627\u0644\u062A\u0644\u0627\u0648\u0629',
@@ -393,9 +394,8 @@ class _WaqfRow extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontFamily: 'KFGQPCQuranicFontHafsSmart',
               ),
-              textDirection: symbol == '∴'
-                  ? TextDirection.ltr
-                  : TextDirection.rtl,
+              textDirection:
+                  symbol == '∴' ? TextDirection.ltr : TextDirection.rtl,
             ),
           ),
           Expanded(
