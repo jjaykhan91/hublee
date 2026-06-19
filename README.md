@@ -1,19 +1,63 @@
-# hublee
+# Hublee
 
-A new Flutter project.
+Offline-first Flutter app for reading the Quran and Hadith.
 
-## Getting Started
+## Quick start
 
-This project is a starting point for a Flutter application.
+**New machine or fresh clone:**
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+cd hublee
+.\scripts\setup.ps1
+flutter run -d chrome
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+**In Cursor / VS Code:** open this folder → install the **Dart** extension → **Run → Hublee (Chrome)** (F5).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Full setup, troubleshooting, and daily workflow: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
 
+## Prerequisites (summary)
 
-Docs: token endpoint + headers + base URLs + scope come from Quran Foundation quick start; you must send x-auth-token and x-client-id with each call.
+| Requirement | Required for |
+|-------------|--------------|
+| [Flutter SDK](https://docs.flutter.dev/get-started/install/windows) (Dart 3.4+) | Everything |
+| **Developer Mode** (Windows) | `flutter pub get` / plugin symlinks |
+| **Chrome** | `flutter run -d chrome` (easiest local target) |
+| **Visual Studio** + C++ workload | `flutter run -d windows` only |
+| **Android Studio** | Android emulator / device only |
+
+Add Flutter to PATH (once per machine):
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+  "Path",
+  "$env:USERPROFILE\flutter\bin;" + [Environment]::GetEnvironmentVariable("Path", "User"),
+  "User"
+)
+```
+
+Restart the terminal after updating PATH.
+
+## Common commands
+
+```powershell
+flutter pub get          # after pubspec changes
+flutter test             # unit tests
+flutter run -d chrome    # run in browser
+flutter analyze          # static analysis
+dart format lib test     # format code
+```
+
+## Documentation
+
+| Doc | Contents |
+|-----|----------|
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Open project, load deps, run, test, troubleshoot |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, navigation, adding pages & hadith collections |
+| [.cursor/rules/](.cursor/rules/) | Quran/Hadith UI rules, theming, coding standards |
+| [assets/fonts/README.md](assets/fonts/README.md) | Font files and re-download links |
+
+## Runtime vs build tools
+
+- **App runtime:** fully offline; all data in `assets/`. No `.env` needed.
+- **Data regeneration:** optional `tools/` scripts use `.env` (see `.env.example`) and Quran Foundation API credentials.

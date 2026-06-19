@@ -2,6 +2,8 @@
 
 This document describes the main layers and conventions so the app stays easy to maintain and scale.
 
+> **Getting the project running locally?** See [DEVELOPMENT.md](DEVELOPMENT.md) for Flutter setup, opening the repo in Cursor/VS Code, `flutter pub get`, run targets, and troubleshooting.
+
 ## Layers
 
 - **UI** (`lib/ui/`): Pages and widgets only. No direct `rootBundle` or `SharedPreferences` usage. Navigation uses the typed [AppRoute](lib/router_paths.dart) API.

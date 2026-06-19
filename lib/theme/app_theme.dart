@@ -5,6 +5,7 @@
 /// UthmanicHafs font with generous line height for readability.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

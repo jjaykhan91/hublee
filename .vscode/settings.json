@@ -1,4 +1,5 @@
 {
+  "dart.flutterSdkPath": "C:\\Users\\MightK\\flutter",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "Dart-Code.dart-code",
   "editor.rulers": [80],
