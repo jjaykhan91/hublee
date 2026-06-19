@@ -16,6 +16,8 @@ flutter run -d chrome
 
 Full setup, troubleshooting, and daily workflow: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
 
+**GitHub (push/pull/PRs):** run `.\scripts\configure-github.ps1` once — see **[docs/GITHUB.md](docs/GITHUB.md)**
+
 ## Prerequisites (summary)
 
 | Requirement | Required for |
@@ -53,6 +55,7 @@ dart format lib test     # format code
 | Doc | Contents |
 |-----|----------|
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Open project, load deps, run, test, troubleshoot |
+| [docs/GITHUB.md](docs/GITHUB.md) | Git identity, SSH, `gh` CLI, push/PR workflow |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, navigation, adding pages & hadith collections |
 | [.cursor/rules/](.cursor/rules/) | Quran/Hadith UI rules, theming, coding standards |
 | [assets/fonts/README.md](assets/fonts/README.md) | Font files and re-download links |

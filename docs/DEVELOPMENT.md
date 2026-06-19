@@ -228,8 +228,21 @@ Install missing SDK components via Android Studio → SDK Manager.
 
 Stop the app and run again, or run `flutter clean` then `flutter pub get` if assets were added/renamed in `pubspec.yaml`.
 
+## GitHub
+
+Account: **jjaykhan91** · email: **jjaykhan91@gmail.com** · repo: [github.com/jjaykhan91/hublee](https://github.com/jjaykhan91/hublee)
+
+One-time setup (git identity, SSH, `gh` login):
+
+```powershell
+.\scripts\configure-github.ps1
+```
+
+Full details, manual steps, and troubleshooting: **[GITHUB.md](GITHUB.md)**
+
 ## Further reading
 
+- [GITHUB.md](GITHUB.md) — GitHub CLI, SSH, push/PR workflow
 - [ARCHITECTURE.md](ARCHITECTURE.md) — layers, navigation, how to add pages
 - [.cursor/rules/](../.cursor/rules/) — UI patterns, Quran/Hadith display rules, theming
 - [Flutter docs](https://docs.flutter.dev/)
