@@ -6,12 +6,13 @@
 ///   bundled KFGQPCQuranicFontHafsSmart font. Not parseable for
 ///   tajweed because it uses Private Use Area characters.
 /// - **Standard Uthmanic** (`assets/quran/ar/{surahId}.json`) —
-///   standard Arabic Unicode with full tashkeel, downloaded from
-///   the quran.com API `text_uthmani` field. Works with any Arabic
-///   font (Amiri, Scheherazade, Noto Naskh) and supports tajweed
-///   colour analysis.
+///   standard Arabic Unicode with full tashkeel. Works with any
+///   Arabic font and supports tajweed colour analysis.
 /// - **Imla'i** (`aya_text_emlaey`) — simplified spelling for
 ///   search indexing only.
+///
+/// The mushaf JSON is decoded at most once per session and shared
+/// across glyph, emlaey, and search loads.
 library;
 
 import 'dart:convert';
@@ -24,6 +25,14 @@ import '../data/asset_paths.dart';
 class QuranArabicRepository {
   const QuranArabicRepository();
 
+  /// Shared in-flight / completed decode of the full mushaf rows.
+  static Future<List<dynamic>>? _mushafRowsFuture;
+
+  /// Per-surah caches: surahId → ayahNumber → text.
+  static final Map<int, Map<String, String>> _glyphCache = {};
+  static final Map<int, Map<String, String>> _emlaeyCache = {};
+  static final Map<int, Map<String, String>> _uthmaniCache = {};
+
   /// Returns a map of `{ ayahNumber: arabicText }` for [surahId].
   ///
   /// When [useGlyphText] is `true` (the default) the KFGQPC PUA
@@ -33,11 +42,11 @@ class QuranArabicRepository {
     int surahId, {
     bool useGlyphText = true,
   }) async {
-    final rawJson = await rootBundle.loadString(
-      AssetPaths.kfgqpcQuranMushafSmartV8,
-    );
-    final List<dynamic> rows = json.decode(rawJson);
+    final cache = useGlyphText ? _glyphCache : _emlaeyCache;
+    final cached = cache[surahId];
+    if (cached != null) return cached;
 
+    final rows = await _loadMushafRows();
     final column = useGlyphText ? 'aya_text' : 'aya_text_emlaey';
     final ayahMap = <String, String>{};
 
@@ -51,6 +60,7 @@ class QuranArabicRepository {
       }
     }
 
+    cache[surahId] = ayahMap;
     return ayahMap;
   }
 
@@ -59,17 +69,34 @@ class QuranArabicRepository {
   ///
   /// These files were downloaded from the quran.com API
   /// `text_uthmani` field and contain proper harakat for rendering
-  /// with Google Fonts and tajweed colour analysis.
+  /// with bundled fonts and tajweed colour analysis.
   Future<Map<String, String>> loadUthmaniStandard(int surahId) async {
+    final cached = _uthmaniCache[surahId];
+    if (cached != null) return cached;
+
     final rawJson = await rootBundle.loadString(
       AssetPaths.quranUthmaniStandard(surahId),
     );
     final decoded = json.decode(rawJson);
 
+    final Map<String, String> ayahMap;
     if (decoded is Map<String, dynamic>) {
-      return decoded.map((key, value) => MapEntry(key, value.toString()));
+      ayahMap = decoded.map((key, value) => MapEntry(key, value.toString()));
+    } else {
+      ayahMap = const {};
     }
 
-    return const {};
+    _uthmaniCache[surahId] = ayahMap;
+    return ayahMap;
+  }
+
+  /// Decodes the mushaf JSON once; concurrent callers share the same Future.
+  static Future<List<dynamic>> _loadMushafRows() {
+    return _mushafRowsFuture ??= () async {
+      final rawJson = await rootBundle.loadString(
+        AssetPaths.kfgqpcQuranMushafSmartV8,
+      );
+      return json.decode(rawJson) as List<dynamic>;
+    }();
   }
 }

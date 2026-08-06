@@ -35,7 +35,10 @@ class QuranSearchService {
       Map<String, String> arabicAyahs = const {};
       Map<String, String> englishAyahs = const {};
       try {
-        arabicAyahs = await _arabicRepo.loadArabicSurah(chapter.id);
+        arabicAyahs = await _arabicRepo.loadArabicSurah(
+          chapter.id,
+          useGlyphText: false, // aya_text_emlaey — searchable Imla'i
+        );
         englishAyahs = await _translationRepo.loadClearQuran(chapter.id);
       } catch (_) {
         continue;

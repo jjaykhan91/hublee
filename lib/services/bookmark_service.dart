@@ -140,6 +140,7 @@ class BookmarkService extends ChangeNotifier {
   static const _kLastReadHadith = 'last_read_hadith';
 
   List<Bookmark> _bookmarks = [];
+  final Set<String> _bookmarkIds = {};
   Map<String, dynamic>? _lastReadQuran;
   Map<String, dynamic>? _lastReadHadith;
 
@@ -165,7 +166,10 @@ class BookmarkService extends ChangeNotifier {
           .whereType<Map<String, dynamic>>()
           .map(Bookmark.fromJson)
           .toList();
+    } else {
+      _bookmarks = [];
     }
+    _rebuildIdSet();
 
     // Decode last-read positions
     final rawQuran = prefs.getString(_kLastReadQuran);
@@ -178,8 +182,7 @@ class BookmarkService extends ChangeNotifier {
   }
 
   /// Returns `true` if a bookmark with the given [id] exists.
-  bool isBookmarked(String id) =>
-      _bookmarks.any((bookmark) => bookmark.id == id);
+  bool isBookmarked(String id) => _bookmarkIds.contains(id);
 
   /// Adds or removes [bookmark] (toggle behaviour).
   ///
@@ -189,8 +192,10 @@ class BookmarkService extends ChangeNotifier {
     final existingIndex = _bookmarks.indexWhere((b) => b.id == bookmark.id);
     if (existingIndex >= 0) {
       _bookmarks.removeAt(existingIndex);
+      _bookmarkIds.remove(bookmark.id);
     } else {
       _bookmarks.insert(0, bookmark);
+      _bookmarkIds.add(bookmark.id);
     }
     await _persistBookmarks();
     notifyListeners();
@@ -199,6 +204,7 @@ class BookmarkService extends ChangeNotifier {
   /// Removes the bookmark matching [id], if any.
   Future<void> removeBookmark(String id) async {
     _bookmarks.removeWhere((bookmark) => bookmark.id == id);
+    _bookmarkIds.remove(id);
     await _persistBookmarks();
     notifyListeners();
   }
@@ -246,5 +252,11 @@ class BookmarkService extends ChangeNotifier {
       _kBookmarks,
       json.encode(_bookmarks.map((bookmark) => bookmark.toJson()).toList()),
     );
+  }
+
+  void _rebuildIdSet() {
+    _bookmarkIds
+      ..clear()
+      ..addAll(_bookmarks.map((b) => b.id));
   }
 }

@@ -12,6 +12,7 @@ import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
 import '../../services/app_scope.dart';
 import '../../theme/app_tokens.dart';
+import 'app_haptics.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -111,9 +112,15 @@ class _ReaderSettingsSheet extends StatelessWidget {
             label: isDark ? 'Moon Mode' : 'Sun Mode',
             trailing: Switch(
               value: isDark,
-              onChanged: (_) => AppScope.of(context).toggleTheme(),
+              onChanged: (_) {
+                AppHaptics.selection();
+                AppScope.of(context).toggleTheme();
+              },
             ),
-            onTap: () => AppScope.of(context).toggleTheme(),
+            onTap: () {
+              AppHaptics.selection();
+              AppScope.of(context).toggleTheme();
+            },
             colorScheme: colorScheme,
           ),
 
@@ -125,9 +132,15 @@ class _ReaderSettingsSheet extends StatelessWidget {
               label: 'Tajweed Colors',
               trailing: Switch(
                 value: settings.tajweedEnabled,
-                onChanged: (v) => settings.tajweedEnabled = v,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.tajweedEnabled = v;
+                },
               ),
-              onTap: () => settings.tajweedEnabled = !settings.tajweedEnabled,
+              onTap: () {
+                AppHaptics.selection();
+                settings.tajweedEnabled = !settings.tajweedEnabled;
+              },
               colorScheme: colorScheme,
             ),
             const SizedBox(height: 4),
@@ -195,7 +208,10 @@ class _FontPicker extends StatelessWidget {
                 child: ChoiceChip(
                   label: Text(font.label),
                   selected: isSelected,
-                  onSelected: (_) => onChanged(font),
+                  onSelected: (_) {
+                    AppHaptics.selection();
+                    onChanged(font);
+                  },
                   selectedColor: colorScheme.primary.withValues(alpha: 0.15),
                   labelStyle: TextStyle(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

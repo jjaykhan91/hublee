@@ -25,6 +25,7 @@ import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
 
 import 'widgets/arabic_text.dart';
+import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
@@ -69,13 +70,17 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   @override
   void initState() {
     super.initState();
-    // Load PUA glyph text (for KFGQPC font), standard Uthmanic
-    // text (for Google Fonts + tajweed), and English translation.
+    // Load PUA glyph text (KFGQPC), standard Uthmanic (tajweed/fonts),
+    // English translation, and Imla'i (in-surah search matching).
     _dataFuture = Future.wait([
       const QuranChaptersRepository().loadChapters(),
       const QuranArabicRepository().loadArabicSurah(widget.surahId),
       const QuranTranslationRepository().loadClearQuran(widget.surahId),
       const QuranArabicRepository().loadUthmaniStandard(widget.surahId),
+      const QuranArabicRepository().loadArabicSurah(
+        widget.surahId,
+        useGlyphText: false,
+      ),
     ]);
   }
 
@@ -233,6 +238,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         Map<String, String> arabicGlyphAyahs = const {};
         Map<String, String> englishAyahs = const {};
         Map<String, String> arabicStandardAyahs = const {};
+        Map<String, String> arabicEmlaeyAyahs = const {};
 
         if (snapshot.hasData) {
           final chapters = snapshot.data![0] as List<ChapterMeta>;
@@ -242,6 +248,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           arabicGlyphAyahs = snapshot.data![1] as Map<String, String>;
           englishAyahs = snapshot.data![2] as Map<String, String>;
           arabicStandardAyahs = snapshot.data![3] as Map<String, String>;
+          arabicEmlaeyAyahs = snapshot.data![4] as Map<String, String>;
         }
 
         return Scaffold(
@@ -266,6 +273,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 arabicGlyphAyahs,
                 englishAyahs,
                 arabicStandardAyahs,
+                arabicEmlaeyAyahs,
               );
             }
 
@@ -409,16 +417,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     Map<String, String> arabicGlyphAyahs,
     Map<String, String> englishAyahs,
     Map<String, String> arabicStandardAyahs,
+    Map<String, String> arabicEmlaeyAyahs,
   ) {
     final queryLower = _searchQuery.toLowerCase();
     final settings = SettingsScope.of(context);
     final bookmarkService = BookmarkScope.of(context);
     final isUthmanic = settings.arabicFont == ArabicFontOption.uthmanic;
 
-    // Find matching ayah numbers (search against standard text).
+    // Match against Imla'i (keyboard-friendly) and English — not PUA glyphs
+    // and not fully vowelled Uthmani (plain typed Arabic would miss).
     final matches = <int>[];
     for (var ayahNum = 1; ayahNum <= chapterMeta.versesCount; ayahNum++) {
-      final arabic = arabicStandardAyahs['$ayahNum'] ?? '';
+      final arabic = arabicEmlaeyAyahs['$ayahNum'] ?? '';
       final english = englishAyahs['$ayahNum'] ?? '';
       if (arabic.contains(_searchQuery) ||
           english.toLowerCase().contains(queryLower)) {
@@ -484,25 +494,28 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
               final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
 
-              return _AyahCard(
-                ayahNumber: ayahNumber,
-                arabic: arabicText,
-                english: englishText,
-                arabicZoom: settings.arabicZoom,
-                englishZoom: settings.englishZoom,
-                isBookmarked: isBookmarked,
-                tajweedEnabled: settings.tajweedEnabled,
-                onBookmarkToggle: () {
-                  bookmarkService.toggleBookmark(
-                    Bookmark.quran(
-                      surahId: widget.surahId,
-                      ayah: ayahNumber,
-                      surahName: chapterMeta.nameSimple,
-                      snippet: englishText,
-                    ),
-                  );
-                },
-                isMeccan: chapterMeta.isMeccan,
+              return RepaintBoundary(
+                child: _AyahCard(
+                  ayahNumber: ayahNumber,
+                  arabic: arabicText,
+                  english: englishText,
+                  arabicZoom: settings.arabicZoom,
+                  englishZoom: settings.englishZoom,
+                  isBookmarked: isBookmarked,
+                  tajweedEnabled: settings.tajweedEnabled,
+                  onBookmarkToggle: () {
+                    AppHaptics.lightImpact();
+                    bookmarkService.toggleBookmark(
+                      Bookmark.quran(
+                        surahId: widget.surahId,
+                        ayah: ayahNumber,
+                        surahName: chapterMeta.nameSimple,
+                        snippet: englishText,
+                      ),
+                    );
+                  },
+                  isMeccan: chapterMeta.isMeccan,
+                ),
               );
             },
           ),
@@ -594,25 +607,28 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
         final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
 
-        return _AyahCard(
-          ayahNumber: ayahNumber,
-          arabic: arabicText,
-          english: englishText,
-          arabicZoom: settings.arabicZoom,
-          englishZoom: settings.englishZoom,
-          isBookmarked: isBookmarked,
-          tajweedEnabled: settings.tajweedEnabled,
-          onBookmarkToggle: () {
-            bookmarkService.toggleBookmark(
-              Bookmark.quran(
-                surahId: widget.surahId,
-                ayah: ayahNumber,
-                surahName: chapterMeta.nameSimple,
-                snippet: englishText,
-              ),
-            );
-          },
-          isMeccan: chapterMeta.isMeccan,
+        return RepaintBoundary(
+          child: _AyahCard(
+            ayahNumber: ayahNumber,
+            arabic: arabicText,
+            english: englishText,
+            arabicZoom: settings.arabicZoom,
+            englishZoom: settings.englishZoom,
+            isBookmarked: isBookmarked,
+            tajweedEnabled: settings.tajweedEnabled,
+            onBookmarkToggle: () {
+              AppHaptics.lightImpact();
+              bookmarkService.toggleBookmark(
+                Bookmark.quran(
+                  surahId: widget.surahId,
+                  ayah: ayahNumber,
+                  surahName: chapterMeta.nameSimple,
+                  snippet: englishText,
+                ),
+              );
+            },
+            isMeccan: chapterMeta.isMeccan,
+          ),
         );
       },
     );

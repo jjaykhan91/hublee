@@ -36,6 +36,8 @@
 /// The public entry point is [tajweedSpans].
 library;
 
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 
 // ────────────────────────────────────────────────────────────────
@@ -445,257 +447,32 @@ Color kNotPronouncedColor(Brightness brightness) =>
 
 /// Converts raw Qur'anic text into a list of colour-coded
 /// [InlineSpan]s according to tajweed recitation rules.
+///
+/// Colour analysis is delegated to [tajweedColorAssignments] (memoized)
+/// so zoom/font rebuilds only re-apply [baseStyle] — they do not re-run
+/// the rule engine.
 List<InlineSpan> tajweedSpans(
   BuildContext context,
   String rawText,
   TextStyle baseStyle,
 ) {
-  final sanitizedText = _sanitize(rawText);
-  final clusters = _clusterize(sanitizedText);
-  final spans = <InlineSpan>[];
+  final assignments = tajweedColorAssignments(
+    rawText,
+    brightness: Theme.of(context).brightness,
+  );
 
-  final brightness = Theme.of(context).brightness;
-  final notPronounced = kNotPronouncedColor(brightness);
-
-  // Pre-assigned colours for clusters that are the "receiving"
-  // side of a two-part rule (idgham / iqlab). Populated during
-  // analysis of the noon/tanween cluster.
-  final overrides = <int, Color>{};
-
-  Color? colorForCluster(int index) {
-    // Check if a prior rule already assigned a colour to this cluster
-    // (receiving letter in idgham / iqlab / ikhfa).
-    if (overrides.containsKey(index)) return overrides[index];
-
-    final cluster = clusters[index];
-    if (cluster.kind != _ClusterKind.letter) return null;
-
-    final baseLetter = cluster.base!;
-    final diacritics = cluster.diacritics;
-    final isSakin = !_hasVowel(diacritics);
-
-    // ── 0a. Hamza Wasl (ٱ) — silent in connected speech ─
-    // quran.com class: ham_wasl. At the start of an ayah the
-    // hamza wasl IS pronounced, so only mark non-initial ones.
-    if (baseLetter == '\u0671' && index > 0) {
-      final prevLetter = _prevLetterIndex(clusters, index);
-      if (prevLetter != null) return notPronounced;
-    }
-
-    // ── 0b. Lam Shamsiyah — assimilated lam in ال ────────
-    // quran.com class: laam_shamsiyah. The lam in definite
-    // article ال is silent when followed by a sun letter.
-    if (baseLetter == '\u0644' && isSakin) {
-      final prevIdx = _prevLetterIndex(clusters, index);
-      final nextIdx = _nextLetterIndex(clusters, index);
-      if (prevIdx != null &&
-          nextIdx != null &&
-          clusters[prevIdx].base == '\u0671' &&
-          _sunLetters.contains(clusters[nextIdx].base) &&
-          clusters[nextIdx].diacritics.contains(_shadda)) {
-        return notPronounced;
-      }
-    }
-
-    // ── 0c. Silent letters (U+06DF marker) ─────────────
-    // quran.com class: slnt. In Uthmanic script, U+06DF
-    // (ARABIC SMALL HIGH ROUNDED ZERO) marks letters that
-    // are written but not pronounced — e.g. waw in أُو۟لَـٰٓئِكَ
-    // and alef in ٱعْبُدُوا۟.
-    if (diacritics.contains('\u06DF')) {
-      return notPronounced;
-    }
-
-    // ── 0d. Silent Waw — orthographic waw not pronounced ─
-    // quran.com class: slnt. In Uthmanic script, words like
-    // الصلوة have a waw that is written but not pronounced.
-    // Detected as: waw + superscript alef (U+0670) where the
-    // preceding letter has fatha (not damma).
-    if (baseLetter == '\u0648' &&
-        diacritics.contains('\u0670') &&
-        !_hasVowel(diacritics.replaceAll('\u0670', ''))) {
-      final prevIdx = _prevLetterIndex(clusters, index);
-      if (prevIdx != null &&
-          clusters[prevIdx].diacritics.contains(_fatha) &&
-          !clusters[prevIdx].diacritics.contains(_damma)) {
-        return notPronounced;
-      }
-    }
-
-    // ── 1. Qalqala ──────────────────────────────────────
-    if (_qalqalaLetters.contains(baseLetter)) {
-      if (isSakin) {
-        // Skip qalqala if the next letter has shadda (idgham
-        // of identical letters — the qalqala letter merges).
-        final next = _nextLetterIndex(clusters, index);
-        if (next != null &&
-            clusters[next].base == baseLetter &&
-            clusters[next].diacritics.contains(_shadda)) {
-          // No qalqala — letter merges into shadda.
-        } else {
-          return kQalqalaColor;
-        }
-      }
-      // Voweled but at very end of text → qalqala at waqf.
-      final next = _nextLetterIndex(clusters, index);
-      if (next == null) return kQalqalaColor;
-    }
-
-    // ── 1b. Tafkhim (heavy letters) ─────────────────────
-    // Qaaf (ق) with vowel, Raa (ر) with fatha/damma, and the seven
-    // heavy letters (ص ض ط ظ ق غ خ) when they have a vowel (ط/ق sakin
-    // are already handled by Qalqala above).
-    if (baseLetter == '\u0642' && _hasVowel(diacritics)) return kTafkhimColor;
-    if (baseLetter == '\u0631' &&
-        (diacritics.contains(_fatha) || diacritics.contains(_damma))) {
-      return kTafkhimColor;
-    }
-    if (_tafkhimHeavyLetters.contains(baseLetter)) {
-      // ص ض ظ غ خ: always heavy. ط with vowel (sakin = qalqala already).
-      if (baseLetter != '\u0637' || _hasVowel(diacritics)) {
-        return kTafkhimColor;
-      }
-    }
-
-    // ── 2. Ghunnah: Noon/Meem + Shadda ──────────────────
-    if ((baseLetter == _noon || baseLetter == _meem) &&
-        diacritics.contains(_shadda)) {
-      return kGhunnahColor;
-    }
-
-    // ── 3. Noon Sakin / Tanween rules ───────────────────
-    // Matching quran.com's two-part colouring:
-    //   • Idgham with Ghunnah → noon/tanween+carrier grey,
-    //     receiving letter green.
-    //   • Idgham without Ghunnah → noon/tanween+carrier+
-    //     receiving letter ALL grey.
-    //   • Iqlab → noon/tanween+carrier grey, ba green.
-    //   • Ikhfa → noon green, receiving letter green.
-    final isNoonSakin = baseLetter == _noon && isSakin;
-    final hasTanween =
-        diacritics.contains(_fathatan) ||
-        diacritics.contains(_dammatan) ||
-        diacritics.contains(_kasratan);
-
-    if (isNoonSakin || hasTanween) {
-      int? nextIndex = _nextLetterIndex(clusters, index);
-      // Skip and grey-out the tanween carrier alef/alef-maqsura.
-      int? carrierIndex;
-      if (hasTanween && nextIndex != null) {
-        final carrier = clusters[nextIndex].base!;
-        if (carrier == '\u0627' || carrier == '\u0649') {
-          carrierIndex = nextIndex;
-          nextIndex = _nextLetterIndex(clusters, nextIndex);
-        }
-      }
-      if (nextIndex != null) {
-        final nextBase = clusters[nextIndex].base!;
-        if (_idghamWithGhunnahLetters.contains(nextBase)) {
-          overrides[nextIndex] = kIdghamGhunnahColor;
-          if (carrierIndex != null) overrides[carrierIndex] = notPronounced;
-          return notPronounced;
-        }
-        if (_idghamWithoutGhunnahLetters.contains(nextBase)) {
-          // quran.com marks noon+carrier+receiving letter ALL grey.
-          overrides[nextIndex] = notPronounced;
-          if (carrierIndex != null) overrides[carrierIndex] = notPronounced;
-          return notPronounced;
-        }
-        if (_ikhfaLetters.contains(nextBase)) {
-          // quran.com colours both noon AND the next letter green.
-          overrides[nextIndex] = kIkhfaColor;
-          return kIkhfaColor;
-        }
-        if (nextBase == _ba) {
-          overrides[nextIndex] = kIqlabColor;
-          if (carrierIndex != null) overrides[carrierIndex] = notPronounced;
-          return notPronounced;
-        }
-      }
-    }
-
-    // ── 4. Meem Sakin rules ─────────────────────────────
-    if (baseLetter == _meem && isSakin) {
-      final nextIndex = _nextLetterIndex(clusters, index);
-      if (nextIndex != null) {
-        final nextBase = clusters[nextIndex].base!;
-        if (nextBase == _ba) return kMeemIkhfaColor;
-        if (nextBase == _meem) return kMeemIdghamColor;
-      }
-    }
-
-    // ── 5. Maddah letters (U+0653) ───────────────────────
-    if (diacritics.contains(_maddahAbove)) {
-      final nextIndex = _nextLetterIndex(clusters, index);
-      if (nextIndex != null) {
-        final nextBase = clusters[nextIndex].base!;
-        if (_hamzaVariants.contains(nextBase)) {
-          return kMaadConnectedColor;
-        }
-      }
-      return kMaadLongColor;
-    }
-
-    // ── 6. Maad (prolongation) ──────────────────────────
-    if (_isMaadLetter(clusters, index)) {
-      // 6a. Normal Madd (2 counts) — check first so ـٰ and لَا get pink.
-      if (baseLetter == '\u0640' && diacritics.contains('\u0670')) {
-        return kNormalMaadColor;
-      }
-      final prevIdx = _prevLetterIndex(clusters, index);
-      if (baseLetter == '\u0627' &&
-          prevIdx != null &&
-          clusters[prevIdx].base == '\u0644' &&
-          clusters[prevIdx].diacritics.contains(_fatha)) {
-        return kNormalMaadColor; // لَا
-      }
-
-      int? nextIndex = _nextLetterIndex(clusters, index);
-      if (nextIndex != null && clusters[nextIndex].base == '\u0671') {
-        nextIndex = _nextLetterIndex(clusters, nextIndex);
-      }
-
-      if (nextIndex != null) {
-        final nextCluster = clusters[nextIndex];
-        final nextBase = nextCluster.base!;
-        final nextDiac = nextCluster.diacritics;
-
-        if (_hamzaVariants.contains(nextBase)) {
-          return kMaadConnectedColor;
-        }
-        if (nextDiac.contains(_shadda)) return kMaadLongColor;
-        if (_hasExplicitSukun(nextDiac)) return kMaadSukoonColor;
-        final afterNext = _nextLetterIndex(clusters, nextIndex);
-        if (afterNext == null) return kMaadSukoonColor;
-        return kMaadSukoonColor; // permissible: next has vowel
-      }
-      return kMaadSukoonColor; // end of phrase
-    }
-
-    return null;
-  }
-
-  // Build spans from clusters. Every cluster becomes a TextSpan so
-  // that the paragraph-level text shaper can join Arabic letters
-  // across span boundaries. WidgetSpans are never used because they
-  // break Arabic cursive joining.
-  for (int i = 0; i < clusters.length; i++) {
-    final cluster = clusters[i];
-
-    if (cluster.kind != _ClusterKind.letter) {
-      spans.add(TextSpan(text: cluster.text, style: baseStyle));
-      continue;
-    }
-
-    final color = colorForCluster(i);
-    final letterStyle = color == null
-        ? baseStyle
-        : baseStyle.copyWith(color: color);
-
-    spans.add(TextSpan(text: cluster.text, style: letterStyle));
-  }
-
-  return spans;
+  // Every cluster becomes a TextSpan so the paragraph-level text
+  // shaper can join Arabic letters across span boundaries. WidgetSpans
+  // are never used because they break Arabic cursive joining.
+  return [
+    for (final cluster in assignments)
+      TextSpan(
+        text: cluster.text,
+        style: cluster.color == null
+            ? baseStyle
+            : baseStyle.copyWith(color: cluster.color),
+      ),
+  ];
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -724,15 +501,45 @@ class TajweedClusterResult {
       'color: $color, isLetter: $isLetter)';
 }
 
+/// Bounded LRU of colour assignments keyed by brightness + raw text.
+///
+/// Sized so a long surah like Al-Baqarah (~286 ayahs) fits, while
+/// visiting many surahs cannot grow without bound. Zoom/font changes
+/// do not bust this cache — only [brightness] and the ayah string do.
+const _kAssignmentCacheCapacity = 300;
+final LinkedHashMap<String, List<TajweedClusterResult>> _assignmentCache =
+    LinkedHashMap<String, List<TajweedClusterResult>>();
+
 /// Returns per-cluster colour assignments for the given Qur'anic
 /// text. This exposes the internal tajweed logic without requiring
-/// a [BuildContext], for use in automated tests.
+/// a [BuildContext], for use in automated tests and by [tajweedSpans].
 ///
 /// [brightness] controls the "not pronounced" grey shade.
+/// Results are memoized for the session.
 List<TajweedClusterResult> tajweedColorAssignments(
   String rawText, {
   Brightness brightness = Brightness.dark,
 }) {
+  final key = '${brightness.index}\u0000$rawText';
+  final cached = _assignmentCache.remove(key);
+  if (cached != null) {
+    _assignmentCache[key] = cached; // move to most-recently-used
+    return cached;
+  }
+
+  final results = _computeTajweedColorAssignments(rawText, brightness);
+  _assignmentCache[key] = results;
+  while (_assignmentCache.length > _kAssignmentCacheCapacity) {
+    _assignmentCache.remove(_assignmentCache.keys.first);
+  }
+  return results;
+}
+
+/// Uncached rule-engine pass. Prefer [tajweedColorAssignments].
+List<TajweedClusterResult> _computeTajweedColorAssignments(
+  String rawText,
+  Brightness brightness,
+) {
   final sanitizedText = _sanitize(rawText);
   final clusters = _clusterize(sanitizedText);
   final notPronounced = kNotPronouncedColor(brightness);

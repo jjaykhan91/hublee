@@ -3,6 +3,8 @@
 /// [SharedPreferences].
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,19 +13,19 @@ enum ArabicFontOption {
   /// Bundled KFGQPC Uthmanic Hafs Smart font (default).
   uthmanic('Uthmanic Hafs', 'KFGQPCQuranicFontHafsSmart'),
 
-  /// Amiri — classic Naskh typeface from Google Fonts.
+  /// Bundled Amiri — classic Naskh typeface (SIL OFL).
   amiri('Amiri', 'Amiri'),
 
-  /// Scheherazade New — elegant Arabic from Google Fonts.
+  /// Bundled Scheherazade New — elegant Arabic (SIL OFL).
   scheherazade('Scheherazade', 'Scheherazade New'),
 
-  /// Noto Naskh Arabic — clean modern from Google Fonts.
+  /// Bundled Noto Naskh Arabic — clean modern face (SIL OFL).
   notoNaskh('Noto Naskh', 'Noto Naskh Arabic');
 
   /// Human-readable label.
   final String label;
 
-  /// Font family identifier used by Flutter / Google Fonts.
+  /// Font family identifier registered in [pubspec.yaml].
   final String fontFamily;
 
   const ArabicFontOption(this.label, this.fontFamily);
@@ -35,16 +37,27 @@ enum ArabicFontOption {
 /// Zoom values are clamped to the range [0.8, 1.8] where 1.0 is
 /// the default (100%). Call [load] once at startup to restore the
 /// saved values from disk.
+///
+/// Zoom setters [notifyListeners] immediately for live preview, but
+/// disk writes are debounced (~300 ms) so slider drags do not hammer
+/// [SharedPreferences]. Call [dispose] to flush any pending write.
 class SettingsController extends ChangeNotifier {
   static const _kArabicZoomKey = 'settings.arabicZoom';
   static const _kEnglishZoomKey = 'settings.englishZoom';
   static const _kTajweedEnabledKey = 'settings.tajweedEnabled';
   static const _kArabicFontKey = 'settings.arabicFont';
 
+  /// Delay before a zoom change is written to disk.
+  @visibleForTesting
+  static const persistDebounce = Duration(milliseconds: 300);
+
   double _arabicZoom = 1.0;
   double _englishZoom = 1.0;
   bool _tajweedEnabled = true;
   ArabicFontOption _arabicFont = ArabicFontOption.uthmanic;
+
+  Timer? _arabicZoomPersistTimer;
+  Timer? _englishZoomPersistTimer;
 
   /// Current Arabic text zoom factor (1.0 = 100%).
   double get arabicZoom => _arabicZoom;
@@ -70,8 +83,13 @@ class SettingsController extends ChangeNotifier {
     value = value.clamp(0.8, 1.8);
     if (value != _arabicZoom) {
       _arabicZoom = value;
-      _persistDouble(_kArabicZoomKey, value);
       notifyListeners();
+      _scheduleZoomPersist(
+        timer: _arabicZoomPersistTimer,
+        assign: (t) => _arabicZoomPersistTimer = t,
+        key: _kArabicZoomKey,
+        value: value,
+      );
     }
   }
 
@@ -79,8 +97,13 @@ class SettingsController extends ChangeNotifier {
     value = value.clamp(0.8, 1.8);
     if (value != _englishZoom) {
       _englishZoom = value;
-      _persistDouble(_kEnglishZoomKey, value);
       notifyListeners();
+      _scheduleZoomPersist(
+        timer: _englishZoomPersistTimer,
+        assign: (t) => _englishZoomPersistTimer = t,
+        key: _kEnglishZoomKey,
+        value: value,
+      );
     }
   }
 
@@ -106,6 +129,43 @@ class SettingsController extends ChangeNotifier {
       );
     }
     notifyListeners();
+  }
+
+  /// Cancels pending debounce timers and flushes the latest zoom values.
+  @override
+  void dispose() {
+    _flushZoomPersist();
+    super.dispose();
+  }
+
+  void _scheduleZoomPersist({
+    required Timer? timer,
+    required void Function(Timer?) assign,
+    required String key,
+    required double value,
+  }) {
+    timer?.cancel();
+    assign(
+      Timer(persistDebounce, () {
+        assign(null);
+        _persistDouble(key, value);
+      }),
+    );
+  }
+
+  void _flushZoomPersist() {
+    final arabicPending = _arabicZoomPersistTimer != null;
+    final englishPending = _englishZoomPersistTimer != null;
+    _arabicZoomPersistTimer?.cancel();
+    _englishZoomPersistTimer?.cancel();
+    _arabicZoomPersistTimer = null;
+    _englishZoomPersistTimer = null;
+    if (arabicPending) {
+      _persistDouble(_kArabicZoomKey, _arabicZoom);
+    }
+    if (englishPending) {
+      _persistDouble(_kEnglishZoomKey, _englishZoom);
+    }
   }
 
   Future<void> _persistDouble(String key, double value) async {

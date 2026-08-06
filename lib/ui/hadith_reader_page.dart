@@ -13,6 +13,7 @@ import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
 
@@ -288,6 +289,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                 englishZoom: settings.englishZoom,
                 isBookmarked: isBookmarked,
                 onBookmarkToggle: () {
+                  AppHaptics.lightImpact();
                   bookmarkService.toggleBookmark(
                     Bookmark.hadith(
                       collectionId: widget.collectionId,
@@ -368,6 +370,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
           englishZoom: settings.englishZoom,
           isBookmarked: isBookmarked,
           onBookmarkToggle: () {
+            AppHaptics.lightImpact();
             bookmarkService.toggleBookmark(
               Bookmark.hadith(
                 collectionId: widget.collectionId,

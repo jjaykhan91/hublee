@@ -14,6 +14,7 @@ import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/app_haptics.dart';
 
 /// Settings tab: display preferences, appearance, and about info.
 class SettingsPage extends StatelessWidget {
@@ -98,7 +99,10 @@ class SettingsPage extends StatelessWidget {
                           return ChoiceChip(
                             label: Text(font.label),
                             selected: isSelected,
-                            onSelected: (_) => settings.arabicFont = font,
+                            onSelected: (_) {
+                              AppHaptics.selection();
+                              settings.arabicFont = font;
+                            },
                             selectedColor: colorScheme.primary.withValues(
                               alpha: 0.15,
                             ),
@@ -151,10 +155,15 @@ class SettingsPage extends StatelessWidget {
                   ),
                   trailing: Switch(
                     value: settings.tajweedEnabled,
-                    onChanged: (v) => settings.tajweedEnabled = v,
+                    onChanged: (v) {
+                      AppHaptics.selection();
+                      settings.tajweedEnabled = v;
+                    },
                   ),
-                  onTap: () =>
-                      settings.tajweedEnabled = !settings.tajweedEnabled,
+                  onTap: () {
+                    AppHaptics.selection();
+                    settings.tajweedEnabled = !settings.tajweedEnabled;
+                  },
                 ),
               )
               .animate()
@@ -212,9 +221,15 @@ class SettingsPage extends StatelessWidget {
                   ),
                   trailing: Switch(
                     value: isDark,
-                    onChanged: (_) => AppScope.of(context).toggleTheme(),
+                    onChanged: (_) {
+                      AppHaptics.selection();
+                      AppScope.of(context).toggleTheme();
+                    },
                   ),
-                  onTap: () => AppScope.of(context).toggleTheme(),
+                  onTap: () {
+                    AppHaptics.selection();
+                    AppScope.of(context).toggleTheme();
+                  },
                 ),
               )
               .animate()

@@ -30,6 +30,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  fake_async: ^1.3.3
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.8
   flutter_launcher_icons: ^0.14.3
@@ -39,6 +40,7 @@ flutter:
 
   assets:
     - assets/quran/KFGQPCQuranMushaf_smart_v8.json
+    - assets/quran/chapters.min.json
     - assets/quran/surah_metadata.json
     - assets/quran/surah_translated_names.json
     - assets/quran/surah_arabic_vowelled.json

@@ -33,6 +33,24 @@ All route paths are built via [AppRoute](lib/router_paths.dart). Use `AppRoute.s
 
 Access via `XxxScope.of(context)`; do not pass controllers deep down by hand.
 
+## Caching
+
+Heavy assets are parsed **once per session** and held in static repository caches:
+
+| Data | Source | Cache |
+|------|--------|--------|
+| Chapter list | `chapters.min.json` + `surah_metadata.json` + name files | `QuranChaptersRepository` static future |
+| PUA / Imla'i ayahs | `KFGQPCQuranMushaf_smart_v8.json` | Shared mushaf-row future + per-surah maps in `QuranArabicRepository` |
+| Standard Uthmanic | `assets/quran/ar/{id}.json` | Per-surah map cache in `QuranArabicRepository` |
+| Surah info | `surah_info.json` | `SurahInfoRepository` static list |
+| Tajweed colours | rule engine in `tajweed.dart` | LRU (~300) of assignments keyed by `(brightness, text)` |
+
+**Search** indexes `aya_text_emlaey` (`useGlyphText: false`), never PUA `aya_text`. Display still uses PUA or standard Uthmanic as before.
+
+**Settings:** zoom sliders call `notifyListeners` immediately for live preview; `SharedPreferences` writes are debounced (~300 ms) and flushed on `dispose`.
+
+**Bookmarks:** `isBookmarked` is O(1) via a `Set` kept in sync with the list.
+
 ## Adding a new page
 
 1. Create the page under `lib/ui/`.
