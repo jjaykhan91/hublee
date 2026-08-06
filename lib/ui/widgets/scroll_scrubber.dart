@@ -130,11 +130,14 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     final trackHeight = renderBox.size.height - _kThumbSize;
     if (trackHeight <= 0) return;
 
-    final fraction =
-        ((localPosition.dy - _kThumbSize / 2) / trackHeight).clamp(0.0, 1.0);
-    final targetIndex = (fraction * (widget.itemCount - 1))
-        .round()
-        .clamp(0, widget.itemCount - 1);
+    final fraction = ((localPosition.dy - _kThumbSize / 2) / trackHeight).clamp(
+      0.0,
+      1.0,
+    );
+    final targetIndex = (fraction * (widget.itemCount - 1)).round().clamp(
+      0,
+      widget.itemCount - 1,
+    );
 
     setState(() {
       _position = fraction;

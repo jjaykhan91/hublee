@@ -1,0 +1,79 @@
+---
+description: Testing requirements and conventions for Hublee — unit, widget, and golden tests
+globs: "test/**/*.dart,lib/ui/widgets/tajweed.dart,lib/router_paths.dart"
+alwaysApply: false
+---
+
+# Testing
+
+## Commands
+
+```bash
+flutter test                              # all tests
+flutter test test/tajweed_baqarah_test.dart
+flutter test --exclude-tags golden        # what CI runs
+flutter test --update-goldens             # regenerate golden PNGs
+dart format --output=none --set-exit-if-changed lib test tools
+flutter analyze
+```
+
+All four must pass before a change is considered done. CI runs format, analyze, and
+`flutter test --exclude-tags golden`.
+
+## Test files
+
+| File | Covers |
+|---|---|
+| `test/tajweed_baqarah_test.dart` | Every letter position in Al-Baqarah 2:1–5 vs quran.com |
+| `test/router_paths_test.dart` | `AppRoute` path building |
+| `test/arabic_rendering_test.dart` | Arabic layout, overflow guards, span integrity, goldens |
+
+## What must have a test
+
+- **Any change to tajweed rules or colours** — add or update assertions in
+  `tajweed_baqarah_test.dart`, verified against quran.com's `uthmani_tajweed` API.
+  Never change an expected colour without a source to justify it. Use `/verify-tajweed`.
+- **Any new or changed `AppRoute`** — add a case to `router_paths_test.dart`.
+- **Any change to `ArabicText`, font handling, or reader text styling** — the goldens
+  in `arabic_rendering_test.dart` must be regenerated and visually reviewed.
+
+## Loading fixtures
+
+Load asset fixtures with `dart:io` `File`, not `rootBundle`:
+
+```dart
+final raw = await File('assets/quran/ar/2.json').readAsString();
+```
+
+Paths are relative to the package root, which is the working directory under
+`flutter test`. `rootBundle` requires an asset bundle that plain unit tests don't have.
+
+## Arabic text in tests
+
+- **Load real fonts before rendering Arabic.** Without a `FontLoader`, the test
+  framework substitutes a fallback font and Arabic renders as boxes, so any layout
+  or golden assertion is meaningless. See `_loadArabicFonts()` in
+  `arabic_rendering_test.dart`.
+- **Never strip diacritics to make an assertion pass.** Assert on the exact string.
+- Prefer asserting on `tajweedColorAssignments(text)` (no `BuildContext` needed) over
+  driving `tajweedSpans()` through a widget when you only care about colours.
+
+## Golden tests
+
+- Tag them `golden` (declared in `dart_test.yaml`) so CI can exclude them. Font
+  rasterization differs across platforms, so goldens generated on Windows will not
+  match a Linux CI runner. They are a **local** regression check.
+- Regenerate with `flutter test --update-goldens`, then **open the PNG and look at it**.
+  A golden is only as good as the first human review — clipped diacritics and wrong
+  tajweed colours both look like "just a diff" otherwise.
+- Keep goldens narrow: fix the widget size, theme, font, and zoom explicitly so a
+  diff means a real rendering change and not an unrelated theme tweak.
+
+## Widget test conventions
+
+- Wrap in `MaterialApp` with the real `buildLightTheme()` / `buildDarkTheme()` so tests
+  catch theme regressions too.
+- Pass `fontOverride:` and `tajweed:` explicitly to `ArabicText` rather than relying on
+  `SettingsScope`, so the test is deterministic.
+- Assert `tester.takeException()` is `null` after pumping — this is what catches
+  `RenderFlex` overflow and layout assertions.

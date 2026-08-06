@@ -12,13 +12,17 @@ const api = 'https://api.quran.com/api/v4';
 
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
-    ..addOption('out',
-        defaultsTo: 'assets/quran', help: 'Output directory for assets.')
-    ..addFlag('minify',
-        defaultsTo: false,
-        negatable: true,
-        help:
-            'Write compact JSON (no indentation). Default is pretty-printed.');
+    ..addOption(
+      'out',
+      defaultsTo: 'assets/quran',
+      help: 'Output directory for assets.',
+    )
+    ..addFlag(
+      'minify',
+      defaultsTo: false,
+      negatable: true,
+      help: 'Write compact JSON (no indentation). Default is pretty-printed.',
+    );
   final opts = parser.parse(args);
 
   final outDir = Directory(opts['out'] as String);
@@ -30,33 +34,41 @@ Future<void> main(List<String> args) async {
       ? jsonEncode(value)
       : const JsonEncoder.withIndent('  ').convert(value);
 
-  final dio = Dio(BaseOptions(
-    baseUrl: api,
-    headers: {'Accept': 'application/json'},
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 60),
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: api,
+      headers: {'Accept': 'application/json'},
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 60),
+    ),
+  );
 
   // 1) Chapters
   stdout.writeln('📖 Fetching chapters…');
-  final chaptersRes =
-      await dio.get('/chapters', queryParameters: {'language': 'en'});
+  final chaptersRes = await dio.get(
+    '/chapters',
+    queryParameters: {'language': 'en'},
+  );
   if (chaptersRes.statusCode != 200) {
     stderr.writeln('chapters: HTTP ${chaptersRes.statusCode}');
     exit(1);
   }
   final chapters = (chaptersRes.data['chapters'] as List)
-      .map((c) => {
-            'id': c['id'],
-            'name_simple': c['name_simple'],
-            'name_arabic': c['name_arabic'],
-            'revelation_place': c['revelation_place'],
-            'verses_count': c['verses_count'],
-          })
+      .map(
+        (c) => {
+          'id': c['id'],
+          'name_simple': c['name_simple'],
+          'name_arabic': c['name_arabic'],
+          'revelation_place': c['revelation_place'],
+          'verses_count': c['verses_count'],
+        },
+      )
       .toList();
 
-  final chaptersPath =
-      p.join(outDir.path, 'chapters.min.json'); // keep filename for app
+  final chaptersPath = p.join(
+    outDir.path,
+    'chapters.min.json',
+  ); // keep filename for app
   await File(chaptersPath).writeAsString(toJson(chapters));
   stdout.writeln('✔ $chaptersPath');
 
@@ -79,12 +91,15 @@ Future<Map<String, String>> _getArabicBySurah(Dio dio, int surah) async {
   final result = <String, String>{};
   int page = 1;
   while (true) {
-    final r = await dio.get('/verses/by_chapter/$surah', queryParameters: {
-      'page': page,
-      'per_page': 50,
-      'fields': 'text_uthmani',
-      'language': 'en',
-    });
+    final r = await dio.get(
+      '/verses/by_chapter/$surah',
+      queryParameters: {
+        'page': page,
+        'per_page': 50,
+        'fields': 'text_uthmani',
+        'language': 'en',
+      },
+    );
     if (r.statusCode != 200) {
       throw Exception('verses $surah p$page: HTTP ${r.statusCode}');
     }

@@ -53,7 +53,8 @@ class AssetPaths {
   static const surahMetadata = 'assets/quran/surah_metadata.json';
 
   /// English translated names for surah titles (e.g. "The Opener"), from Quran.com.
-  static const surahTranslatedNames = 'assets/quran/surah_translated_names.json';
+  static const surahTranslatedNames =
+      'assets/quran/surah_translated_names.json';
 
   /// Arabic surah names with full tashkeel (vowelled), for display like Quran.com.
   static const surahArabicVowelled = 'assets/quran/surah_arabic_vowelled.json';

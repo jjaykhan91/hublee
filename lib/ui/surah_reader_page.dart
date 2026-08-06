@@ -38,11 +38,7 @@ class SurahReaderPage extends StatefulWidget {
   /// If provided, the list auto-scrolls to this ayah on load.
   final int? scrollToAyah;
 
-  const SurahReaderPage({
-    super.key,
-    required this.surahId,
-    this.scrollToAyah,
-  });
+  const SurahReaderPage({super.key, required this.surahId, this.scrollToAyah});
 
   @override
   State<SurahReaderPage> createState() => _SurahReaderPageState();
@@ -110,10 +106,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   }
 
   /// Shows a modal bottom sheet with surah background information.
-  Future<void> _showSurahInfo(
-    BuildContext context,
-    ChapterMeta chapter,
-  ) async {
+  Future<void> _showSurahInfo(BuildContext context, ChapterMeta chapter) async {
     final info = await const SurahInfoRepository().loadBySurahId(chapter.id);
     if (!mounted || info.shortText.isEmpty) return;
 
@@ -162,14 +155,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border(
-                    left: BorderSide(
-                      color: colorScheme.primary,
-                      width: 3,
-                    ),
+                    left: BorderSide(color: colorScheme.primary, width: 3),
                   ),
                 ),
                 child: Text(
@@ -184,11 +175,10 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               // Rendered HTML sections
               if (sections.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                ...sections.map((section) => _buildInfoSection(
-                      ctx,
-                      section.heading,
-                      section.body,
-                    )),
+                ...sections.map(
+                  (section) =>
+                      _buildInfoSection(ctx, section.heading, section.body),
+                ),
               ],
 
               // Source attribution
@@ -203,16 +193,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                     Icon(
                       Icons.auto_stories_rounded,
                       size: 14,
-                      color: colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.5),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         info.source,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.5),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -233,8 +225,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       future: _dataFuture,
       builder: (context, snapshot) {
         final isLoading = snapshot.connectionState != ConnectionState.done;
-        final errorMessage =
-            snapshot.hasError ? snapshot.error.toString() : null;
+        final errorMessage = snapshot.hasError
+            ? snapshot.error.toString()
+            : null;
 
         ChapterMeta? chapterMeta;
         Map<String, String> arabicGlyphAyahs = const {};
@@ -257,9 +250,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               : _buildNormalAppBar(context, chapterMeta),
           body: () {
             if (isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
             if (errorMessage != null) {
               return Padding(
@@ -340,44 +331,38 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             ),
       actions: [
         if (chapterMeta != null)
-          Builder(builder: (ctx) {
-            final chapter = chapterMeta;
-            return IconButton(
-              icon: const Icon(Icons.info_outline_rounded),
-              tooltip: 'Surah info',
-              onPressed: () => _showSurahInfo(ctx, chapter),
-              style: IconButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
-            );
-          }),
+          Builder(
+            builder: (ctx) {
+              final chapter = chapterMeta;
+              return IconButton(
+                icon: const Icon(Icons.info_outline_rounded),
+                tooltip: 'Surah info',
+                onPressed: () => _showSurahInfo(ctx, chapter),
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+            },
+          ),
         const SizedBox(width: 4),
         IconButton(
           icon: const Icon(Icons.menu_book_rounded),
           tooltip: 'Quran reading & Tajweed guide',
           onPressed: () => showQuranReadingGuideSheet(context),
-          style: IconButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-          ),
+          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this surah',
           onPressed: _openSearch,
-          style: IconButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-          ),
+          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         IconButton(
           icon: const Icon(Icons.tune_rounded),
           tooltip: 'Reader settings',
-          onPressed: () => showReaderSettingsSheet(
-            context,
-            showTajweedToggle: true,
-          ),
-          style: IconButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-          ),
+          onPressed: () =>
+              showReaderSettingsSheet(context, showTajweedToggle: true),
+          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         const SizedBox(width: 8),
       ],
@@ -449,20 +434,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             Icon(
               Icons.search_off_rounded,
               size: 48,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 12),
             Text(
               'No matching ayahs found',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.5),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -478,9 +461,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           child: Text(
             '${matches.length} result${matches.length == 1 ? '' : 's'} found',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         // Matching ayahs list
@@ -489,7 +472,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: matches.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ayahNumber = matches[index];
               // When tajweed is on, always use standard text.
@@ -510,12 +493,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 isBookmarked: isBookmarked,
                 tajweedEnabled: settings.tajweedEnabled,
                 onBookmarkToggle: () {
-                  bookmarkService.toggleBookmark(Bookmark.quran(
-                    surahId: widget.surahId,
-                    ayah: ayahNumber,
-                    surahName: chapterMeta.nameSimple,
-                    snippet: englishText,
-                  ));
+                  bookmarkService.toggleBookmark(
+                    Bookmark.quran(
+                      surahId: widget.surahId,
+                      ayah: ayahNumber,
+                      surahName: chapterMeta.nameSimple,
+                      snippet: englishText,
+                    ),
+                  );
                 },
                 isMeccan: chapterMeta.isMeccan,
               );
@@ -559,8 +544,10 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _hasScrolledToAyah = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final offset = hasBismillah ? 1 : 0;
-        final targetIndex = (widget.scrollToAyah! - 1 + offset)
-            .clamp(0, totalAyahs - 1 + offset);
+        final targetIndex = (widget.scrollToAyah! - 1 + offset).clamp(
+          0,
+          totalAyahs - 1 + offset,
+        );
         if (_scrollController.isAttached) {
           _scrollController.jumpTo(index: targetIndex);
           _scrollController.scrollTo(
@@ -586,13 +573,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         // First item: Bismillah header (if applicable).
         if (hasBismillah && index == 0) {
-          return _BismillahHeader(
-            arabicZoom: settings.arabicZoom,
-          );
+          return _BismillahHeader(arabicZoom: settings.arabicZoom);
         }
 
         // Normal ayah card.
@@ -618,12 +603,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           isBookmarked: isBookmarked,
           tajweedEnabled: settings.tajweedEnabled,
           onBookmarkToggle: () {
-            bookmarkService.toggleBookmark(Bookmark.quran(
-              surahId: widget.surahId,
-              ayah: ayahNumber,
-              surahName: chapterMeta.nameSimple,
-              snippet: englishText,
-            ));
+            bookmarkService.toggleBookmark(
+              Bookmark.quran(
+                surahId: widget.surahId,
+                ayah: ayahNumber,
+                surahName: chapterMeta.nameSimple,
+                snippet: englishText,
+              ),
+            );
           },
           isMeccan: chapterMeta.isMeccan,
         );
@@ -647,10 +634,7 @@ class _BismillahHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 20,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -661,9 +645,7 @@ class _BismillahHeader extends StatelessWidget {
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1)),
       ),
       child: Center(
         child: ArabicText(
@@ -721,9 +703,7 @@ class _AyahCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: cardColor,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -744,9 +724,9 @@ class _AyahCard extends StatelessWidget {
                   child: Text(
                     '$ayahNumber',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const Spacer(),
@@ -785,17 +765,14 @@ class _AyahCard extends StatelessWidget {
                 english!,
                 textAlign: TextAlign.left,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Roboto',
-                      fontFamilyFallback: const [
-                        'Arial',
-                        'sans-serif',
-                      ],
-                      fontSize: 17 * englishZoom,
-                      height: 1.5,
-                      letterSpacing: 0.1,
-                      color: colorScheme.onSurface.withValues(alpha: 0.85),
-                    ),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Roboto',
+                  fontFamilyFallback: const ['Arial', 'sans-serif'],
+                  fontSize: 17 * englishZoom,
+                  height: 1.5,
+                  letterSpacing: 0.1,
+                  color: colorScheme.onSurface.withValues(alpha: 0.85),
+                ),
               ),
           ],
         ),
@@ -820,8 +797,9 @@ Widget _buildSurahInfoHeader(BuildContext context, ChapterMeta chapter) {
   final bgGradient = isMakki
       ? const [Color(0xFF4A3728), Color(0xFF2C1E12)]
       : const [Color(0xFF1B3A2E), Color(0xFF0E2218)];
-  final accentColor =
-      isMakki ? const Color(0xFFD4A054) : const Color(0xFF4CAF7D);
+  final accentColor = isMakki
+      ? const Color(0xFFD4A054)
+      : const Color(0xFF4CAF7D);
   const textColor = Color(0xFFF5F0E8);
 
   final imagePath = isMakki
@@ -845,10 +823,7 @@ Widget _buildSurahInfoHeader(BuildContext context, ChapterMeta chapter) {
           Positioned.fill(
             child: Opacity(
               opacity: 0.30,
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset(imagePath, fit: BoxFit.cover),
             ),
           ),
 
@@ -985,11 +960,7 @@ List<_InfoSection> _parseHtmlSections(String html) {
 }
 
 /// Builds a single section card with heading and body.
-Widget _buildInfoSection(
-  BuildContext context,
-  String heading,
-  String body,
-) {
+Widget _buildInfoSection(BuildContext context, String heading, String body) {
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
 
@@ -1081,11 +1052,7 @@ class _CyclingSurahTitle extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    ThemeData theme,
-    Color accent,
-  ) {
+  Widget _buildContent(BuildContext context, ThemeData theme, Color accent) {
     switch (cycleIndex % 4) {
       case 0:
         // Tarteel QUL surah-name-v4 font: ligatures surah001–surah114 render calligraphic Arabic names.

@@ -1,14 +1,16 @@
 /// Builds the Material 3 light and dark [ThemeData] for Hublee.
 ///
 /// Palette colours are hand-tuned for AMOLED-friendly dark mode
-/// and a clean, accessible light mode. Arabic text styles use the
-/// UthmanicHafs font with generous line height for readability.
+/// and a clean, accessible light mode. Reading styles use a generous line
+/// height, and every style carries a bundled Arabic fallback family so
+/// Qur'anic symbols render inside Latin text.
 library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_tokens.dart';
 import 'tajweed_extension.dart';
 
 // ── Dark-mode palette ────────────────────────────────────────────
@@ -66,32 +68,30 @@ const _darkScheme = ColorScheme(
 
 // ── Arabic text helpers ──────────────────────────────────────────
 
-/// Applies the UthmanicHafs font and generous line height to the
-/// text styles commonly used for Arabic content.
-TextTheme _applyArabicFontToTextTheme(TextTheme base) {
+/// Applies a generous line height to the text styles commonly used for
+/// long-form reading.
+///
+/// This deliberately sets no `fontFamily`. Arabic is always rendered through
+/// the `ArabicText` widget, which resolves the user's selected font itself —
+/// forcing an Arabic family here would also restyle every English body
+/// string in the app.
+TextTheme _applyReadingLineHeightToTextTheme(TextTheme base) {
   return base.copyWith(
-    bodyLarge: base.bodyLarge?.copyWith(
-      fontFamily: 'UthmanicHafs',
-      height: 2.0,
-    ),
-    bodyMedium: base.bodyMedium?.copyWith(
-      fontFamily: 'UthmanicHafs',
-      height: 2.0,
-    ),
-    titleLarge: base.titleLarge?.copyWith(
-      fontFamily: 'UthmanicHafs',
-      fontWeight: FontWeight.w700,
-    ),
+    bodyLarge: base.bodyLarge?.copyWith(height: 2.0),
+    bodyMedium: base.bodyMedium?.copyWith(height: 2.0),
+    titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w700),
   );
 }
 
-/// Adds UthmanicHafs as a fallback font family so that any
-/// style can render Qur'anic symbols even when the primary font
+/// Adds a bundled Arabic face as a fallback family so that any style can
+/// render Qur'anic symbols and honorifics (ﷺ, ۩) even when its primary font
 /// is a Latin typeface.
+///
+/// A fallback is only consulted for codepoints the primary family lacks, so
+/// Latin text is unaffected.
 TextTheme _addArabicFontFallback(TextTheme base) {
-  const fallbackFonts = ['UthmanicHafs'];
   TextStyle? withFallback(TextStyle? style) =>
-      style?.copyWith(fontFamilyFallback: fallbackFonts);
+      style?.copyWith(fontFamilyFallback: AppFonts.arabicFallback);
 
   return base.copyWith(
     displayLarge: withFallback(base.displayLarge),
@@ -119,7 +119,7 @@ TextTheme _addArabicFontFallback(TextTheme base) {
 ThemeData buildLightTheme() {
   final base = ThemeData.light(useMaterial3: true);
   final textTheme = _addArabicFontFallback(
-    _applyArabicFontToTextTheme(base.textTheme),
+    _applyReadingLineHeightToTextTheme(base.textTheme),
   );
 
   return base.copyWith(
@@ -194,11 +194,8 @@ ThemeData buildLightTheme() {
 ThemeData buildDarkTheme() {
   final base = ThemeData.dark(useMaterial3: true);
   final textTheme = _addArabicFontFallback(
-    _applyArabicFontToTextTheme(base.textTheme),
-  ).apply(
-    bodyColor: _darkOnSurface,
-    displayColor: _darkOnSurface,
-  );
+    _applyReadingLineHeightToTextTheme(base.textTheme),
+  ).apply(bodyColor: _darkOnSurface, displayColor: _darkOnSurface);
 
   return base.copyWith(
     colorScheme: _darkScheme,

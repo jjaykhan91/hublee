@@ -40,13 +40,8 @@ class _HadithPageState extends State<HadithPage> {
 
     for (final collection in collections) {
       try {
-        final books = await repository.loadBooksForCollection(
-          collection.id,
-        );
-        results.add(_CollectionWithBooks(
-          collection: collection,
-          books: books,
-        ));
+        final books = await repository.loadBooksForCollection(collection.id);
+        results.add(_CollectionWithBooks(collection: collection, books: books));
       } catch (_) {
         // Skip collections with missing index files.
       }
@@ -62,9 +57,7 @@ class _HadithPageState extends State<HadithPage> {
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Padding(
@@ -75,9 +68,7 @@ class _HadithPageState extends State<HadithPage> {
 
           final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
-            return const Center(
-              child: Text('No hadith books found.'),
-            );
+            return const Center(child: Text('No hadith books found.'));
           }
 
           return _buildBookList(context, groups);
@@ -96,17 +87,19 @@ class _HadithPageState extends State<HadithPage> {
     final items = <Widget>[];
     var animIndex = 0;
     for (final group in groups) {
-      items.add(_CollectionHeader(
-        title: group.collection.title,
-        bookCount: group.books.length,
-      ));
+      items.add(
+        _CollectionHeader(
+          title: group.collection.title,
+          bookCount: group.books.length,
+        ),
+      );
       for (final book in group.books) {
         final delay = (30 * animIndex).clamp(0, 600);
         items.add(
-          _BookTile(
-            book: book,
-            collectionId: group.collection.id,
-          ).animate().fadeIn(duration: 400.ms, delay: delay.ms).slideX(
+          _BookTile(book: book, collectionId: group.collection.id)
+              .animate()
+              .fadeIn(duration: 400.ms, delay: delay.ms)
+              .slideX(
                 begin: 0.03,
                 end: 0,
                 duration: 400.ms,
@@ -132,10 +125,7 @@ class _CollectionWithBooks {
   final HadithCollectionMeta collection;
   final List<HadithBookMeta> books;
 
-  const _CollectionWithBooks({
-    required this.collection,
-    required this.books,
-  });
+  const _CollectionWithBooks({required this.collection, required this.books});
 }
 
 /// Section header for a hadith collection group.
@@ -143,10 +133,7 @@ class _CollectionHeader extends StatelessWidget {
   final String title;
   final int bookCount;
 
-  const _CollectionHeader({
-    required this.title,
-    required this.bookCount,
-  });
+  const _CollectionHeader({required this.title, required this.bookCount});
 
   @override
   Widget build(BuildContext context) {
@@ -182,15 +169,15 @@ class _CollectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
               ),
               Text(
                 '$bookCount books',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
             ],
           ),
@@ -206,10 +193,7 @@ class _BookTile extends StatelessWidget {
   final HadithBookMeta book;
   final String collectionId;
 
-  const _BookTile({
-    required this.book,
-    required this.collectionId,
-  });
+  const _BookTile({required this.book, required this.collectionId});
 
   @override
   Widget build(BuildContext context) {
@@ -222,23 +206,24 @@ class _BookTile extends StatelessWidget {
     }
     final fileBaseName = book.file.split('/').last.split('.').first;
     subtitleParts.add(fileBaseName);
-    final subtitle =
-        subtitleParts.where((part) => part.isNotEmpty).join(' \u2022 ');
+    final subtitle = subtitleParts
+        .where((part) => part.isNotEmpty)
+        .join(' \u2022 ');
 
     final summary = _lookupBookSummary(book.title, fileBaseName);
 
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          context.push(AppRoute.hadithBook(
-            collectionId: collectionId,
-            bookFile: book.file,
-            bookTitle: book.title,
-          ));
+          context.push(
+            AppRoute.hadithBook(
+              collectionId: collectionId,
+              bookFile: book.file,
+              bookTitle: book.title,
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -265,8 +250,9 @@ class _BookTile extends StatelessWidget {
                       Text(
                         subtitle,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.75),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
                         ),
                       ),
                     ],
@@ -276,8 +262,9 @@ class _BookTile extends StatelessWidget {
                         summary,
                         style: theme.textTheme.bodySmall?.copyWith(
                           height: 1.3,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.9),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.9,
+                          ),
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 3,
@@ -419,7 +406,9 @@ String? _lookupBookSummary(String title, String fileBaseName) {
     if (key.contains('muwatta') || key.contains('malik')) {
       return muwattaSummary;
     }
-    if (key.contains('musnad') || key.contains('ahmad') || key.contains('ahmed')) {
+    if (key.contains('musnad') ||
+        key.contains('ahmad') ||
+        key.contains('ahmed')) {
       return musnadSummary;
     }
     if (key.contains('darimi')) return darimiSummary;

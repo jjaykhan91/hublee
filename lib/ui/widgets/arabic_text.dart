@@ -7,27 +7,39 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
+import '../../theme/app_tokens.dart';
 import 'tajweed.dart';
 
 /// Resolves the [TextStyle] for the given [ArabicFontOption].
 ///
-/// For the bundled Uthmanic font, returns a style with its family
-/// name directly. For Google Fonts options, returns the matching
-/// `GoogleFonts` text style.
+/// Every option resolves to a family bundled in the app, so Arabic rendering
+/// never depends on a network fetch or a platform font.
+///
+/// [AppFonts.uthmanic] carries a fallback because it only covers PUA glyphs:
+/// the reader switches to standard Uthmanic Unicode whenever tajweed is
+/// enabled, and that text would otherwise have no glyphs at all.
 TextStyle _resolveArabicFontStyle(ArabicFontOption font) {
   switch (font) {
     case ArabicFontOption.uthmanic:
-      return const TextStyle(fontFamily: 'KFGQPCQuranicFontHafsSmart');
+      return const TextStyle(
+        fontFamily: AppFonts.uthmanic,
+        fontFamilyFallback: AppFonts.arabicFallback,
+      );
     case ArabicFontOption.amiri:
-      return GoogleFonts.amiri();
+      return const TextStyle(fontFamily: AppFonts.amiri);
     case ArabicFontOption.scheherazade:
-      return GoogleFonts.scheherazadeNew();
+      return const TextStyle(
+        fontFamily: AppFonts.scheherazade,
+        fontFamilyFallback: AppFonts.arabicFallback,
+      );
     case ArabicFontOption.notoNaskh:
-      return GoogleFonts.notoNaskhArabic();
+      return const TextStyle(
+        fontFamily: AppFonts.notoNaskh,
+        fontFamilyFallback: AppFonts.arabicFallback,
+      );
   }
 }
 
@@ -90,24 +102,26 @@ class ArabicText extends StatelessWidget {
 
     // Build the base style with the resolved font and required
     // OpenType features for correct mark/ligature rendering.
-    final TextStyle resolvedStyle =
-        (style ?? const TextStyle()).merge(baseFontStyle).copyWith(
-      fontSize: resolvedFontSize,
-      fontWeight: weight ?? FontWeight.w600,
-      height: 2.0,
-      color: color ?? Theme.of(context).colorScheme.onSurface,
-      fontFeatures: const <FontFeature>[
-        FontFeature.enable('mark'),
-        FontFeature.enable('mkmk'),
-        FontFeature.enable('rlig'),
-        FontFeature.enable('calt'),
-      ],
-    );
+    final TextStyle resolvedStyle = (style ?? const TextStyle())
+        .merge(baseFontStyle)
+        .copyWith(
+          fontSize: resolvedFontSize,
+          fontWeight: weight ?? FontWeight.w600,
+          height: 2.0,
+          color: color ?? Theme.of(context).colorScheme.onSurface,
+          fontFeatures: const <FontFeature>[
+            FontFeature.enable('mark'),
+            FontFeature.enable('mkmk'),
+            FontFeature.enable('rlig'),
+            FontFeature.enable('calt'),
+          ],
+        );
 
     // Strut style ensures consistent line height across different
     // character compositions.
     final strutStyle = StrutStyle(
       fontFamily: baseFontStyle.fontFamily,
+      fontFamilyFallback: baseFontStyle.fontFamilyFallback,
       fontSize: resolvedFontSize,
       height: 2.0,
       forceStrutHeight: true,
@@ -141,9 +155,7 @@ class ArabicText extends StatelessWidget {
       child: RichText(
         textDirection: TextDirection.rtl,
         textAlign: resolvedAlign,
-        text: TextSpan(
-          children: tajweedSpans(context, text, resolvedStyle),
-        ),
+        text: TextSpan(children: tajweedSpans(context, text, resolvedStyle)),
         strutStyle: strutStyle,
         maxLines: maxLines,
         overflow: overflow ?? TextOverflow.visible,

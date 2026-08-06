@@ -43,8 +43,11 @@ String _decodeHtmlEntities(String s) {
 
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
-    ..addFlag('minify',
-        defaultsTo: false, help: 'Write compact JSON (default pretty).');
+    ..addFlag(
+      'minify',
+      defaultsTo: false,
+      help: 'Write compact JSON (default pretty).',
+    );
   final opts = parser.parse(args);
   final minify = opts['minify'] as bool;
 

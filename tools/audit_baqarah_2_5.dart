@@ -4,6 +4,8 @@
 // Uses the test_tajweed logic to output colored clusters. Compare with
 // Quran.com to verify.
 
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -210,8 +212,9 @@ String? colorFor(List<Cluster> clusters, int idx) {
 }
 
 void main() async {
-  final ar = jsonDecode(await File('assets/quran/ar/2.json').readAsString())
-      as Map<String, dynamic>;
+  final ar =
+      jsonDecode(await File('assets/quran/ar/2.json').readAsString())
+          as Map<String, dynamic>;
   for (var i = 1; i <= 5; i++) {
     final text = (ar['$i'] as String?) ?? '';
     final clusters = clusterize(text);

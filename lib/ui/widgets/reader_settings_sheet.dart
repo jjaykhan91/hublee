@@ -25,9 +25,7 @@ void showReaderSettingsSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _ReaderSettingsSheet(
-      showTajweedToggle: showTajweedToggle,
-    ),
+    builder: (_) => _ReaderSettingsSheet(showTajweedToggle: showTajweedToggle),
   );
 }
 
@@ -71,9 +69,9 @@ class _ReaderSettingsSheet extends StatelessWidget {
               Text(
                 'Reader Settings',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
               ),
             ],
           ),
@@ -172,14 +170,17 @@ class _FontPicker extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.font_download_rounded,
-                size: 20, color: colorScheme.primary),
+            Icon(
+              Icons.font_download_rounded,
+              size: 20,
+              color: colorScheme.primary,
+            ),
             const SizedBox(width: 10),
             Text(
               'Arabic Font',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -246,9 +247,9 @@ class _ZoomSlider extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         Expanded(
           child: Slider(
@@ -270,9 +271,9 @@ class _ZoomSlider extends StatelessWidget {
           child: Text(
             '${(value * 100).round()}%',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -310,9 +311,9 @@ class _SettingRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             trailing,

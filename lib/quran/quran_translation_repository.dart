@@ -24,9 +24,7 @@ class QuranTranslationRepository {
     );
     final decoded = json.decode(rawJson);
     if (decoded is! Map) {
-      throw const FormatException(
-        'English surah JSON must be a Map',
-      );
+      throw const FormatException('English surah JSON must be a Map');
     }
     return decoded.map(
       (key, value) => MapEntry(key.toString(), value.toString()),

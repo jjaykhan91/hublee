@@ -108,8 +108,8 @@ class _SearchPageState extends State<SearchPage> {
       body: _isSearching
           ? const Center(child: CircularProgressIndicator())
           : totalResults == 0
-              ? _buildEmptyState(theme, colorScheme)
-              : _buildResultsList(theme, colorScheme),
+          ? _buildEmptyState(theme, colorScheme)
+          : _buildResultsList(theme, colorScheme),
     );
   }
 
@@ -137,10 +137,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   /// Builds the grouped results list (Quran first, then Hadith).
-  Widget _buildResultsList(
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildResultsList(ThemeData theme, ColorScheme colorScheme) {
     return ListView(
       physics: const BouncingScrollPhysics(),
       padding: AppSpacing.list,
@@ -150,9 +147,7 @@ class _SearchPageState extends State<SearchPage> {
             'Quran (${_quranResults.length})',
             icon: Icons.menu_book_rounded,
           ),
-          ..._quranResults.map(
-            (hit) => _QuranResultTile(hit: hit),
-          ),
+          ..._quranResults.map((hit) => _QuranResultTile(hit: hit)),
           const SizedBox(height: 16),
         ],
         if (_hadithResults.isNotEmpty) ...[
@@ -160,9 +155,7 @@ class _SearchPageState extends State<SearchPage> {
             'Hadith (${_hadithResults.length})',
             icon: Icons.library_books_rounded,
           ),
-          ..._hadithResults.map(
-            (hit) => _HadithResultTile(hit: hit),
-          ),
+          ..._hadithResults.map((hit) => _HadithResultTile(hit: hit)),
         ],
       ],
     );
@@ -185,46 +178,46 @@ class _HadithResultTile extends StatelessWidget {
 
     return HubleeCard(
       onTap: () {
-        context.push(AppRoute.hadithBook(
-          collectionId: hit.collectionId,
-          bookFile: hit.bookFile,
-          bookTitle: hit.bookTitle ?? hit.bookFile,
-          index: hit.hadithIndex,
-        ));
+        context.push(
+          AppRoute.hadithBook(
+            collectionId: hit.collectionId,
+            bookFile: hit.bookFile,
+            bookTitle: hit.bookTitle ?? hit.bookFile,
+            index: hit.hadithIndex,
+          ),
+        );
       },
       child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.library_books_outlined,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${hit.bookTitle ?? hit.bookFile}'
-                      ' \u2022 Hadith ${hit.hadithIndex + 1}',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        hit.snippet!,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.library_books_outlined, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${hit.bookTitle ?? hit.bookFile}'
+                  ' \u2022 Hadith ${hit.hadithIndex + 1}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+                if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    hit.snippet!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
           ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
     );
   }
 }
@@ -240,35 +233,35 @@ class _QuranResultTile extends StatelessWidget {
     return HubleeCard(
       onTap: () => context.push(AppRoute.surah(hit.surahId, ayah: hit.ayah)),
       child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.menu_book_outlined, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${hit.surahName} \u2022 Ayah ${hit.ayah}',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        hit.snippet!,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.menu_book_outlined, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${hit.surahName} \u2022 Ayah ${hit.ayah}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+                if (hit.snippet != null && hit.snippet!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    hit.snippet!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
           ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
     );
   }
 }

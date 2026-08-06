@@ -125,7 +125,6 @@ const _tafkhimHeavyLetters = {
   '\u062E', // خ
 };
 
-
 // ────────────────────────────────────────────────────────────────
 //  Character classification helpers
 // ────────────────────────────────────────────────────────────────
@@ -254,16 +253,16 @@ class _Cluster {
   final String diacritics;
 
   const _Cluster.space(this.text)
-      : kind = _ClusterKind.space,
-        base = null,
-        diacritics = '';
+    : kind = _ClusterKind.space,
+      base = null,
+      diacritics = '';
   const _Cluster.sign(this.text)
-      : kind = _ClusterKind.sign,
-        base = null,
-        diacritics = '';
+    : kind = _ClusterKind.sign,
+      base = null,
+      diacritics = '';
   const _Cluster.letter(this.base, this.diacritics)
-      : kind = _ClusterKind.letter,
-        text = '$base$diacritics';
+    : kind = _ClusterKind.letter,
+      text = '$base$diacritics';
 }
 
 List<_Cluster> _clusterize(String text) {
@@ -305,10 +304,7 @@ List<_Cluster> _clusterize(String text) {
       }
       if (j >= 0) {
         final prev = clusters.removeAt(j);
-        clusters.insert(
-          j,
-          _Cluster.letter(prev.base!, prev.diacritics + ch),
-        );
+        clusters.insert(j, _Cluster.letter(prev.base!, prev.diacritics + ch));
         i++;
         continue;
       }
@@ -387,8 +383,7 @@ bool _isMaadLetter(List<_Cluster> clusters, int index) {
   // Tatweel with superscript alef (ـٰ) → maad if preceded by fatha.
   if (base == '\u0640' && diac.contains('\u0670')) {
     final prevIdx = _prevLetterIndex(clusters, index);
-    return prevIdx != null &&
-        clusters[prevIdx].diacritics.contains(_fatha);
+    return prevIdx != null && clusters[prevIdx].diacritics.contains(_fatha);
   }
 
   // Alef with madda above (آ) — inherently a maad.
@@ -405,8 +400,7 @@ bool _isMaadLetter(List<_Cluster> clusters, int index) {
   // Waw (و) preceded by damma.
   if (base == '\u0648' && prevDiac.contains(_damma)) return true;
   // Ya (ي / ى) preceded by kasra.
-  if ((base == '\u064A' || base == '\u0649') &&
-      prevDiac.contains(_kasra)) {
+  if ((base == '\u064A' || base == '\u0649') && prevDiac.contains(_kasra)) {
     return true;
   }
 
@@ -422,11 +416,15 @@ const kGhunnahColor = Color(0xFF43A047); // green
 const kIdghamGhunnahColor = Color(0xFF43A047); // green (receiving letter)
 const kIkhfaColor = Color(0xFF43A047); // green (matches quran.com ghunna/ikhfa)
 const kIqlabColor = Color(0xFF43A047); // green (receiving ba)
-const kMeemIkhfaColor = Color(0xFF43A047); // green (matches ghunna/ikhfa grouping)
+const kMeemIkhfaColor = Color(
+  0xFF43A047,
+); // green (matches ghunna/ikhfa grouping)
 const kMeemIdghamColor = Color(0xFF43A047); // green
 const kNormalMaadColor = Color(0xFFE91E8C); // pink (Normal madd 2 counts)
 const kMaadSukoonColor = Color(0xFFFB8C00); // orange (Separated / Aridh)
-const kMaadConnectedColor = Color(0xFFD81B60); // dark pink (Connected madd 4/5 — before hamza)
+const kMaadConnectedColor = Color(
+  0xFFD81B60,
+); // dark pink (Connected madd 4/5 — before hamza)
 const kMaadLongColor = Color(0xFFF44336); // red (Necessary madd 6 — Madd Lazim)
 
 /// Tafkhim (heavy/thick articulation) — dark blue. Applied to Qaaf with vowel,
@@ -438,8 +436,8 @@ const kTafkhimColor = Color(0xFF1565C0); // dark blue
 /// is visually distinct, matching quran.com's dark-theme rendering.
 Color kNotPronouncedColor(Brightness brightness) =>
     brightness == Brightness.dark
-        ? const Color(0xFF9E9E9E) // clearly muted grey on dark bg
-        : const Color(0xFFBDBDBD); // muted grey on light bg
+    ? const Color(0xFF9E9E9E) // clearly muted grey on dark bg
+    : const Color(0xFFBDBDBD); // muted grey on light bg
 
 // ────────────────────────────────────────────────────────────────
 //  Public API: tajweed span builder
@@ -574,7 +572,8 @@ List<InlineSpan> tajweedSpans(
     //   • Iqlab → noon/tanween+carrier grey, ba green.
     //   • Ikhfa → noon green, receiving letter green.
     final isNoonSakin = baseLetter == _noon && isSakin;
-    final hasTanween = diacritics.contains(_fathatan) ||
+    final hasTanween =
+        diacritics.contains(_fathatan) ||
         diacritics.contains(_dammatan) ||
         diacritics.contains(_kasratan);
 
@@ -689,8 +688,9 @@ List<InlineSpan> tajweedSpans(
     }
 
     final color = colorForCluster(i);
-    final letterStyle =
-        color == null ? baseStyle : baseStyle.copyWith(color: color);
+    final letterStyle = color == null
+        ? baseStyle
+        : baseStyle.copyWith(color: color);
 
     spans.add(TextSpan(text: cluster.text, style: letterStyle));
   }
@@ -718,7 +718,8 @@ class TajweedClusterResult {
   });
 
   @override
-  String toString() => 'TajweedClusterResult('
+  String toString() =>
+      'TajweedClusterResult('
       'text: "$text", base: ${base == null ? "null" : '"$base"'}, '
       'color: $color, isLetter: $isLetter)';
 }
@@ -813,7 +814,8 @@ List<TajweedClusterResult> tajweedColorAssignments(
     }
 
     final isNoonSakin = baseLetter == _noon && isSakin;
-    final hasTanween = diacritics.contains(_fathatan) ||
+    final hasTanween =
+        diacritics.contains(_fathatan) ||
         diacritics.contains(_dammatan) ||
         diacritics.contains(_kasratan);
 
@@ -904,12 +906,14 @@ List<TajweedClusterResult> tajweedColorAssignments(
   for (int i = 0; i < clusters.length; i++) {
     final cluster = clusters[i];
     final isLetter = cluster.kind == _ClusterKind.letter;
-    results.add(TajweedClusterResult(
-      text: cluster.text,
-      base: cluster.base,
-      color: isLetter ? colorForCluster(i) : null,
-      isLetter: isLetter,
-    ));
+    results.add(
+      TajweedClusterResult(
+        text: cluster.text,
+        base: cluster.base,
+        color: isLetter ? colorForCluster(i) : null,
+        isLetter: isLetter,
+      ),
+    );
   }
 
   return results;

@@ -1,0 +1,7 @@
+tags:
+  golden:
+    description: >-
+      Golden image tests for Arabic rendering. Font rasterization differs
+      across platforms, so goldens generated locally will not match a Linux
+      CI runner. These are a local regression check and CI runs
+      `flutter test --exclude-tags golden`.

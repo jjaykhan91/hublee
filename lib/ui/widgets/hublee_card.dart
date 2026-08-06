@@ -10,12 +10,7 @@ import '../../theme/app_tokens.dart';
 
 /// A [Card] with theme styling, optional [onTap], and [AppRadius.card] padding.
 class HubleeCard extends StatelessWidget {
-  const HubleeCard({
-    super.key,
-    this.onTap,
-    required this.child,
-    this.padding,
-  });
+  const HubleeCard({super.key, this.onTap, required this.child, this.padding});
 
   final VoidCallback? onTap;
   final Widget child;
@@ -30,10 +25,7 @@ class HubleeCard extends StatelessWidget {
       child: InkWell(
         borderRadius: AppRadius.card,
         onTap: onTap,
-        child: Padding(
-          padding: padding ?? AppSpacing.cardTight,
-          child: child,
-        ),
+        child: Padding(padding: padding ?? AppSpacing.cardTight, child: child),
       ),
     );
   }

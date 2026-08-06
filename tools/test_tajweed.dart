@@ -3,7 +3,6 @@
 
 // ignore_for_file: avoid_print
 
-const _sukun = '\u0652';
 const _shadda = '\u0651';
 const _fathatan = '\u064B';
 const _dammatan = '\u064C';
@@ -129,22 +128,24 @@ class Cluster {
   final String? base;
   final String diacritics;
   Cluster.space(this.text)
-      : kind = ClusterKind.space,
-        base = null,
-        diacritics = '';
+    : kind = ClusterKind.space,
+      base = null,
+      diacritics = '';
   Cluster.sign(this.text)
-      : kind = ClusterKind.sign,
-        base = null,
-        diacritics = '';
+    : kind = ClusterKind.sign,
+      base = null,
+      diacritics = '';
   Cluster.letter(this.base, this.diacritics)
-      : kind = ClusterKind.letter,
-        text = '$base$diacritics';
+    : kind = ClusterKind.letter,
+      text = '$base$diacritics';
 }
 
 List<Cluster> clusterize(String text) {
   final runes = text.runes.toList();
-  final chars =
-      List<String>.generate(runes.length, (i) => String.fromCharCode(runes[i]));
+  final chars = List<String>.generate(
+    runes.length,
+    (i) => String.fromCharCode(runes[i]),
+  );
   final clusters = <Cluster>[];
   bool isLetterLike(String ch) =>
       !_isSpaceLike(ch) && !_isCombiningMark(ch) && !_isQuranSpacingSign(ch);
@@ -246,7 +247,8 @@ String? colorForCluster(List<Cluster> clusters, int index) {
 
   // Noon Sakin / Tanween
   final isNoonSakin = baseLetter == _noon && isSakin;
-  final hasTanween = diacritics.contains(_fathatan) ||
+  final hasTanween =
+      diacritics.contains(_fathatan) ||
       diacritics.contains(_dammatan) ||
       diacritics.contains(_kasratan);
 
@@ -284,8 +286,13 @@ String? colorForCluster(List<Cluster> clusters, int index) {
     final nextIndex = nextLetterIndex(clusters, index);
     if (nextIndex != null) {
       final nextBase = clusters[nextIndex].base!;
-      if ({'\u0621', '\u0623', '\u0625', '\u0624', '\u0626'}
-          .contains(nextBase)) {
+      if ({
+        '\u0621',
+        '\u0623',
+        '\u0625',
+        '\u0624',
+        '\u0626',
+      }.contains(nextBase)) {
         return 'RED(MaadMunfasil)'; // maddah before hamza
       }
     }
@@ -305,8 +312,11 @@ void testText(String label, String text, Map<String, String> expected) {
     final c = clusters[i];
     final color = colorForCluster(clusters, i);
     if (c.kind == ClusterKind.letter) {
-      final baseCP =
-          c.base!.codeUnitAt(0).toRadixString(16).toUpperCase().padLeft(4, '0');
+      final baseCP = c.base!
+          .codeUnitAt(0)
+          .toRadixString(16)
+          .toUpperCase()
+          .padLeft(4, '0');
       final diacCP = c.diacritics.runes
           .map((r) => 'U+${r.toRadixString(16).toUpperCase().padLeft(4, '0')}')
           .join(' ');
@@ -323,7 +333,8 @@ void testText(String label, String text, Map<String, String> expected) {
       print('  PASS: ${entry.key} => ${entry.value}');
     } else {
       print(
-          '  FAIL: ${entry.key} expected ${entry.value} but got ${results[entry.key] ?? "none"}');
+        '  FAIL: ${entry.key} expected ${entry.value} but got ${results[entry.key] ?? "none"}',
+      );
       allPassed = false;
     }
   }
@@ -333,8 +344,6 @@ void testText(String label, String text, Map<String, String> expected) {
 }
 
 void main() {
-  int passed = 0, failed = 0;
-
   // Test 1: Qalqala with explicit sukun (Dal)
   testText('Qalqala: لَمْ يَلِدْ', 'لَمْ يَلِدْ وَلَمْ يُولَدْ', {
     '5:د': 'RED(Qalqala)', // dal+sukun in يَلِدْ
@@ -342,10 +351,13 @@ void main() {
   });
 
   // Test 2: Qalqala should NOT trigger on voweled letters
-  testText('No false Qalqala: قُلْ هُوَ ٱللَّهُ أَحَدٌ',
-      'قُلْ هُوَ ٱللَّهُ أَحَدٌ', {
-    '13:د': 'RED(Qalqala-waqf)', // dal with dammatan at END of ayah (waqf)
-  });
+  testText(
+    'No false Qalqala: قُلْ هُوَ ٱللَّهُ أَحَدٌ',
+    'قُلْ هُوَ ٱللَّهُ أَحَدٌ',
+    {
+      '13:د': 'RED(Qalqala-waqf)', // dal with dammatan at END of ayah (waqf)
+    },
+  );
 
   // Test 3: Ghunnah (noon + shadda)
   testText('Ghunnah: إِنَّ ٱللَّهَ', 'إِنَّ ٱللَّهَ', {
@@ -397,9 +409,10 @@ void main() {
 
   // Test 10: Al-Fatiha 1:7 comprehensive
   testText(
-      'Al-Fatiha 1:7',
-      'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
-      {}); // Just observe, no specific expectations
+    'Al-Fatiha 1:7',
+    'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
+    {},
+  ); // Just observe, no specific expectations
 
   print('\n\n========== SUMMARY ==========');
   print('Tests complete. Review output above for PASS/FAIL.');

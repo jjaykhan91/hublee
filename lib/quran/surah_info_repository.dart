@@ -66,12 +66,8 @@ class SurahInfoRepository {
     final all = await loadAll();
     return all.firstWhere(
       (info) => info.id == surahId,
-      orElse: () => SurahInfo(
-        id: surahId,
-        shortText: '',
-        fullText: '',
-        source: '',
-      ),
+      orElse: () =>
+          SurahInfo(id: surahId, shortText: '', fullText: '', source: ''),
     );
   }
 }

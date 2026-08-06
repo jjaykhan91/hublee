@@ -229,7 +229,9 @@ class _QuranReadingGuideContent extends StatelessWidget {
                   rule: 'Ghunnah / Ikhfa\'',
                 ),
                 const _TajweedLegendRow(
-                    color: kQalqalaColor, rule: 'Qalqala (echo)'),
+                  color: kQalqalaColor,
+                  rule: 'Qalqala (echo)',
+                ),
                 const _TajweedLegendRow(
                   color: kTafkhimColor,
                   rule: 'Tafkhim (heavy)',
@@ -394,8 +396,9 @@ class _WaqfRow extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontFamily: 'KFGQPCQuranicFontHafsSmart',
               ),
-              textDirection:
-                  symbol == '∴' ? TextDirection.ltr : TextDirection.rtl,
+              textDirection: symbol == '∴'
+                  ? TextDirection.ltr
+                  : TextDirection.rtl,
             ),
           ),
           Expanded(

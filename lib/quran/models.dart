@@ -61,6 +61,7 @@ class ChapterMeta {
   bool get isMedinan => revelationType == 'Medinan';
 
   @override
-  String toString() => 'ChapterMeta(id: $id, name: $nameSimple/$nameArabic, '
+  String toString() =>
+      'ChapterMeta(id: $id, name: $nameSimple/$nameArabic, '
       'verses: $versesCount, $revelationType, juz: $startJuz-$endJuz)';
 }
