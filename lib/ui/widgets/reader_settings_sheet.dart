@@ -145,6 +145,23 @@ class _ReaderSettingsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             _SettingRow(
+              icon: Icons.touch_app_rounded,
+              label: 'Word by Word',
+              trailing: Switch(
+                value: settings.wordByWordEnabled,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.wordByWordEnabled = v;
+                },
+              ),
+              onTap: () {
+                AppHaptics.selection();
+                settings.wordByWordEnabled = !settings.wordByWordEnabled;
+              },
+              colorScheme: colorScheme,
+            ),
+            const SizedBox(height: 4),
+            _SettingRow(
               icon: Icons.info_outline_rounded,
               label: 'Tajweed Guide',
               trailing: Icon(

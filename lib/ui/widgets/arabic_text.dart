@@ -43,6 +43,62 @@ TextStyle _resolveArabicFontStyle(ArabicFontOption font) {
   }
 }
 
+/// Resolves the font the user has selected, honouring [fontOverride].
+///
+/// Falls back to [ArabicFontOption.uthmanic] when no [SettingsScope] is in
+/// scope, so Arabic still renders in previews and tests.
+ArabicFontOption resolveArabicFont(
+  BuildContext context, {
+  ArabicFontOption? fontOverride,
+}) {
+  if (fontOverride != null) return fontOverride;
+  try {
+    return SettingsScope.of(context).arabicFont;
+  } catch (_) {
+    return ArabicFontOption.uthmanic;
+  }
+}
+
+/// Builds the text style Hublee uses for Qur'anic Arabic.
+///
+/// Shared by [ArabicText] and the word-by-word reader so both render identical
+/// typography — OpenType features included. Anything drawing Qur'anic Arabic
+/// should come through here rather than assembling its own [TextStyle].
+TextStyle arabicTextStyle(
+  BuildContext context, {
+  required double fontSize,
+  ArabicFontOption? fontOverride,
+  FontWeight? weight,
+  Color? color,
+  TextStyle? base,
+}) {
+  final font = resolveArabicFont(context, fontOverride: fontOverride);
+  return (base ?? const TextStyle())
+      .merge(_resolveArabicFontStyle(font))
+      .copyWith(
+        fontSize: fontSize,
+        fontWeight: weight ?? FontWeight.w600,
+        height: 2.0,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
+        fontFeatures: const <FontFeature>[
+          FontFeature.enable('mark'),
+          FontFeature.enable('mkmk'),
+          FontFeature.enable('rlig'),
+          FontFeature.enable('calt'),
+        ],
+      );
+}
+
+/// Strut matching [arabicTextStyle], so line height stays constant regardless
+/// of which marks a line happens to contain.
+StrutStyle arabicStrutStyle(TextStyle style) => StrutStyle(
+  fontFamily: style.fontFamily,
+  fontFamilyFallback: style.fontFamilyFallback,
+  fontSize: style.fontSize,
+  height: 2.0,
+  forceStrutHeight: true,
+);
+
 /// Renders Arabic text in the user-selected Arabic font.
 ///
 /// Key properties:
@@ -86,53 +142,28 @@ class ArabicText extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedFontSize = (fontSize ?? size ?? 26).toDouble();
 
-    // Resolve which font to use: override > user setting > default.
-    ArabicFontOption font;
-    if (fontOverride != null) {
-      font = fontOverride!;
-    } else {
-      try {
-        font = SettingsScope.of(context).arabicFont;
-      } catch (_) {
-        font = ArabicFontOption.uthmanic;
-      }
-    }
-
-    final baseFontStyle = _resolveArabicFontStyle(font);
-
-    // Build the base style with the resolved font and required
-    // OpenType features for correct mark/ligature rendering.
-    final TextStyle resolvedStyle = (style ?? const TextStyle())
-        .merge(baseFontStyle)
-        .copyWith(
-          fontSize: resolvedFontSize,
-          fontWeight: weight ?? FontWeight.w600,
-          height: 2.0,
-          color: color ?? Theme.of(context).colorScheme.onSurface,
-          fontFeatures: const <FontFeature>[
-            FontFeature.enable('mark'),
-            FontFeature.enable('mkmk'),
-            FontFeature.enable('rlig'),
-            FontFeature.enable('calt'),
-          ],
-        );
-
-    // Strut style ensures consistent line height across different
-    // character compositions.
-    final strutStyle = StrutStyle(
-      fontFamily: baseFontStyle.fontFamily,
-      fontFamilyFallback: baseFontStyle.fontFamilyFallback,
+    final resolvedStyle = arabicTextStyle(
+      context,
       fontSize: resolvedFontSize,
-      height: 2.0,
-      forceStrutHeight: true,
+      fontOverride: fontOverride,
+      weight: weight,
+      color: color,
+      base: style,
     );
-
+    final strutStyle = arabicStrutStyle(resolvedStyle);
     final resolvedAlign = align ?? TextAlign.right;
+    // Honour the requested alignment. Arabic defaults to the right edge, but a
+    // centred header must actually centre rather than be pinned right.
+    final alignment = switch (resolvedAlign) {
+      TextAlign.center => Alignment.center,
+      TextAlign.left || TextAlign.start => Alignment.centerLeft,
+      _ => Alignment.centerRight,
+    };
 
     // Without tajweed: render as a simple Text widget.
     if (!tajweed) {
       return Align(
-        alignment: Alignment.centerRight,
+        alignment: alignment,
         child: Text(
           text,
           textDirection: TextDirection.rtl,
@@ -151,7 +182,7 @@ class ArabicText extends StatelessWidget {
 
     // With tajweed: render as RichText with colour-coded spans.
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: alignment,
       child: RichText(
         textDirection: TextDirection.rtl,
         textAlign: resolvedAlign,

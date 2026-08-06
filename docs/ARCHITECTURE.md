@@ -43,6 +43,7 @@ Heavy assets are parsed **once per session** and held in static repository cache
 | PUA / Imla'i ayahs | `KFGQPCQuranMushaf_smart_v8.json` | Shared mushaf-row future + per-surah maps in `QuranArabicRepository` |
 | Standard Uthmanic | `assets/quran/ar/{id}.json` | Per-surah map cache in `QuranArabicRepository` |
 | Surah info | `surah_info.json` | `SurahInfoRepository` static list |
+| Word-by-word glosses | `assets/quran/en.wordbyword/{id}.json` | Per-surah future cache in `WordByWordRepository` |
 | Tajweed colours | rule engine in `tajweed.dart` | LRU (~300) of assignments keyed by `(brightness, text)` |
 
 **Search** indexes `aya_text_emlaey` (`useGlyphText: false`), never PUA `aya_text`. Display still uses PUA or standard Uthmanic as before.
@@ -50,6 +51,38 @@ Heavy assets are parsed **once per session** and held in static repository cache
 **Settings:** zoom sliders call `notifyListeners` immediately for live preview; `SharedPreferences` writes are debounced (~300 ms) and flushed on `dispose`.
 
 **Bookmarks:** `isBookmarked` is O(1) via a `Set` kept in sync with the list.
+
+## Word-by-word glossing
+
+Tapping a word in the surah reader reveals its English meaning. The design
+constraint is that this must **coexist with tajweed** rather than replace it, so
+a selected word is marked with a background tint and every letter keeps its
+tajweed colour.
+
+The hard part is agreeing on what a "word" is. Three things disagree by default:
+the gloss data numbers words from 1 and counts the ayah-number marker as a
+word; quran.com's Uthmani text emits waqf signs and rosettes as standalone
+tokens; and the tajweed engine strips presentation-only marks before analysis.
+
+Rather than reconcile that per frame, alignment is settled once:
+
+| Piece | Responsibility |
+|---|---|
+| `lib/quran/arabic_word_segmenter.dart` | The single definition of a word. Folds annotation-only tokens into a neighbour so no character is lost, and returns ranges that **tile the string** so any offset maps to exactly one word. |
+| `tools/build_word_by_word.dart` | Runs that segmenter over all 6,236 ayahs and emits one gloss per word. Exits non-zero instead of shipping misaligned data. |
+| `WordByWordRepository` | Loads a surah's glosses (~1 MB total across 114 files, so only the open surah is decoded) and resolves phrases via `glossPhraseAt`. |
+| `WordByWordArabicText` | Segments the exact string being drawn — for the tajweed path, the one reconstructed from the engine's clusters — then maps clusters to words by offset. Recognizers live in `State` and are disposed. |
+
+Two safety nets: the widget renders **untappable text** if gloss and word
+counts ever disagree, because mislabelling a Qur'anic word is worse than not
+offering the feature; and `test/word_by_word_test.dart` re-verifies the
+alignment for every ayah on both rendering paths.
+
+An empty gloss means "this word continues the previous phrase" (بَعْدَ مَا →
+"after what"), and such words highlight together as one phrase.
+
+Word-by-word requires standard Uthmani text, so enabling it opts out of the PUA
+glyph column exactly as tajweed already does.
 
 ## Adding a new page
 

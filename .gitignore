@@ -54,3 +54,6 @@ env.*.json
 !.cursor/rules/
 !.cursor/skills/
 !.cursor/mcp.json
+
+# Local device screenshots used to eyeball a change on an emulator
+.screens/

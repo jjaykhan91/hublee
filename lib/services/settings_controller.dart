@@ -1,6 +1,6 @@
 /// Manages user-configurable display settings (font zoom levels,
-/// tajweed toggle, Arabic font family) and persists them in
-/// [SharedPreferences].
+/// tajweed toggle, word-by-word toggle, Arabic font family) and
+/// persists them in [SharedPreferences].
 library;
 
 import 'dart:async';
@@ -46,6 +46,7 @@ class SettingsController extends ChangeNotifier {
   static const _kEnglishZoomKey = 'settings.englishZoom';
   static const _kTajweedEnabledKey = 'settings.tajweedEnabled';
   static const _kArabicFontKey = 'settings.arabicFont';
+  static const _kWordByWordEnabledKey = 'settings.wordByWordEnabled';
 
   /// Delay before a zoom change is written to disk.
   @visibleForTesting
@@ -54,6 +55,7 @@ class SettingsController extends ChangeNotifier {
   double _arabicZoom = 1.0;
   double _englishZoom = 1.0;
   bool _tajweedEnabled = true;
+  bool _wordByWordEnabled = false;
   ArabicFontOption _arabicFont = ArabicFontOption.uthmanic;
 
   Timer? _arabicZoomPersistTimer;
@@ -67,6 +69,12 @@ class SettingsController extends ChangeNotifier {
 
   /// Whether tajweed colour-coding is enabled for Quran text.
   bool get tajweedEnabled => _tajweedEnabled;
+
+  /// Whether tapping a Qur'anic word reveals its English gloss.
+  ///
+  /// Off by default: it makes every word a tap target, which is what a learner
+  /// wants but not what someone simply reading expects.
+  bool get wordByWordEnabled => _wordByWordEnabled;
 
   /// Currently selected Arabic font family.
   ArabicFontOption get arabicFont => _arabicFont;
@@ -115,12 +123,21 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
+  set wordByWordEnabled(bool value) {
+    if (value != _wordByWordEnabled) {
+      _wordByWordEnabled = value;
+      _persistBool(_kWordByWordEnabledKey, value);
+      notifyListeners();
+    }
+  }
+
   /// Restores saved settings from [SharedPreferences].
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _arabicZoom = prefs.getDouble(_kArabicZoomKey) ?? 1.0;
     _englishZoom = prefs.getDouble(_kEnglishZoomKey) ?? 1.0;
     _tajweedEnabled = prefs.getBool(_kTajweedEnabledKey) ?? true;
+    _wordByWordEnabled = prefs.getBool(_kWordByWordEnabledKey) ?? false;
     final fontName = prefs.getString(_kArabicFontKey);
     if (fontName != null) {
       _arabicFont = ArabicFontOption.values.firstWhere(

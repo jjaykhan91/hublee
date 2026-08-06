@@ -170,6 +170,41 @@ class SettingsPage extends StatelessWidget {
               .fadeIn(duration: 400.ms, delay: 210.ms)
               .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 210.ms),
 
+          // Word-by-word toggle
+          Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Icon(
+                    Icons.touch_app_rounded,
+                    color: colorScheme.primary,
+                  ),
+                  title: const Text('Word by Word'),
+                  subtitle: Text(
+                    settings.wordByWordEnabled
+                        ? 'Tap any word to see its meaning'
+                        : 'Tapping words is off',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  trailing: Switch(
+                    value: settings.wordByWordEnabled,
+                    onChanged: (v) {
+                      AppHaptics.selection();
+                      settings.wordByWordEnabled = v;
+                    },
+                  ),
+                  onTap: () {
+                    AppHaptics.selection();
+                    settings.wordByWordEnabled = !settings.wordByWordEnabled;
+                  },
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 240.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 240.ms),
+
           // Tajweed guide link
           Card(
                 child: ListTile(
@@ -261,6 +296,40 @@ class SettingsPage extends StatelessWidget {
                         'Quran & Hadith Reader',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sources',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Word-by-word English from "The Glorious Qur\u2019an: '
+                        'Word-for-Word Translation to Facilitate Learning of '
+                        'Qur\u2019anic Arabic" by Dr. Shehnaz Shaikh and '
+                        'Ms. Kausar Khatri.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Verse translation: ClearQuran. Arabic script: KFGQPC '
+                        'Hafs and Uthmani text.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 12),

@@ -59,6 +59,7 @@ Both reader pages share these features:
 - Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
 - Arabic with tajweed coloring
 - Tajweed legend at the bottom
+- **Word-by-word** (when `settings.wordByWordEnabled`): ayah Arabic renders via `WordByWordArabicText`; tapping a word tints it and shows `WordGlossCard` floating at the bottom of the screen. Only one word is selected at a time across the surah, and the card floats so revealing a meaning never shifts the text being read. Search results stay plain.
 
 ### Hadith Reader specifics
 - Narrator shown in a distinct container
@@ -90,6 +91,9 @@ Each surah card: left = number badge + English name (and translation on some tab
 ## Reusable Widgets
 
 - `ArabicText` -- Arabic rendering with optional Tajweed coloring (uses `tajweedSpans()` internally)
+- `arabicTextStyle()` / `arabicStrutStyle()` -- shared Qur'anic typography in `arabic_text.dart`. Anything drawing Arabic must use these instead of assembling its own `TextStyle`, so font choice and fallbacks stay in one place.
+- `WordByWordArabicText` -- tappable per-word Arabic that preserves tajweed colours; selection is shown with a background tint
+- `WordGlossCard` -- floating bottom card showing the tapped word's Arabic and English
 - `tajweedSpans()` -- Public API in `lib/ui/widgets/tajweed.dart` that converts raw Qur'anic text into colour-coded `InlineSpan`s. Also exposes `tajweedColorAssignments()` for unit testing without `BuildContext`.
 - `GradientTile` -- Card with gradient background, icon, title, subtitle
 - `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)

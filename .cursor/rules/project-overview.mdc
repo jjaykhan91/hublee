@@ -33,7 +33,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `lib/ui/` -- Pages and shared widgets
 - `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `HubleeCard`, `SectionHeader`, `ReaderSettingsSheet`, `ScrollScrubber`, `tajweed.dart` (colour engine with `tajweedSpans()` and `tajweedColorAssignments()` testing API)
 - `lib/router_paths.dart` -- Typed route paths (`AppRoute`); single source for all navigation URLs.
-- `lib/quran/` -- Quran data models and repositories
+- `lib/quran/` -- Quran data models and repositories, plus `arabic_word_segmenter.dart` (the single definition of a Qur'anic word) and `word_by_word_repository.dart`
 - `lib/hadith/` -- Hadith data models and repository
 - `lib/services/` -- Settings, theme, bookmarks, scopes, search models, daily content
 - `lib/theme/` -- Light/dark theme config and Tajweed color extension
@@ -41,7 +41,7 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 - `assets/quran/` -- Arabic text JSON, surah metadata JSON, ClearQuran English translations
 - `assets/hadith/` -- Hadith collection JSON files (forties, 9 books, others)
 - `tools/` -- Build-time Dart scripts for fetching and processing data
-- `test/tajweed_baqarah_test.dart` -- Unit tests for tajweed coloring (Surah Al-Baqarah 2:1-5). `test/router_paths_test.dart` -- Tests for `AppRoute` path building. `test/arabic_rendering_test.dart` -- Font coverage, layout/overflow guards, tajweed span integrity, and goldens. `test/settings_controller_test.dart` -- Zoom debounce. `test/quran_search_service_test.dart` -- Emlaey search corpus.
+- `test/tajweed_baqarah_test.dart` -- Unit tests for tajweed coloring (Surah Al-Baqarah 2:1-5). `test/router_paths_test.dart` -- Tests for `AppRoute` path building. `test/arabic_rendering_test.dart` -- Font coverage, layout/overflow guards, tajweed span integrity, and goldens. `test/settings_controller_test.dart` -- Zoom debounce. `test/quran_search_service_test.dart` -- Emlaey search corpus. `test/word_by_word_test.dart` -- Word segmentation, gloss phrases, tap behaviour, and full-Quran gloss alignment on both rendering paths.
 - `.github/workflows/ci.yml` -- CI: `dart format` check, `flutter analyze`, `flutter test --exclude-tags golden`. See `.cursor/rules/testing.mdc`.
 - `docs/ARCHITECTURE.md` -- Layer boundaries, navigation, tokens, and how to add pages or hadith collections.
 - `.cursor/rules/coding-standards.mdc` -- Naming, commenting, and formatting rules

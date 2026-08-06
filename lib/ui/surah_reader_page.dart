@@ -17,6 +17,7 @@ import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
 import '../quran/surah_info_repository.dart';
+import '../quran/word_by_word_repository.dart';
 import '../quran/models.dart';
 
 import '../services/settings_controller.dart';
@@ -29,6 +30,8 @@ import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
+import 'widgets/word_by_word_arabic_text.dart';
+import 'widgets/word_gloss_card.dart';
 
 /// Displays all ayahs of a single surah with bookmarking and
 /// tajweed rendering.
@@ -67,11 +70,20 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   /// Cycle index for header title: 0=Arabic, 1=English, 2=Meaning, 3=Revelation.
   int _titleCycleIndex = 0;
 
+  // ── Word-by-word state ─────────────────────────────────────
+  /// The revealed word, or null when nothing is selected. Only one word is
+  /// selected at a time across the whole surah.
+  WordByWordSelection? _wordSelection;
+
+  /// Ayah the selected word belongs to, so only that card highlights.
+  int? _wordSelectionAyah;
+
   @override
   void initState() {
     super.initState();
     // Load PUA glyph text (KFGQPC), standard Uthmanic (tajweed/fonts),
-    // English translation, and Imla'i (in-surah search matching).
+    // English translation, Imla'i (in-surah search matching), and
+    // word-by-word glosses.
     _dataFuture = Future.wait([
       const QuranChaptersRepository().loadChapters(),
       const QuranArabicRepository().loadArabicSurah(widget.surahId),
@@ -81,7 +93,24 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         widget.surahId,
         useGlyphText: false,
       ),
+      const WordByWordRepository().loadSurah(widget.surahId),
     ]);
+  }
+
+  /// Reveals [selection] within [ayahNumber], or clears when null.
+  void _selectWord(int ayahNumber, WordByWordSelection? selection) {
+    setState(() {
+      _wordSelection = selection;
+      _wordSelectionAyah = selection == null ? null : ayahNumber;
+    });
+  }
+
+  void _clearWordSelection() {
+    if (_wordSelection == null) return;
+    setState(() {
+      _wordSelection = null;
+      _wordSelectionAyah = null;
+    });
   }
 
   @override
@@ -97,6 +126,8 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _isSearching = true;
       _searchQuery = '';
       _searchController.clear();
+      _wordSelection = null;
+      _wordSelectionAyah = null;
     });
     _searchFocusNode.requestFocus();
   }
@@ -239,6 +270,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         Map<String, String> englishAyahs = const {};
         Map<String, String> arabicStandardAyahs = const {};
         Map<String, String> arabicEmlaeyAyahs = const {};
+        Map<int, List<String>> wordGlosses = const {};
 
         if (snapshot.hasData) {
           final chapters = snapshot.data![0] as List<ChapterMeta>;
@@ -249,6 +281,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           englishAyahs = snapshot.data![2] as Map<String, String>;
           arabicStandardAyahs = snapshot.data![3] as Map<String, String>;
           arabicEmlaeyAyahs = snapshot.data![4] as Map<String, String>;
+          wordGlosses = snapshot.data![5] as Map<int, List<String>>;
         }
 
         return Scaffold(
@@ -289,6 +322,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   arabicGlyphAyahs,
                   englishAyahs,
                   arabicStandardAyahs,
+                  wordGlosses,
                 ),
                 ScrollScrubber(
                   itemCount: itemCount,
@@ -301,6 +335,22 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   },
                   scrollController: _scrollController,
                   positionsListener: _positionsListener,
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: SafeArea(
+                    top: false,
+                    child: WordGlossCard(
+                      selection: _wordSelection,
+                      reference: _wordSelectionAyah == null
+                          ? null
+                          : '${chapterMeta.nameSimple} '
+                                '${widget.surahId}:$_wordSelectionAyah',
+                      onDismiss: _clearWordSelection,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -503,6 +553,10 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   englishZoom: settings.englishZoom,
                   isBookmarked: isBookmarked,
                   tajweedEnabled: settings.tajweedEnabled,
+                  // Search results stay plain: the gloss card belongs to the
+                  // reading view, and tapping words while filtering competes
+                  // with tapping a result.
+                  onWordSelected: (_) {},
                   onBookmarkToggle: () {
                     AppHaptics.lightImpact();
                     bookmarkService.toggleBookmark(
@@ -532,6 +586,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     Map<String, String> arabicGlyphAyahs,
     Map<String, String> englishAyahs,
     Map<String, String> arabicStandardAyahs,
+    Map<int, List<String>> wordGlosses,
   ) {
     final totalAyahs = chapterMeta.versesCount;
 
@@ -596,10 +651,11 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         // Normal ayah card.
         final ayahIndex = index - (hasBismillah ? 1 : 0);
         final ayahNumber = ayahIndex + 1;
-        // When tajweed is enabled, always use standard Uthmanic text
-        // (parseable Arabic with full tashkeel). When tajweed is off,
-        // KFGQPC uses PUA glyph text for its optimised rendering.
-        final usePua = isUthmanic && !settings.tajweedEnabled;
+        // Word-by-word glosses are aligned to the standard Uthmanic text, and
+        // tajweed needs parseable Arabic, so either feature rules out the PUA
+        // glyph column. It is only used for plain KFGQPC reading.
+        final wordByWord = settings.wordByWordEnabled;
+        final usePua = isUthmanic && !settings.tajweedEnabled && !wordByWord;
         final arabicText = usePua
             ? arabicGlyphAyahs['$ayahNumber']
             : arabicStandardAyahs['$ayahNumber'];
@@ -616,6 +672,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             englishZoom: settings.englishZoom,
             isBookmarked: isBookmarked,
             tajweedEnabled: settings.tajweedEnabled,
+            glosses: wordByWord ? wordGlosses[ayahNumber] : null,
+            selection: _wordSelectionAyah == ayahNumber ? _wordSelection : null,
+            onWordSelected: (selection) => _selectWord(ayahNumber, selection),
             onBookmarkToggle: () {
               AppHaptics.lightImpact();
               bookmarkService.toggleBookmark(
@@ -693,6 +752,14 @@ class _AyahCard extends StatelessWidget {
   final VoidCallback onBookmarkToggle;
   final bool isMeccan;
 
+  /// One gloss per word, or null when word-by-word is off for this card.
+  final List<String>? glosses;
+
+  /// The revealed word when it belongs to this ayah.
+  final WordByWordSelection? selection;
+
+  final ValueChanged<WordByWordSelection?> onWordSelected;
+
   const _AyahCard({
     required this.ayahNumber,
     this.arabic,
@@ -703,6 +770,9 @@ class _AyahCard extends StatelessWidget {
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
     required this.isMeccan,
+    required this.onWordSelected,
+    this.glosses,
+    this.selection,
   });
 
   @override
@@ -764,14 +834,26 @@ class _AyahCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Arabic text with tajweed colouring
+            // Arabic text: tappable words when word-by-word is on, plain
+            // otherwise. Tajweed colouring applies either way.
             if (arabic != null && arabic!.isNotEmpty)
-              ArabicText(
-                arabic!,
-                tajweed: tajweedEnabled,
-                fontSize: 34 * arabicZoom,
-                weight: FontWeight.bold,
-              ),
+              if (glosses case final wordGlosses?)
+                WordByWordArabicText(
+                  text: arabic!,
+                  glosses: wordGlosses,
+                  tajweed: tajweedEnabled,
+                  fontSize: 34 * arabicZoom,
+                  weight: FontWeight.bold,
+                  selectedPhrase: selection?.phrase,
+                  onPhraseSelected: onWordSelected,
+                )
+              else
+                ArabicText(
+                  arabic!,
+                  tajweed: tajweedEnabled,
+                  fontSize: 34 * arabicZoom,
+                  weight: FontWeight.bold,
+                ),
             if (arabic != null && arabic!.isNotEmpty)
               const SizedBox(height: 20),
 
