@@ -91,6 +91,10 @@ TextStyle arabicTextStyle(
 
 /// Strut matching [arabicTextStyle], so line height stays constant regardless
 /// of which marks a line happens to contain.
+///
+/// Height 2.0 with [StrutStyle.forceStrutHeight] is the clearance verified
+/// against dense tashkeel (e.g. 2:255) at maximum Arabic zoom. Do not lower
+/// it without re-running `test/arabic_rendering_test.dart` overflow tests.
 StrutStyle arabicStrutStyle(TextStyle style) => StrutStyle(
   fontFamily: style.fontFamily,
   fontFamilyFallback: style.fontFamilyFallback,

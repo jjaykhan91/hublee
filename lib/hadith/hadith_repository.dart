@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
+import '../services/app_metrics.dart';
 import '../services/search_models.dart';
 
 // ────────────────────────────────────────────────────────────────
@@ -27,11 +28,33 @@ import '../services/search_models.dart';
 class HadithRepository {
   const HadithRepository();
 
+  static final Map<String, Future<HadithBook>> _bookCache = {};
+  static Future<List<_HadithIndexRow>>? _searchIndexFuture;
+
+  /// Clears session caches. Tests only — cached [Future]s from one
+  /// fake-async zone never complete in the next.
+  @visibleForTesting
+  static void resetCache() {
+    _bookCache.clear();
+    _searchIndexFuture = null;
+  }
+
   /// Loads and parses a single hadith book.
   ///
   /// [collectionId] identifies the collection directory (e.g. `"forties"`).
   /// [bookFile] is the filename within that directory (e.g. `"nawawi40.json"`).
-  Future<HadithBook> loadBook(String collectionId, String bookFile) async {
+  Future<HadithBook> loadBook(String collectionId, String bookFile) {
+    final key = '$collectionId/$bookFile';
+    return _bookCache.putIfAbsent(
+      key,
+      () => _loadBookUncached(collectionId, bookFile),
+    );
+  }
+
+  Future<HadithBook> _loadBookUncached(
+    String collectionId,
+    String bookFile,
+  ) async {
     final path = AssetPaths.hadith(collectionId, bookFile);
     final rawJson = await rootBundle.loadString(path);
     final root = json.decode(rawJson);
@@ -239,82 +262,128 @@ extension HadithRepositoryListing on HadithRepository {
 //  Full-text search extension
 // ────────────────────────────────────────────────────────────────
 
-/// Extends [HadithRepository] with a brute-force full-text search
-/// across all collections and books.
+/// Extends [HadithRepository] with full-text search across all collections.
 extension HadithSearchExtension on HadithRepository {
   /// Searches all hadith text (English and Arabic) for [query].
   ///
   /// Returns up to [limit] matching [HadithSearchHit] results.
   /// The search is case-insensitive for English text and exact
-  /// for Arabic text.
+  /// for Arabic text. The first call builds a session index.
   Future<List<HadithSearchHit>> searchHadith(
     String query, {
     int limit = 100,
   }) async {
-    final queryLower = query.toLowerCase();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+    final queryLower = trimmed.toLowerCase();
+
+    final index = await _ensureSearchIndex();
     final hits = <HadithSearchHit>[];
 
-    final collections = await loadCollections();
-    for (final collection in collections) {
-      late final List<HadithBookMeta> books;
-      try {
-        books = await loadBooksForCollection(collection.id);
-      } catch (_) {
-        continue;
-      }
+    for (final row in index) {
+      final isMatch =
+          row.englishLower.contains(queryLower) || row.arabic.contains(trimmed);
+      if (!isMatch) continue;
 
-      for (final bookMeta in books) {
-        HadithBook book;
+      hits.add(
+        HadithSearchHit(
+          collectionId: row.collectionId,
+          bookFile: row.bookFile,
+          bookTitle: row.bookTitle,
+          hadithIndex: row.hadithIndex,
+          snippet: _hadithSnippet(row.english, row.englishLower, queryLower),
+        ),
+      );
+      if (hits.length >= limit) return hits;
+    }
+    return hits;
+  }
+
+  Future<List<_HadithIndexRow>> _ensureSearchIndex() {
+    return HadithRepository._searchIndexFuture ??= _buildSearchIndex();
+  }
+
+  Future<List<_HadithIndexRow>> _buildSearchIndex() {
+    return AppMetrics.instance.time('search.hadithIndex', () async {
+      final rows = <_HadithIndexRow>[];
+      final collections = await loadCollections();
+
+      for (final collection in collections) {
+        late final List<HadithBookMeta> books;
         try {
-          book = await loadBook(collection.id, bookMeta.file);
+          books = await loadBooksForCollection(collection.id);
         } catch (_) {
           continue;
         }
 
-        for (var index = 0; index < book.hadiths.length; index++) {
-          final hadith = book.hadiths[index];
-          final englishLower = (hadith.english ?? '').toLowerCase();
-          final arabicText = hadith.arabic ?? '';
-
-          // Check if either text contains the query.
-          final isMatch =
-              englishLower.contains(queryLower) || arabicText.contains(query);
-          if (!isMatch) continue;
-
-          // Build a snippet around the match in English text.
-          String? snippet;
-          if (englishLower.isNotEmpty) {
-            final matchIndex = englishLower.indexOf(queryLower);
-            if (matchIndex >= 0) {
-              final start = (matchIndex - 40).clamp(0, englishLower.length);
-              final end = (matchIndex + queryLower.length + 60).clamp(
-                0,
-                englishLower.length,
-              );
-              snippet = (hadith.english ?? '').substring(start, end).trim();
-              if (start > 0) snippet = '…$snippet';
-              if (end < englishLower.length) snippet = '$snippet…';
-            } else {
-              snippet = hadith.english;
+        final loaded = await Future.wait(
+          books.map((bookMeta) async {
+            try {
+              final book = await loadBook(collection.id, bookMeta.file);
+              return (bookMeta, book);
+            } catch (_) {
+              return null;
             }
+          }),
+        );
+
+        for (final item in loaded) {
+          if (item == null) continue;
+          final (bookMeta, book) = item;
+          final bookTitle = book.title.isNotEmpty ? book.title : bookMeta.title;
+          for (var index = 0; index < book.hadiths.length; index++) {
+            final hadith = book.hadiths[index];
+            final english = hadith.english ?? '';
+            rows.add(
+              _HadithIndexRow(
+                collectionId: collection.id,
+                bookFile: bookMeta.file,
+                bookTitle: bookTitle,
+                hadithIndex: index,
+                arabic: hadith.arabic ?? '',
+                english: english,
+                englishLower: english.toLowerCase(),
+              ),
+            );
           }
-
-          hits.add(
-            HadithSearchHit(
-              collectionId: collection.id,
-              bookFile: bookMeta.file,
-              bookTitle: book.title.isNotEmpty ? book.title : bookMeta.title,
-              hadithIndex: index,
-              snippet: snippet,
-            ),
-          );
-
-          if (hits.length >= limit) return hits;
         }
       }
-    }
-    return hits;
+      return rows;
+    });
   }
+}
+
+String? _hadithSnippet(String english, String englishLower, String queryLower) {
+  if (english.isEmpty) return null;
+  final matchIndex = englishLower.indexOf(queryLower);
+  if (matchIndex < 0) return english;
+  final start = (matchIndex - 40).clamp(0, english.length);
+  final end = (matchIndex + queryLower.length + 60).clamp(0, english.length);
+  var snippet = english.substring(start, end).trim();
+  if (start > 0) snippet = '…$snippet';
+  if (end < english.length) snippet = '$snippet…';
+  return snippet;
+}
+
+/// One searchable hadith in the session index.
+class _HadithIndexRow {
+  const _HadithIndexRow({
+    required this.collectionId,
+    required this.bookFile,
+    required this.bookTitle,
+    required this.hadithIndex,
+    required this.arabic,
+    required this.english,
+    required this.englishLower,
+  });
+
+  final String collectionId;
+  final String bookFile;
+  final String bookTitle;
+  final int hadithIndex;
+  final String arabic;
+  final String english;
+  final String englishLower;
 }
 
 // ────────────────────────────────────────────────────────────────

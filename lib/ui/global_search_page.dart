@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import '../router_paths.dart';
 import '../services/hadith_search_service.dart';
 import '../services/quran_search_service.dart';
+import '../services/app_metrics.dart';
 import '../services/search_models.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/section_header.dart';
@@ -21,7 +22,15 @@ import 'widgets/hublee_card.dart';
 
 /// Global search across Quran and Hadith with debounced input.
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({
+    super.key,
+    this.quranSearch = const QuranSearchService(),
+    this.hadithSearch = const HadithSearchService(),
+  });
+
+  /// Injected in tests so a slower query cannot overwrite a newer one.
+  final QuranSearchService quranSearch;
+  final HadithSearchService hadithSearch;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -29,11 +38,13 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _queryController = TextEditingController();
-  final _quranSearch = const QuranSearchService();
-  final _hadithSearch = const HadithSearchService();
 
   /// Timer for debouncing search input (300 ms delay).
   Timer? _debounceTimer;
+
+  /// Incremented on every search so late responses from an older
+  /// query are dropped instead of replacing newer results.
+  int _searchGeneration = 0;
 
   bool _isSearching = false;
   final List<HadithSearchHit> _hadithResults = [];
@@ -58,8 +69,10 @@ class _SearchPageState extends State<SearchPage> {
   /// Runs a full-text search across both Quran and Hadith data.
   Future<void> _performSearch(String rawQuery) async {
     final query = rawQuery.trim();
+    final generation = ++_searchGeneration;
     if (query.isEmpty) {
       setState(() {
+        _isSearching = false;
         _hadithResults.clear();
         _quranResults.clear();
       });
@@ -68,20 +81,25 @@ class _SearchPageState extends State<SearchPage> {
 
     setState(() => _isSearching = true);
     try {
-      final hadithHits = await _hadithSearch.search(query, limit: 100);
-      final quranHits = await _quranSearch.search(query, limit: 150);
-
-      if (!mounted) return;
-      setState(() {
-        _hadithResults
-          ..clear()
-          ..addAll(hadithHits);
-        _quranResults
-          ..clear()
-          ..addAll(quranHits);
-      });
-    } finally {
-      if (mounted) setState(() => _isSearching = false);
+      await AppMetrics.instance.time('search.global', () async {
+        final hadithFuture = widget.hadithSearch.search(query, limit: 100);
+        final quranFuture = widget.quranSearch.search(query, limit: 150);
+        final hadithHits = await hadithFuture;
+        final quranHits = await quranFuture;
+        if (!mounted || generation != _searchGeneration) return;
+        setState(() {
+          _hadithResults
+            ..clear()
+            ..addAll(hadithHits);
+          _quranResults
+            ..clear()
+            ..addAll(quranHits);
+          _isSearching = false;
+        });
+      }, detail: {'queryLen': '${query.length}'});
+    } catch (_) {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _isSearching = false);
     }
   }
 

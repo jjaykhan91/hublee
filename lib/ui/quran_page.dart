@@ -554,147 +554,178 @@ class _SurahCard extends StatelessWidget {
 
     // Makki = warm amber, Madani = cool green.
     final accentColor = isMeccan
-        ? const Color(0xFFD4A054)
-        : const Color(0xFF4CAF7D);
+        ? AppColors.meccanAccent
+        : AppColors.medinanAccent;
     final bgGradient = isMeccan
-        ? const [Color(0xFF3D2E1E), Color(0xFF2A1F14)]
-        : const [Color(0xFF1A3529), Color(0xFF0F211A)];
+        ? AppColors.meccanCardGradient
+        : AppColors.medinanCardGradient;
     final imagePath = isMeccan
         ? 'assets/images/kaaba_makki.png'
         : 'assets/images/masjid_nabawi_madani.png';
-    const textColor = Color(0xFFF5F0E8);
+    const textColor = AppColors.surahCardOnImage;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.card,
-        boxShadow: AppShadows.card(context),
-      ),
-      child: ClipRRect(
-        borderRadius: AppRadius.card,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => context.push(AppRoute.surah(chapter.id)),
-            child: Container(
-              height: showRevelationOrder
-                  ? 96
-                  : (chapter.nameTranslated != null ? 88 : 80),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: bgGradient,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  // Full-width background image.
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.15,
-                      child: Image.asset(imagePath, fit: BoxFit.cover),
+    final semanticsLabel = [
+      'Surah ${chapter.id}',
+      chapter.nameSimple,
+      if (chapter.nameTranslated != null) chapter.nameTranslated!,
+      '${chapter.versesCount} ayahs',
+      if (isMeccan) 'Meccan' else 'Medinan',
+    ].join(', ');
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.card,
+          boxShadow: AppShadows.card(context),
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.card,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.push(AppRoute.surah(chapter.id)),
+              child: ExcludeSemantics(
+                child: Container(
+                  height: showRevelationOrder
+                      ? 96
+                      : (chapter.nameTranslated != null ? 88 : 80),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: bgGradient,
                     ),
                   ),
-
-                  // Content row.
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      children: [
-                        // Surah number in modern circular badge (3D shadow).
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: accentColor, width: 1.5),
-                            color: accentColor.withValues(alpha: 0.15),
-                            boxShadow: AppShadows.badge,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            showRevelationOrder
-                                ? '${chapter.revelationOrder}'
-                                : '${chapter.id}',
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  color: accentColor,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                  child: Stack(
+                    children: [
+                      // Full-width background image.
+                      Positioned.fill(
+                        child: ExcludeSemantics(
+                          child: Opacity(
+                            opacity: 0.15,
+                            child: Image.asset(imagePath, fit: BoxFit.cover),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        // English name + translation + ayah count (Quran.com style).
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                chapter.nameSimple,
-                                style: Theme.of(context).textTheme.titleSmall
+                      ),
+
+                      // Content row.
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            // Surah number in modern circular badge (3D shadow).
+                            Container(
+                              width: AppSpacing.minTouchTarget,
+                              height: AppSpacing.minTouchTarget,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: accentColor,
+                                  width: 1.5,
+                                ),
+                                color: accentColor.withValues(alpha: 0.15),
+                                boxShadow: AppShadows.badge,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                showRevelationOrder
+                                    ? '${chapter.revelationOrder}'
+                                    : '${chapter.id}',
+                                style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: textColor,
+                                      color: accentColor,
+                                      fontWeight: FontWeight.w800,
                                     ),
                               ),
-                              if (chapter.nameTranslated != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  chapter.nameTranslated!,
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: textColor.withValues(
-                                          alpha: 0.75,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                              if (showRevelationOrder) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Surah ${chapter.id}',
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: textColor.withValues(alpha: 0.4),
-                                      ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        // Calligraphic Arabic surah name (Tarteel surah-name-v4 ligature).
-                        Expanded(
-                          child: Center(
-                            child: Text(
-                              'surah${chapter.id.toString().padLeft(3, '0')}',
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    fontFamily: 'SurahNameV4',
-                                    fontWeight: FontWeight.bold,
-                                    color: accentColor,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textDirection: TextDirection.rtl,
                             ),
-                          ),
-                        ),
-                        // Ayah count to the right.
-                        Text(
-                          '${chapter.versesCount} Ayahs',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: textColor.withValues(alpha: 0.6),
+                            const SizedBox(width: 14),
+                            // English name + translation + ayah count (Quran.com style).
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    chapter.nameSimple,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                        ),
+                                  ),
+                                  if (chapter.nameTranslated != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      chapter.nameTranslated!,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: textColor.withValues(
+                                              alpha: 0.75,
+                                            ),
+                                          ),
+                                    ),
+                                  ],
+                                  if (showRevelationOrder) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Surah ${chapter.id}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: textColor.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                    ),
+                                  ],
+                                ],
                               ),
+                            ),
+                            // Calligraphic Arabic surah name (Tarteel surah-name-v4 ligature).
+                            Expanded(
+                              child: Center(
+                                child: ExcludeSemantics(
+                                  child: Text(
+                                    'surah${chapter.id.toString().padLeft(3, '0')}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontFamily: AppFonts.surahName,
+                                          fontWeight: FontWeight.bold,
+                                          color: accentColor,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Ayah count to the right.
+                            Text(
+                              '${chapter.versesCount} Ayahs',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: textColor.withValues(alpha: 0.6),
+                                  ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

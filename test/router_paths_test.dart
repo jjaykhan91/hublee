@@ -16,6 +16,7 @@ void main() {
       expect(AppRoute.settings, '/settings');
       expect(AppRoute.search, '/search');
       expect(AppRoute.tajweedGuide, '/tajweed-guide');
+      expect(AppRoute.diagnostics, '/diagnostics');
     });
 
     test('surah builds path without ayah', () {
@@ -47,6 +48,20 @@ void main() {
         index: 5,
       );
       expect(path, contains('index=5'));
+    });
+
+    test('tryParseSurahId accepts 1–114', () {
+      expect(AppRoute.tryParseSurahId('1'), 1);
+      expect(AppRoute.tryParseSurahId('114'), 114);
+      expect(AppRoute.tryParseSurahId('2'), 2);
+    });
+
+    test('tryParseSurahId rejects junk and out-of-range', () {
+      expect(AppRoute.tryParseSurahId(null), isNull);
+      expect(AppRoute.tryParseSurahId(''), isNull);
+      expect(AppRoute.tryParseSurahId('abc'), isNull);
+      expect(AppRoute.tryParseSurahId('0'), isNull);
+      expect(AppRoute.tryParseSurahId('115'), isNull);
     });
   });
 }

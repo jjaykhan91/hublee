@@ -28,8 +28,8 @@ class ScrollScrubber extends StatefulWidget {
   /// Inset from the physical right edge of the stack.
   static const double edgeInset = 8;
 
-  /// Width of the overlay hit area (track + thumb padding).
-  static const double overlayWidth = _kTrackWidth + 24;
+  /// Width of the overlay hit area. At least 48 dp for a usable target.
+  static const double overlayWidth = AppSpacing.minTouchTarget;
 
   /// Right padding readers should reserve so content clears the overlay.
   static const double gutter = edgeInset + overlayWidth;
@@ -196,84 +196,89 @@ class _ScrollScrubberState extends State<ScrollScrubber>
       top: 8,
       bottom: 8,
       width: ScrollScrubber.overlayWidth,
-      child: GestureDetector(
-        onVerticalDragStart: _onDragStart,
-        onVerticalDragUpdate: _onDragUpdate,
-        onVerticalDragEnd: _onDragEnd,
-        onTapDown: _onTapDown,
-        behavior: HitTestBehavior.translucent,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Track line, aligned with the thumb on the physical right.
-            Positioned(
-              right: _kTrackWidth / 2 - 1.5,
-              top: _kThumbSize / 2,
-              bottom: _kThumbSize / 2,
-              child: Container(
-                width: 3,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(
-                    alpha: _isDragging ? 0.2 : 0.08,
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Thumb
-            Positioned(
-              right: 0,
-              top: thumbTop,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
-                width: _kTrackWidth,
-                height: _kThumbSize,
-                decoration: BoxDecoration(
-                  color: _isDragging
-                      ? colorScheme.primary
-                      : colorScheme.primary.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.drag_handle_rounded,
-                  size: 18,
-                  color: _isDragging
-                      ? colorScheme.onPrimary
-                      : colorScheme.onPrimary.withValues(alpha: 0.7),
-                ),
-              ),
-            ),
-
-            // Label floats inward so it does not hang off the screen.
-            Positioned(
-              right: _kTrackWidth + 8,
-              top: thumbTop + (_kThumbSize - 36) / 2,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
+      child: Semantics(
+        slider: true,
+        label: 'Reading position',
+        value: widget.labelBuilder(_currentIndex),
+        child: GestureDetector(
+          onVerticalDragStart: _onDragStart,
+          onVerticalDragUpdate: _onDragUpdate,
+          onVerticalDragEnd: _onDragEnd,
+          onTapDown: _onTapDown,
+          behavior: HitTestBehavior.translucent,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Track line, aligned with the thumb on the physical right.
+              Positioned(
+                right: _kTrackWidth / 2 - 1.5,
+                top: _kThumbSize / 2,
+                bottom: _kThumbSize / 2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  width: 3,
                   decoration: BoxDecoration(
-                    color: colorScheme.inverseSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: AppShadows.scrubber,
+                    color: colorScheme.primary.withValues(
+                      alpha: _isDragging ? 0.2 : 0.08,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: Text(
-                    widget.labelBuilder(_currentIndex),
-                    style: TextStyle(
-                      color: colorScheme.onInverseSurface,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              // Thumb
+              Positioned(
+                right: 0,
+                top: thumbTop,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: _kTrackWidth,
+                  height: _kThumbSize,
+                  decoration: BoxDecoration(
+                    color: _isDragging
+                        ? colorScheme.primary
+                        : colorScheme.primary.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    size: 18,
+                    color: _isDragging
+                        ? colorScheme.onPrimary
+                        : colorScheme.onPrimary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+
+              // Label floats inward so it does not hang off the screen.
+              Positioned(
+                right: _kTrackWidth + 8,
+                top: thumbTop + (_kThumbSize - 36) / 2,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.inverseSurface,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: AppShadows.scrubber,
+                    ),
+                    child: Text(
+                      widget.labelBuilder(_currentIndex),
+                      style: TextStyle(
+                        color: colorScheme.onInverseSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

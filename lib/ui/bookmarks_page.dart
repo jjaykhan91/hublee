@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../theme/app_tokens.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
 class BookmarksPage extends StatelessWidget {
@@ -81,8 +82,8 @@ class BookmarksPage extends StatelessWidget {
         final bookmark = bookmarks[index];
         final isQuran = bookmark.type == 'quran';
         final badgeColor = isQuran
-            ? const Color(0xFF4338CA)
-            : const Color(0xFF047857);
+            ? AppColors.verseOfDayTint
+            : AppColors.hadithOfDayTint;
 
         return Dismissible(
               key: ValueKey(bookmark.id),
@@ -101,8 +102,8 @@ class BookmarksPage extends StatelessWidget {
               child: Card(
                 child: ListTile(
                   leading: Container(
-                    width: 40,
-                    height: 40,
+                    width: AppSpacing.minTouchTarget,
+                    height: AppSpacing.minTouchTarget,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [

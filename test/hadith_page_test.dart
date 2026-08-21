@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hublee/hadith/hadith_book_summaries.dart';
+import 'package:hublee/hadith/hadith_repository.dart';
 import 'package:hublee/ui/hadith_page.dart';
 
 void main() {
@@ -39,7 +40,10 @@ void main() {
   });
 
   group('HadithPage', () {
-    setUp(rootBundle.clear);
+    setUp(() {
+      rootBundle.clear();
+      HadithRepository.resetCache();
+    });
 
     testWidgets('lists collection headers and Nawawi 40', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HadithPage()));

@@ -19,11 +19,24 @@ abstract final class AppRoute {
   // ── Full-screen (no bottom nav) ───────────────────────────────
   static const String search = '/search';
   static const String tajweedGuide = '/tajweed-guide';
+  static const String diagnostics = '/diagnostics';
 
   /// Path to surah reader, optionally with ayah to scroll to.
   static String surah(int surahId, {int? ayah}) {
     if (ayah == null) return '/quran/$surahId';
     return '/quran/$surahId?ayah=$ayah';
+  }
+
+  /// Canonical Quran range.
+  static const int minSurahId = 1;
+  static const int maxSurahId = 114;
+
+  /// Parses a path parameter as a surah id, or `null` if it is missing
+  /// or outside 1–114.
+  static int? tryParseSurahId(String? raw) {
+    final id = int.tryParse(raw ?? '');
+    if (id == null || id < minSurahId || id > maxSurahId) return null;
+    return id;
   }
 
   /// Path to hadith book reader, optionally with hadith index.

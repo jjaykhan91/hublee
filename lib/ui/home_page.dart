@@ -83,30 +83,40 @@ class _HomePageState extends State<HomePage> {
               padding: AppSpacing.page,
               children: [
                 // ── Search shortcut (3D shadow) ─────────────────
-                GestureDetector(
-                  onTap: () => context.push(AppRoute.search),
-                  child: AbsorbPointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.5,
-                        ),
-                        borderRadius: AppRadius.input,
-                        boxShadow: AppShadows.input,
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          hintText: 'Search Quran and Hadith',
-                          suffixIcon: Icon(
-                            Icons.arrow_forward_rounded,
-                            color: colorScheme.onSurface.withValues(alpha: 0.4),
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: AppRadius.input,
+                  child: InkWell(
+                    onTap: () => context.push(AppRoute.search),
+                    borderRadius: AppRadius.input,
+                    child: Semantics(
+                      button: true,
+                      label: 'Search Quran and Hadith',
+                      child: AbsorbPointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                            borderRadius: AppRadius.input,
+                            boxShadow: AppShadows.input,
                           ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.transparent,
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              hintText: 'Search Quran and Hadith',
+                              suffixIcon: Icon(
+                                Icons.arrow_forward_rounded,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -307,123 +317,132 @@ class _VerseOfTheDayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () =>
-          context.push(AppRoute.surah(verse.surahId, ayah: verse.ayah)),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return Semantics(
+      button: true,
+      label: 'Ayah of the day, ${verse.surahName} ayah ${verse.ayah}',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.featureCard,
+        child: InkWell(
+          onTap: () =>
+              context.push(AppRoute.surah(verse.surahId, ayah: verse.ayah)),
           borderRadius: AppRadius.featureCard,
-          boxShadow: AppShadows.featureCardShadow(const Color(0xFF4338CA)),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header row
-            Row(
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: AppColors.verseOfDay,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: AppRadius.featureCard,
+              boxShadow: AppShadows.featureCardShadow(AppColors.verseOfDayTint),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: AppRadius.badge,
-                    boxShadow: AppShadows.badge,
-                  ),
-                  child: const Icon(
-                    Icons.auto_stories_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Ayah of the Day',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                // Header row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: AppRadius.badge,
+                        boxShadow: AppShadows.badge,
+                      ),
+                      child: const Icon(
+                        Icons.auto_stories_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Ayah of the Day',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${verse.surahName} : ${verse.ayah}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+                const SizedBox(height: 12),
+
+                // Arabic text (compact)
+                if (verse.arabic.isNotEmpty)
+                  ArabicText(
+                    verse.arabic,
+                    tajweed: false,
+                    fontSize: 20,
+                    weight: FontWeight.bold,
+                    align: TextAlign.center,
+                    color: Colors.white,
+                    fontOverride: ArabicFontOption.uthmanic,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${verse.surahName} : ${verse.ayah}',
+                if (verse.arabic.isNotEmpty) const SizedBox(height: 10),
+
+                // English translation (show full but clamp height)
+                if (verse.english.isNotEmpty)
+                  Text(
+                    verse.english,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+
+                const SizedBox(height: 10),
+
+                // "Tap to read more" footer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Tap to read full surah',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // Arabic text (compact)
-            if (verse.arabic.isNotEmpty)
-              ArabicText(
-                verse.arabic,
-                tajweed: false,
-                fontSize: 20,
-                weight: FontWeight.bold,
-                align: TextAlign.center,
-                color: Colors.white,
-                fontOverride: ArabicFontOption.uthmanic,
-              ),
-            if (verse.arabic.isNotEmpty) const SizedBox(height: 10),
-
-            // English translation (show full but clamp height)
-            if (verse.english.isNotEmpty)
-              Text(
-                verse.english,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
-            const SizedBox(height: 10),
-
-            // "Tap to read more" footer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Tap to read full surah',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 14,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -441,148 +460,162 @@ class _HadithOfTheDayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(
-        AppRoute.hadithBook(
-          collectionId: hadith.collectionId,
-          bookFile: hadith.bookFile,
-          bookTitle: hadith.bookTitle,
-          index: hadith.hadithIndex,
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF065F46), Color(0xFF047857), Color(0xFF10B981)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Semantics(
+      button: true,
+      label: 'Hadith of the day, ${hadith.bookTitle}',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.featureCard,
+        child: InkWell(
+          onTap: () => context.push(
+            AppRoute.hadithBook(
+              collectionId: hadith.collectionId,
+              bookFile: hadith.bookFile,
+              bookTitle: hadith.bookTitle,
+              index: hadith.hadithIndex,
+            ),
           ),
           borderRadius: AppRadius.featureCard,
-          boxShadow: AppShadows.featureCardShadow(const Color(0xFF047857)),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header row
-            Row(
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: AppColors.hadithOfDay,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: AppRadius.featureCard,
+              boxShadow: AppShadows.featureCardShadow(
+                AppColors.hadithOfDayTint,
+              ),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: AppRadius.badge,
-                    boxShadow: AppShadows.badge,
-                  ),
-                  child: const Icon(
-                    Icons.library_books_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                // Header row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: AppRadius.badge,
+                        boxShadow: AppShadows.badge,
+                      ),
+                      child: const Icon(
+                        Icons.library_books_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Hadith of the Day',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        hadith.bookTitle,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Hadith of the Day',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                const SizedBox(height: 12),
+
+                // Narrator (compact)
+                if (hadith.narrator != null && hadith.narrator!.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      hadith.narrator!,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+                  const SizedBox(height: 10),
+                ],
+
+                // Arabic text (compact)
+                if (hadith.arabic.isNotEmpty)
+                  ArabicText(
+                    hadith.arabic,
+                    tajweed: false,
+                    fontSize: 18,
+                    weight: FontWeight.bold,
+                    align: TextAlign.center,
+                    color: Colors.white,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    hadith.bookTitle,
+                if (hadith.arabic.isNotEmpty) const SizedBox(height: 10),
+
+                // English translation (show preview)
+                if (hadith.english.isNotEmpty)
+                  Text(
+                    hadith.english,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+
+                const SizedBox(height: 10),
+
+                // "Tap to read more" footer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Tap to read full hadith',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // Narrator (compact)
-            if (hadith.narrator != null && hadith.narrator!.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  hadith.narrator!,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            // Arabic text (compact)
-            if (hadith.arabic.isNotEmpty)
-              ArabicText(
-                hadith.arabic,
-                tajweed: false,
-                fontSize: 18,
-                weight: FontWeight.bold,
-                align: TextAlign.center,
-                color: Colors.white,
-              ),
-            if (hadith.arabic.isNotEmpty) const SizedBox(height: 10),
-
-            // English translation (show preview)
-            if (hadith.english.isNotEmpty)
-              Text(
-                hadith.english,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
-            const SizedBox(height: 10),
-
-            // "Tap to read more" footer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Tap to read full hadith',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 14,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

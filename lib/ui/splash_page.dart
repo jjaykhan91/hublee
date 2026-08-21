@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
 import '../services/launch_preload.dart';
+import '../services/app_metrics.dart';
 
 /// Splash screen: background image, preload, then [AppRoute.home].
 class SplashPage extends StatefulWidget {
@@ -55,7 +56,10 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<void> _runPreload() async {
     try {
-      await (widget.preload ?? warmLaunchCaches)();
+      await AppMetrics.instance.time(
+        'launch.preload',
+        () => (widget.preload ?? warmLaunchCaches)(),
+      );
     } catch (_) {
       // Home has its own error UI for failed daily content.
     }

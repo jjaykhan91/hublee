@@ -122,6 +122,27 @@ flutter devices
 
 While running: **r** = hot reload, **R** = hot restart, **q** = quit.
 
+Debug and profile builds show a **Metrics** chip on the lower left. Tap it
+(or Settings → Diagnostics) to see:
+
+- Operation timings (`launch.preload`, `search.quranIndex`, `search.global`, …)
+- Route changes
+- Theme / overlay UI events
+- Frame jank vs 16 ms
+- Flutter's performance overlay (UI vs raster thread)
+
+Nothing is uploaded. The chip is hidden in release builds.
+
+To catch visual regressions of chrome (error page, search empty, cards):
+
+```powershell
+flutter test --update-goldens test/ui_snapshot_test.dart
+flutter test test/ui_snapshot_test.dart
+```
+
+Open the PNGs under `test/goldens/ui_*.png` and look at them — a golden is
+only useful after a human review.
+
 ### Release build (sanity check)
 
 ```powershell

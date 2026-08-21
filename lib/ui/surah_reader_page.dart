@@ -24,6 +24,7 @@ import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../theme/app_tokens.dart';
 
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
@@ -396,9 +397,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 icon: const Icon(Icons.info_outline_rounded),
                 tooltip: 'Surah info',
                 onPressed: () => _showSurahInfo(ctx, chapter),
-                style: IconButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
               );
             },
           ),
@@ -407,20 +405,17 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           icon: const Icon(Icons.menu_book_rounded),
           tooltip: 'Quran reading & Tajweed guide',
           onPressed: () => showQuranReadingGuideSheet(context),
-          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this surah',
           onPressed: _openSearch,
-          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         IconButton(
           icon: const Icon(Icons.tune_rounded),
           tooltip: 'Reader settings',
           onPressed: () =>
               showReaderSettingsSheet(context, showTajweedToggle: true),
-          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
         const SizedBox(width: 8),
       ],
@@ -827,7 +822,6 @@ class _AyahCard extends StatelessWidget {
                     size: 22,
                   ),
                   onPressed: onBookmarkToggle,
-                  visualDensity: VisualDensity.compact,
                   tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
                 ),
               ],
@@ -958,8 +952,8 @@ Widget _buildSurahInfoHeader(BuildContext context, ChapterMeta chapter) {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: AppSpacing.minTouchTarget,
+                      height: AppSpacing.minTouchTarget,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: accentColor, width: 2),
@@ -1155,18 +1149,23 @@ class _CyclingSurahTitle extends StatelessWidget {
       case 0:
         // Tarteel QUL surah-name-v4 font: ligatures surah001–surah114 render calligraphic Arabic names.
         final ligature = 'surah${chapter.id.toString().padLeft(3, '0')}';
-        return Text(
-          ligature,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontFamily: 'SurahNameV4',
-            fontWeight: FontWeight.w600,
-            fontSize: 24,
-            color: accent,
-            height: 1.3,
+        return Semantics(
+          label: 'Surah ${chapter.id}, ${chapter.nameSimple}',
+          child: ExcludeSemantics(
+            child: Text(
+              ligature,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontFamily: AppFonts.surahName,
+                fontWeight: FontWeight.w600,
+                fontSize: 24,
+                color: accent,
+                height: 1.3,
+              ),
+              textDirection: TextDirection.rtl,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          textDirection: TextDirection.rtl,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         );
       case 1:
         return Text(

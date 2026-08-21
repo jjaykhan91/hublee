@@ -53,6 +53,9 @@ late String _puaLongVerse;
 /// Standard Uthmanic Unicode, which the app renders when tajweed is on.
 late String _standardVerse;
 
+/// Ayat al-Kursi (2:255) — dense tashkeel used for the max-zoom strut pass.
+late String _denseTashkeelVerse;
+
 /// Registers the bundled Arabic fonts with the test font system.
 ///
 /// Without this, the framework substitutes its own fallback font, and every
@@ -190,6 +193,7 @@ void main() {
   setUpAll(() async {
     await _loadArabicFonts();
     _standardVerse = await _loadStandardVerse(2, 5);
+    _denseTashkeelVerse = await _loadStandardVerse(2, 255);
     final pua = await _loadPuaVerses(2, {5, 255});
     _puaVerse = pua[5]!;
     _puaLongVerse = pua[255]!;
@@ -301,6 +305,30 @@ void main() {
         );
       });
     }
+
+    testWidgets('dense tashkeel at max zoom does not overflow', (tester) async {
+      _setSurface(tester, const Size(1000, 4000));
+
+      await tester.pumpWidget(
+        _harness(
+          width: 320,
+          theme: buildLightTheme(),
+          child: ArabicText(
+            _denseTashkeelVerse,
+            tajweed: true,
+            fontSize: _kBaseFontSize * _kMaxZoom,
+            fontOverride: ArabicFontOption.amiri,
+          ),
+        ),
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'forceStrutHeight 2.0 must clear dense marks at maximum zoom',
+      );
+      expect(tester.getSize(find.byKey(_targetKey)).height, greaterThan(0));
+    });
 
     testWidgets('greater zoom produces a taller paragraph', (tester) async {
       _setSurface(tester, const Size(1000, 4000));

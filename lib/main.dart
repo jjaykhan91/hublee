@@ -4,6 +4,7 @@
 /// and go_router navigation.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
@@ -13,7 +14,9 @@ import 'services/settings_scope.dart';
 import 'services/app_scope.dart';
 import 'services/bookmark_service.dart';
 import 'services/bookmark_scope.dart';
+import 'services/app_metrics.dart';
 import 'router.dart';
+import 'ui/widgets/metrics_hud.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +40,7 @@ class _HubleeAppState extends State<HubleeApp> {
   final _bookmarkService = BookmarkService();
 
   ThemeMode _themeMode = ThemeMode.system;
+  bool _overlayEnabled = false;
 
   @override
   void initState() {
@@ -44,10 +48,27 @@ class _HubleeAppState extends State<HubleeApp> {
     _themeModeService.load().then((mode) => setState(() => _themeMode = mode));
     _settingsController.load();
     _bookmarkService.load();
+    AppMetrics.instance.attachFrameTiming();
+    AppMetrics.instance.addListener(_onOverlay);
+    appRouter.routerDelegate.addListener(_onRoute);
+  }
+
+  void _onOverlay() {
+    final next = AppMetrics.instance.overlayEnabled;
+    if (next == _overlayEnabled) return;
+    setState(() => _overlayEnabled = next);
+  }
+
+  void _onRoute() {
+    AppMetrics.instance.recordNav(
+      appRouter.routerDelegate.currentConfiguration.uri.toString(),
+    );
   }
 
   @override
   void dispose() {
+    AppMetrics.instance.removeListener(_onOverlay);
+    appRouter.routerDelegate.removeListener(_onRoute);
     _settingsController.dispose();
     super.dispose();
   }
@@ -58,6 +79,10 @@ class _HubleeAppState extends State<HubleeApp> {
         ? ThemeMode.light
         : ThemeMode.dark;
     setState(() => _themeMode = nextMode);
+    AppMetrics.instance.recordUi(
+      'theme',
+      detail: {'mode': nextMode == ThemeMode.dark ? 'dark' : 'light'},
+    );
     await _themeModeService.save(nextMode);
   }
 
@@ -74,10 +99,21 @@ class _HubleeAppState extends State<HubleeApp> {
           child: MaterialApp.router(
             title: 'Hublee',
             debugShowCheckedModeBanner: false,
+            showPerformanceOverlay: _overlayEnabled,
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
             themeMode: _themeMode,
             routerConfig: appRouter,
+            builder: (context, child) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  if (!kReleaseMode)
+                    const Positioned(left: 8, bottom: 88, child: MetricsHud()),
+                ],
+              );
+            },
           ),
         ),
       ),
