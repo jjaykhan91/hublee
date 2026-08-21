@@ -1,8 +1,4 @@
-/// Displays the user's saved bookmarks for Quran ayahs and Hadith
-/// entries.
-///
-/// Supports swipe-to-delete via [Dismissible] and one-tap
-/// navigation back to the bookmarked content.
+/// Displays saved ayahs, hadiths, and Quranic words for learning.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,7 +8,10 @@ import 'package:go_router/go_router.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../services/vocab_scope.dart';
+import '../services/vocab_service.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/arabic_text.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
 class BookmarksPage extends StatelessWidget {
@@ -21,43 +20,98 @@ class BookmarksPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bookmarkService = BookmarkScope.of(context);
+    final vocab = VocabScope.of(context);
     final bookmarks = bookmarkService.bookmarks;
+    final ayahs = bookmarks.where((b) => b.type == 'quran').toList();
+    final hadiths = bookmarks.where((b) => b.type == 'hadith').toList();
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Bookmarks')),
-      body: bookmarks.isEmpty
-          ? _buildEmptyState(context, colorScheme)
-          : _buildBookmarkList(
-              context,
-              bookmarkService,
-              bookmarks,
-              colorScheme,
-            ),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Saved'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Ayahs'),
+              Tab(text: 'Hadith'),
+              Tab(text: 'Words'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            ayahs.isEmpty
+                ? _empty(
+                    context,
+                    colorScheme,
+                    icon: Icons.menu_book_outlined,
+                    title: 'No favorite ayahs yet',
+                    subtitle:
+                        'Tap the bookmark icon on any ayah or hadith to save it',
+                  )
+                : _buildBookmarkList(
+                    context,
+                    bookmarkService,
+                    ayahs,
+                    colorScheme,
+                  ),
+            hadiths.isEmpty
+                ? _empty(
+                    context,
+                    colorScheme,
+                    icon: Icons.library_books_outlined,
+                    title: 'No favorite hadiths yet',
+                    subtitle: 'Bookmark a hadith while reading to save it here',
+                  )
+                : _buildBookmarkList(
+                    context,
+                    bookmarkService,
+                    hadiths,
+                    colorScheme,
+                  ),
+            vocab.entries.isEmpty
+                ? _empty(
+                    context,
+                    colorScheme,
+                    icon: Icons.star_outline_rounded,
+                    title: 'No saved words yet',
+                    subtitle:
+                        'Turn on word-by-word, tap a word, and star it to learn it',
+                  )
+                : _wordList(context, vocab, colorScheme),
+          ],
+        ),
+      ),
     );
   }
 
-  /// Shown when no bookmarks exist yet.
-  Widget _buildEmptyState(BuildContext context, ColorScheme colorScheme) {
+  Widget _empty(
+    BuildContext context,
+    ColorScheme colorScheme, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.bookmark_outline_rounded,
+            icon,
             size: 64,
             color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
-            'No bookmarks yet',
+            title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the bookmark icon on any ayah or hadith to save it',
+            subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),
@@ -175,6 +229,77 @@ class BookmarksPage extends StatelessWidget {
               curve: Curves.easeOut,
             );
       },
+    );
+  }
+
+  Widget _wordList(
+    BuildContext context,
+    VocabService vocab,
+    ColorScheme colorScheme,
+  ) {
+    final entries = vocab.entries;
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      itemCount: entries.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return Dismissible(
+          key: ValueKey(entry.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: colorScheme.error.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(Icons.delete_outline, color: colorScheme.error),
+          ),
+          onDismissed: (_) => _removeWordWithUndo(context, vocab, entry, index),
+          child: Card(
+            child: ListTile(
+              title: ArabicText(
+                entry.arabic,
+                tajweed: false,
+                fontSize: 22,
+                weight: FontWeight.w700,
+              ),
+              subtitle: Text(
+                '${entry.gloss} · ${entry.surahName} ${entry.surahId}:${entry.ayah}',
+              ),
+              trailing: IconButton(
+                tooltip: 'Remove from learning list',
+                icon: Icon(Icons.star_rounded, color: colorScheme.primary),
+                onPressed: () =>
+                    _removeWordWithUndo(context, vocab, entry, index),
+              ),
+              onTap: () =>
+                  context.push(AppRoute.surah(entry.surahId, ayah: entry.ayah)),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _removeWordWithUndo(
+    BuildContext context,
+    VocabService vocab,
+    VocabEntry entry,
+    int index,
+  ) {
+    vocab.remove(entry.id);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Word removed'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => vocab.restore(entry, index: index),
+        ),
+      ),
     );
   }
 

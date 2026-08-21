@@ -1,7 +1,7 @@
 /// Defines all application routes using go_router.
 ///
 /// Uses [StatefulShellRoute.indexedStack] for bottom navigation with
-/// 5 tabs (Home, Quran, Hadith, Bookmarks, Settings). Detail pages
+/// 6 tabs (Home, Quran, Hadith, Learn, Saved, Settings). Detail pages
 /// like surah reading and hadith reading push full-screen above the
 /// shell so the bottom nav bar is hidden during focused reading.
 library;
@@ -23,6 +23,13 @@ import 'router_paths.dart';
 import 'ui/splash_page.dart';
 import 'ui/route_error_page.dart';
 import 'ui/diagnostics_page.dart';
+import 'ui/dictionary_page.dart';
+import 'ui/learn_page.dart';
+import 'ui/learn_hub_page.dart';
+import 'ui/arabic_hub_page.dart';
+import 'ui/msa_dictionary_page.dart';
+import 'ui/grammar_page.dart';
+import 'ui/srs_review_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
 /// Used by detail pages that should push above the shell.
@@ -124,7 +131,30 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Tab 3: Bookmarks
+        // Tab 3: Learn
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/learn',
+              builder: (context, state) => const LearnHubPage(),
+              routes: [
+                GoRoute(
+                  path: 'quranic',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => const LearnPage(),
+                ),
+                GoRoute(
+                  path: 'review',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) =>
+                      const SrsReviewPage(deck: 'quran'),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // Tab 4: Bookmarks
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -134,7 +164,7 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Tab 4: Settings
+        // Tab 5: Settings
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -161,6 +191,39 @@ final GoRouter appRouter = GoRouter(
       path: AppRoute.diagnostics,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const DiagnosticsPage(),
+    ),
+    GoRoute(
+      path: AppRoute.dictionary,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          DictionaryPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
+    ),
+    GoRoute(
+      path: AppRoute.arabicHub,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const ArabicHubPage(),
+    ),
+    GoRoute(
+      path: AppRoute.msaDictionary,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          MsaDictionaryPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
+    ),
+    GoRoute(
+      path: AppRoute.grammar,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const GrammarPage(),
+    ),
+    GoRoute(
+      path: '${AppRoute.grammar}/:lessonId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          GrammarLessonPage(lessonId: state.pathParameters['lessonId'] ?? ''),
+    ),
+    GoRoute(
+      path: AppRoute.arabicReview,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SrsReviewPage(deck: 'msa'),
     ),
   ],
 );

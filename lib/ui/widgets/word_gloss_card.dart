@@ -22,6 +22,10 @@ class WordGlossCard extends StatefulWidget {
   /// Human-readable location, e.g. `Al-Fatiha 1:2`.
   final String? reference;
 
+  /// When set, a star is shown so the word can be saved for learning.
+  final bool isFavorite;
+  final VoidCallback? onToggleFavorite;
+
   final VoidCallback onDismiss;
 
   const WordGlossCard({
@@ -29,6 +33,8 @@ class WordGlossCard extends StatefulWidget {
     required this.selection,
     required this.onDismiss,
     this.reference,
+    this.isFavorite = false,
+    this.onToggleFavorite,
   });
 
   @override
@@ -90,9 +96,28 @@ class _WordGlossCardState extends State<WordGlossCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Balances the trailing close button so the Arabic and its
-                  // meaning read as one centred unit.
-                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: 40,
+                    child: widget.onToggleFavorite == null
+                        ? null
+                        : IconButton(
+                            icon: Icon(
+                              widget.isFavorite
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              color: widget.isFavorite
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                            tooltip: widget.isFavorite
+                                ? 'Remove from learning list'
+                                : 'Save word to learn',
+                            onPressed: () {
+                              AppHaptics.selection();
+                              widget.onToggleFavorite!();
+                            },
+                          ),
+                  ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,

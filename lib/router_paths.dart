@@ -13,6 +13,7 @@ abstract final class AppRoute {
   static const String home = '/home';
   static const String quran = '/quran';
   static const String hadith = '/hadith';
+  static const String learn = '/learn';
   static const String bookmarks = '/bookmarks';
   static const String settings = '/settings';
 
@@ -20,6 +21,16 @@ abstract final class AppRoute {
   static const String search = '/search';
   static const String tajweedGuide = '/tajweed-guide';
   static const String diagnostics = '/diagnostics';
+  static const String dictionary = '/dictionary';
+  static const String learnQuranic = '/learn/quranic';
+  static const String quranReview = '/learn/review';
+  static const String arabicHub = '/arabic';
+  static const String msaDictionary = '/arabic/dictionary';
+  static const String grammar = '/arabic/grammar';
+  static const String arabicReview = '/arabic/review';
+
+  static String grammarLesson(String id) =>
+      '/arabic/grammar/${Uri.encodeComponent(id)}';
 
   /// Path to surah reader, optionally with ayah to scroll to.
   static String surah(int surahId, {int? ayah}) {

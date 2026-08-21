@@ -13,8 +13,8 @@ import 'widgets/app_haptics.dart';
 /// Persistent bottom-navigation scaffold.
 ///
 /// Receives the [navigationShell] from `StatefulShellRoute` and
-/// renders a 5-tab [NavigationBar] (Home, Quran, Hadith, Bookmarks,
-/// Settings).
+/// renders a 6-tab [NavigationBar] (Home, Quran, Hadith, Learn,
+/// Saved, Settings).
 class AppShell extends StatelessWidget {
   /// The shell that manages the active tab body and branch state.
   final StatefulNavigationShell navigationShell;
@@ -60,9 +60,14 @@ class AppShell extends StatelessWidget {
             label: 'Hadith',
           ),
           NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school_rounded),
+            label: 'Learn',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.bookmark_outline_rounded),
             selectedIcon: Icon(Icons.bookmark_rounded),
-            label: 'Bookmarks',
+            label: 'Saved',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

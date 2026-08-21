@@ -69,4 +69,7 @@ class AssetPaths {
 
   /// Surah info summaries (short_text + full text) for all 114 surahs.
   static const surahInfo = 'assets/quran/surah_info.json';
+
+  /// Modern Standard Arabic dictionary (Wiktionary + Hublee core).
+  static const msaDictionary = 'assets/arabic/msa_dictionary.json';
 }

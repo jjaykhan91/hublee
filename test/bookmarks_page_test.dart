@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hublee/services/bookmark_scope.dart';
 import 'package:hublee/services/bookmark_service.dart';
+import 'package:hublee/services/vocab_scope.dart';
+import 'package:hublee/services/vocab_service.dart';
 import 'package:hublee/ui/bookmarks_page.dart';
 
 void main() {
@@ -16,17 +18,22 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('empty state tells the reader to use the bookmark icon', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      BookmarkScope(
-        service: BookmarkService(),
+  Widget harness({BookmarkService? bookmarks, VocabService? vocab}) {
+    return VocabScope(
+      service: vocab ?? VocabService(),
+      child: BookmarkScope(
+        service: bookmarks ?? BookmarkService(),
         child: const MaterialApp(home: BookmarksPage()),
       ),
     );
+  }
 
-    expect(find.text('No bookmarks yet'), findsOneWidget);
+  testWidgets('empty state tells the reader to use the bookmark icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(harness());
+
+    expect(find.text('No favorite ayahs yet'), findsOneWidget);
     expect(
       find.text('Tap the bookmark icon on any ayah or hadith to save it'),
       findsOneWidget,
@@ -47,12 +54,7 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(
-      BookmarkScope(
-        service: service,
-        child: const MaterialApp(home: BookmarksPage()),
-      ),
-    );
+    await tester.pumpWidget(harness(bookmarks: service));
     await tester.pump();
     expect(find.textContaining('Al-Fatihah'), findsOneWidget);
 
