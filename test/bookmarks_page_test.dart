@@ -33,4 +33,39 @@ void main() {
     );
     expect(find.textContaining('Long-press'), findsNothing);
   });
+
+  testWidgets('removing a bookmark offers undo that restores it', (
+    tester,
+  ) async {
+    final service = BookmarkService();
+    await service.toggleBookmark(
+      Bookmark.quran(
+        surahId: 1,
+        ayah: 1,
+        surahName: 'Al-Fatihah',
+        snippet: 'In the name of Allah',
+      ),
+    );
+
+    await tester.pumpWidget(
+      BookmarkScope(
+        service: service,
+        child: const MaterialApp(home: BookmarksPage()),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Al-Fatihah'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Remove bookmark'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Bookmark removed'), findsOneWidget);
+    expect(find.textContaining('Al-Fatihah'), findsNothing);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.textContaining('Al-Fatihah'), findsOneWidget);
+  });
 }

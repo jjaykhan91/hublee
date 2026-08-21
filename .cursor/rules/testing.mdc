@@ -29,7 +29,7 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/arabic_rendering_test.dart` | Arabic layout, overflow guards, span integrity, goldens |
 | `test/quran_page_test.dart` | Quran tab keep-alive (scroll survives tab switch) |
 | `test/home_page_test.dart` | Daily-card skeletons hold layout while content loads |
-| `test/bookmarks_page_test.dart` | Empty-state copy matches the bookmark-icon control |
+| `test/bookmarks_page_test.dart` | Empty-state copy and swipe-to-delete undo |
 | `test/hadith_page_test.dart` | Book summaries and lazy Hadith tab list |
 | `test/splash_page_test.dart` | Splash preloads then advances; tap and maxWait skip a hung load |
 | `test/scroll_scrubber_test.dart` | Scrubber pins to the right edge; list gutter matches overlay |
