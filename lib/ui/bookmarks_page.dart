@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
+import '../services/bookmark_service.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
 class BookmarksPage extends StatelessWidget {
@@ -68,8 +69,8 @@ class BookmarksPage extends StatelessWidget {
   /// Builds the scrollable list of bookmark cards.
   Widget _buildBookmarkList(
     BuildContext context,
-    dynamic bookmarkService,
-    List bookmarks,
+    BookmarkService bookmarkService,
+    List<Bookmark> bookmarks,
     ColorScheme colorScheme,
   ) {
     return ListView.separated(
@@ -95,7 +96,8 @@ class BookmarksPage extends StatelessWidget {
                 ),
                 child: Icon(Icons.delete_outline, color: colorScheme.error),
               ),
-              onDismissed: (_) => bookmarkService.removeBookmark(bookmark.id),
+              onDismissed: (_) =>
+                  _removeWithUndo(context, bookmarkService, bookmark, index),
               child: Card(
                 child: ListTile(
                   leading: Container(
@@ -148,8 +150,12 @@ class BookmarksPage extends StatelessWidget {
                           color: colorScheme.error,
                         ),
                         tooltip: 'Remove bookmark',
-                        onPressed: () =>
-                            bookmarkService.removeBookmark(bookmark.id),
+                        onPressed: () => _removeWithUndo(
+                          context,
+                          bookmarkService,
+                          bookmark,
+                          index,
+                        ),
                       ),
                       const Icon(Icons.chevron_right),
                     ],
@@ -171,23 +177,44 @@ class BookmarksPage extends StatelessWidget {
     );
   }
 
+  /// Removes [bookmark] and offers an Undo snackbar.
+  void _removeWithUndo(
+    BuildContext context,
+    BookmarkService bookmarkService,
+    Bookmark bookmark,
+    int index,
+  ) {
+    bookmarkService.removeBookmark(bookmark.id);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Bookmark removed'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            bookmarkService.restoreBookmark(bookmark, index: index);
+          },
+        ),
+      ),
+    );
+  }
+
   /// Routes the user to the bookmarked ayah or hadith.
   void _navigateToBookmark(
     BuildContext context,
-    dynamic bookmark,
+    Bookmark bookmark,
     bool isQuran,
   ) {
     if (isQuran) {
-      context.push(
-        AppRoute.surah(bookmark.surahId as int, ayah: bookmark.ayah as int?),
-      );
+      context.push(AppRoute.surah(bookmark.surahId!, ayah: bookmark.ayah));
     } else {
       context.push(
         AppRoute.hadithBook(
-          collectionId: bookmark.collectionId as String,
-          bookFile: bookmark.bookFile as String,
-          bookTitle: bookmark.bookTitle as String? ?? '',
-          index: bookmark.hadithIndex as int?,
+          collectionId: bookmark.collectionId!,
+          bookFile: bookmark.bookFile!,
+          bookTitle: bookmark.bookTitle ?? '',
+          index: bookmark.hadithIndex,
         ),
       );
     }

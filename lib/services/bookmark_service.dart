@@ -209,6 +209,19 @@ class BookmarkService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Re-inserts [bookmark] after an accidental delete.
+  ///
+  /// [index] is clamped to the current list so undo still works if
+  /// other bookmarks changed while the snackbar was visible.
+  Future<void> restoreBookmark(Bookmark bookmark, {int? index}) async {
+    if (_bookmarkIds.contains(bookmark.id)) return;
+    final insertAt = (index ?? 0).clamp(0, _bookmarks.length);
+    _bookmarks.insert(insertAt, bookmark);
+    _bookmarkIds.add(bookmark.id);
+    await _persistBookmarks();
+    notifyListeners();
+  }
+
   /// Saves the user's last-read Quran position.
   Future<void> saveLastReadQuran({
     required int surahId,
