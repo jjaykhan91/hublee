@@ -2,6 +2,13 @@
   "mcpServers": {
     "context7": {
       "url": "https://mcp.context7.com/mcp"
+    },
+    "android": {
+      "command": "npx",
+      "args": ["-y", "android-mcp-server"],
+      "env": {
+        "ANDROID_HOME": "C:/Users/MightK/AppData/Local/Android/Sdk"
+      }
     }
   }
 }
