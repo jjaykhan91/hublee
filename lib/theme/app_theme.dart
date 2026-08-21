@@ -26,6 +26,17 @@ const _darkOnPrimary = Color(0xFF0A1220);
 const _darkSecondary = Color(0xFF7DD3FC);
 const _darkError = Color(0xFFFF6B6B);
 
+const _pageTransitionsTheme = PageTransitionsTheme(
+  builders: {
+    TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+    TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+    TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+    TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+  },
+);
+
 /// Light colour scheme seeded from a vivid blue with richer
 /// secondary and tertiary tones.
 final _lightScheme = ColorScheme.fromSeed(
@@ -128,7 +139,7 @@ ThemeData buildLightTheme() {
     scaffoldBackgroundColor: const Color(0xFFF8FAFC),
     cardTheme: CardThemeData(
       surfaceTintColor: Colors.transparent,
-      elevation: 3,
+      elevation: 1,
       shadowColor: Colors.black.withValues(alpha: 0.12),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
@@ -179,12 +190,7 @@ ThemeData buildLightTheme() {
       shadowColor: Colors.black.withValues(alpha: 0.15),
       height: 68,
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-      },
-    ),
+    pageTransitionsTheme: _pageTransitionsTheme,
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
   );
 }
@@ -216,12 +222,12 @@ ThemeData buildDarkTheme() {
       ),
       systemOverlayStyle: SystemUiOverlayStyle.light,
     ),
-    cardTheme: CardThemeData(
+    cardTheme: const CardThemeData(
       color: _darkSurfaceElevated,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.35),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
         side: BorderSide(color: _darkOutline, width: 1),
       ),
@@ -267,12 +273,7 @@ ThemeData buildDarkTheme() {
         borderSide: BorderSide(color: _darkPrimary, width: 1.4),
       ),
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-      },
-    ),
+    pageTransitionsTheme: _pageTransitionsTheme,
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
   );
 }

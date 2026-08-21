@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../router_paths.dart';
 import '../services/settings_controller.dart';
@@ -103,6 +104,7 @@ class SettingsPage extends StatelessWidget {
                               AppHaptics.selection();
                               settings.arabicFont = font;
                             },
+                            materialTapTargetSize: MaterialTapTargetSize.padded,
                             selectedColor: colorScheme.primary.withValues(
                               alpha: 0.15,
                             ),
@@ -153,12 +155,16 @@ class SettingsPage extends StatelessWidget {
                         : 'Plain Arabic text displayed',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  trailing: Switch(
-                    value: settings.tajweedEnabled,
-                    onChanged: (v) {
-                      AppHaptics.selection();
-                      settings.tajweedEnabled = v;
-                    },
+                  trailing: Semantics(
+                    label: 'Tajweed colors',
+                    toggled: settings.tajweedEnabled,
+                    child: Switch(
+                      value: settings.tajweedEnabled,
+                      onChanged: (v) {
+                        AppHaptics.selection();
+                        settings.tajweedEnabled = v;
+                      },
+                    ),
                   ),
                   onTap: () {
                     AppHaptics.selection();
@@ -188,12 +194,16 @@ class SettingsPage extends StatelessWidget {
                         : 'Tapping words is off',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  trailing: Switch(
-                    value: settings.wordByWordEnabled,
-                    onChanged: (v) {
-                      AppHaptics.selection();
-                      settings.wordByWordEnabled = v;
-                    },
+                  trailing: Semantics(
+                    label: 'Word by word',
+                    toggled: settings.wordByWordEnabled,
+                    child: Switch(
+                      value: settings.wordByWordEnabled,
+                      onChanged: (v) {
+                        AppHaptics.selection();
+                        settings.wordByWordEnabled = v;
+                      },
+                    ),
                   ),
                   onTap: () {
                     AppHaptics.selection();
@@ -333,12 +343,7 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        'Version 1.0.0',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
+                      const _AppVersionLabel(),
                     ],
                   ),
                 ),
@@ -435,17 +440,56 @@ class _FontSizeCard extends StatelessWidget {
                 ),
               ],
             ),
-            Slider(
-              value: value,
-              min: 0.8,
-              max: 1.8,
-              divisions: 10,
-              onChanged: onChanged,
+            Semantics(
+              label: label,
+              value: '${(value * 100).round()} percent',
+              slider: true,
+              child: Slider(
+                value: value,
+                min: 0.8,
+                max: 1.8,
+                divisions: 10,
+                label: '${(value * 100).round()}%',
+                onChanged: onChanged,
+              ),
             ),
             const SizedBox(height: 4),
             preview,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Shows the version from the host package, not a hardcoded string.
+class _AppVersionLabel extends StatefulWidget {
+  const _AppVersionLabel();
+
+  @override
+  State<_AppVersionLabel> createState() => _AppVersionLabelState();
+}
+
+class _AppVersionLabelState extends State<_AppVersionLabel> {
+  String _label = 'Version \u2026';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() {
+        _label = 'Version ${info.version}+${info.buildNumber}';
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
       ),
     );
   }

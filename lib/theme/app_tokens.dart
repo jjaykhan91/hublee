@@ -86,6 +86,9 @@ abstract final class AppSpacing {
 
   /// Small gap between related items.
   static const double itemGap = 12.0;
+
+  /// Minimum tappable size (Material accessibility guideline).
+  static const double minTouchTarget = 48.0;
 }
 
 // ── Shadows (3D / elevation style) ───────────────────────────────
@@ -155,4 +158,39 @@ abstract final class AppShadows {
       offset: const Offset(0, 8),
     ),
   ];
+}
+
+// ── Feature palettes ─────────────────────────────────────────────
+
+/// Product-surface colours that are not derived from [ColorScheme]
+/// because they identify a card (ayah of the day vs hadith of the day)
+/// rather than following the seed.
+abstract final class AppColors {
+  AppColors._();
+
+  static const verseOfDay = [
+    Color(0xFF312E81),
+    Color(0xFF4338CA),
+    Color(0xFF6366F1),
+  ];
+  static const verseOfDayTint = Color(0xFF4338CA);
+
+  static const hadithOfDay = [
+    Color(0xFF065F46),
+    Color(0xFF047857),
+    Color(0xFF10B981),
+  ];
+  static const hadithOfDayTint = Color(0xFF047857);
+
+  /// Warm amber used on Meccan surah cards.
+  static const meccanAccent = Color(0xFFD4A054);
+
+  /// Cool green used on Medinan surah cards.
+  static const medinanAccent = Color(0xFF4CAF7D);
+
+  static const meccanCardGradient = [Color(0xFF3D2E1E), Color(0xFF2A1F14)];
+  static const medinanCardGradient = [Color(0xFF1A3529), Color(0xFF0F211A)];
+
+  /// Cream text over the dark surah-card background images.
+  static const surahCardOnImage = Color(0xFFF5F0E8);
 }

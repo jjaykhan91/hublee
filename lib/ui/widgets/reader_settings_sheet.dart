@@ -110,12 +110,16 @@ class _ReaderSettingsSheet extends StatelessWidget {
           _SettingRow(
             icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
             label: isDark ? 'Moon Mode' : 'Sun Mode',
-            trailing: Switch(
-              value: isDark,
-              onChanged: (_) {
-                AppHaptics.selection();
-                AppScope.of(context).toggleTheme();
-              },
+            trailing: Semantics(
+              label: isDark ? 'Moon Mode' : 'Sun Mode',
+              toggled: isDark,
+              child: Switch(
+                value: isDark,
+                onChanged: (_) {
+                  AppHaptics.selection();
+                  AppScope.of(context).toggleTheme();
+                },
+              ),
             ),
             onTap: () {
               AppHaptics.selection();
@@ -130,12 +134,16 @@ class _ReaderSettingsSheet extends StatelessWidget {
             _SettingRow(
               icon: Icons.color_lens_rounded,
               label: 'Tajweed Colors',
-              trailing: Switch(
-                value: settings.tajweedEnabled,
-                onChanged: (v) {
-                  AppHaptics.selection();
-                  settings.tajweedEnabled = v;
-                },
+              trailing: Semantics(
+                label: 'Tajweed colors',
+                toggled: settings.tajweedEnabled,
+                child: Switch(
+                  value: settings.tajweedEnabled,
+                  onChanged: (v) {
+                    AppHaptics.selection();
+                    settings.tajweedEnabled = v;
+                  },
+                ),
               ),
               onTap: () {
                 AppHaptics.selection();
@@ -147,12 +155,16 @@ class _ReaderSettingsSheet extends StatelessWidget {
             _SettingRow(
               icon: Icons.touch_app_rounded,
               label: 'Word by Word',
-              trailing: Switch(
-                value: settings.wordByWordEnabled,
-                onChanged: (v) {
-                  AppHaptics.selection();
-                  settings.wordByWordEnabled = v;
-                },
+              trailing: Semantics(
+                label: 'Word by word',
+                toggled: settings.wordByWordEnabled,
+                child: Switch(
+                  value: settings.wordByWordEnabled,
+                  onChanged: (v) {
+                    AppHaptics.selection();
+                    settings.wordByWordEnabled = v;
+                  },
+                ),
               ),
               onTap: () {
                 AppHaptics.selection();
@@ -229,6 +241,7 @@ class _FontPicker extends StatelessWidget {
                     AppHaptics.selection();
                     onChanged(font);
                   },
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
                   selectedColor: colorScheme.primary.withValues(alpha: 0.15),
                   labelStyle: TextStyle(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -245,7 +258,6 @@ class _FontPicker extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  visualDensity: VisualDensity.compact,
                 ),
               );
             }).toList(),
@@ -285,12 +297,18 @@ class _ZoomSlider extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         Expanded(
-          child: Slider(
-            value: value,
-            min: 0.8,
-            max: 1.8,
-            divisions: 10,
-            onChanged: onChanged,
+          child: Semantics(
+            label: label,
+            value: '${(value * 100).round()} percent',
+            slider: true,
+            child: Slider(
+              value: value,
+              min: 0.8,
+              max: 1.8,
+              divisions: 10,
+              label: '${(value * 100).round()}%',
+              onChanged: onChanged,
+            ),
           ),
         ),
         Container(

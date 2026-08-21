@@ -64,8 +64,8 @@ class GradientTile extends StatelessWidget {
             children: [
               // Icon badge with 3D shadow
               Container(
-                height: 44,
-                width: 44,
+                height: AppSpacing.minTouchTarget,
+                width: AppSpacing.minTouchTarget,
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.18),
                   borderRadius: AppRadius.chip,

@@ -11,12 +11,14 @@ import 'package:hublee/services/quran_search_service.dart';
 /// Records which [useGlyphText] flag was requested and returns fixtures.
 class _RecordingArabicRepo implements QuranArabicRepository {
   bool? lastUseGlyphText;
+  int loadCount = 0;
 
   @override
   Future<Map<String, String>> loadArabicSurah(
     int surahId, {
     bool useGlyphText = true,
   }) async {
+    loadCount++;
     lastUseGlyphText = useGlyphText;
     if (useGlyphText) {
       // PUA-looking private-use junk — must NOT be what search indexes.
@@ -51,6 +53,10 @@ class _StubTranslationRepo implements QuranTranslationRepository {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(QuranSearchService.resetCache);
+
   test('Arabic search indexes emlaey, not PUA glyph text', () async {
     final arabicRepo = _RecordingArabicRepo();
     final service = QuranSearchService(
@@ -89,5 +95,29 @@ void main() {
     // Query that only exists in the stub's glyph corpus.
     final hits = await service.search('\uE000\uE001');
     expect(hits, isEmpty);
+  });
+
+  test('second search reuses the session index', () async {
+    final arabicRepo = _RecordingArabicRepo();
+    final service = QuranSearchService(
+      chaptersRepo: _StubChaptersRepo(),
+      arabicRepo: arabicRepo,
+      translationRepo: _StubTranslationRepo(),
+    );
+
+    await service.search('Merciful');
+    expect(arabicRepo.loadCount, 1);
+
+    await service.search('Allah');
+    expect(arabicRepo.loadCount, 1);
+  });
+
+  test('empty query returns no hits', () async {
+    final service = QuranSearchService(
+      chaptersRepo: _StubChaptersRepo(),
+      arabicRepo: _RecordingArabicRepo(),
+      translationRepo: _StubTranslationRepo(),
+    );
+    expect(await service.search('   '), isEmpty);
   });
 }

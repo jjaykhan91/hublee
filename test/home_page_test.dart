@@ -6,6 +6,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:hublee/hadith/hadith_repository.dart';
+import 'package:hublee/quran/quran_translation_repository.dart';
 import 'package:hublee/services/bookmark_scope.dart';
 import 'package:hublee/services/bookmark_service.dart';
 import 'package:hublee/services/daily_content_service.dart';
@@ -17,6 +19,8 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     DailyContentService.resetCache();
+    HadithRepository.resetCache();
+    QuranTranslationRepository.resetCache();
     rootBundle.clear();
   });
 

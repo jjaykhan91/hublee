@@ -529,7 +529,6 @@ class _HadithCard extends StatelessWidget {
                     size: 22,
                   ),
                   onPressed: onBookmarkToggle,
-                  visualDensity: VisualDensity.compact,
                   tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
                 ),
               ],
