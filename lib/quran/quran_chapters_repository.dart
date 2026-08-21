@@ -7,6 +7,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
@@ -29,6 +30,14 @@ class QuranChaptersRepository {
   Future<List<ChapterMeta>> loadChapters() {
     return _cacheFuture ??= _loadChaptersUncached();
   }
+
+  /// Clears the session cache. Tests only.
+  ///
+  /// Each widget test runs in its own fake-async zone, and a `Future` cached
+  /// in one zone never delivers in the next — a page would sit on its loading
+  /// spinner forever. Call this between tests that pump a page.
+  @visibleForTesting
+  static void resetCache() => _cacheFuture = null;
 
   static Future<List<ChapterMeta>> _loadChaptersUncached() async {
     final results = await Future.wait([

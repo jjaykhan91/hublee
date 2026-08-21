@@ -17,6 +17,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
@@ -98,5 +99,18 @@ class QuranArabicRepository {
       );
       return json.decode(rawJson) as List<dynamic>;
     }();
+  }
+
+  /// Clears the session caches. Tests only.
+  ///
+  /// Each widget test runs in its own fake-async zone, and a `Future` cached
+  /// in one zone never delivers in the next — a page would sit on its loading
+  /// spinner forever. Call this between tests that pump a page.
+  @visibleForTesting
+  static void resetCache() {
+    _mushafRowsFuture = null;
+    _glyphCache.clear();
+    _emlaeyCache.clear();
+    _uthmaniCache.clear();
   }
 }

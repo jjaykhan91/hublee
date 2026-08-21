@@ -57,6 +57,24 @@ Decoding a multi-megabyte JSON file is expensive and happens on the main isolate
   rule detection; memoize its output per (text, brightness, style) rather than
   recomputing on every rebuild.
 
+## Keep tab views alive
+
+Children of a `TabBarView` are disposed when they scroll off, so switching tabs
+and coming back rebuilds the list and silently returns the reader to the top.
+Mix in `AutomaticKeepAliveClientMixin`, return `true` from `wantKeepAlive`, and
+call `super.build(context)`. All four `QuranPage` tabs do this.
+
+Once a view is stateful for that reason, move derived data — juz grouping,
+Meccan/Medinan partitioning, revelation-order sorting — into `initState` with a
+`didUpdateWidget` refresh, rather than recomputing it on every build.
+
+## Animate only what the reader can see
+
+Staggered entry animations on a 114-item list are mostly invisible work: past
+the first screenful the animation has finished long before the item scrolls
+into view. Cap the animated prefix (`_animatedCardLimit` in `quran_page.dart`)
+and return the plain widget beyond it.
+
 ## Debounce persistence
 
 `SharedPreferences` writes hit disk. A `ChangeNotifier` setter that writes and calls

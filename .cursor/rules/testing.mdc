@@ -27,6 +27,9 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/tajweed_baqarah_test.dart` | Every letter position in Al-Baqarah 2:1–5 vs quran.com |
 | `test/router_paths_test.dart` | `AppRoute` path building |
 | `test/arabic_rendering_test.dart` | Arabic layout, overflow guards, span integrity, goldens |
+| `test/quran_page_test.dart` | Quran tab keep-alive (scroll survives tab switch) |
+| `test/tajweed_colors_test.dart` | Rule colours pinned to the documented Madani hex |
+| `test/quran_chapters_repository_test.dart` | 114 chapters load with valid metadata |
 
 ## What must have a test
 
@@ -68,6 +71,30 @@ Paths are relative to the package root, which is the working directory under
   tajweed colours both look like "just a diff" otherwise.
 - Keep goldens narrow: fix the widget size, theme, font, and zoom explicitly so a
   diff means a real rendering change and not an unrelated theme tweak.
+
+## Pumping a page that loads assets
+
+Two session caches will make the **second** test in a file hang on its loading
+spinner with no error to explain why. Each test runs in its own fake-async zone,
+and a `Future` completed in a previous zone never delivers in the next:
+
+```dart
+setUp(() {
+  QuranChaptersRepository.resetCache();  // also QuranArabicRepository,
+  rootBundle.clear();                    // WordByWordRepository
+});
+```
+
+`rootBundle` is the one that actually bites — it caches asset strings
+independently of our repositories, so clearing only the repository is not
+enough. Repositories that cache expose `@visibleForTesting resetCache()`; add
+one when you introduce a new cache.
+
+Do not try to diagnose this by pumping longer. Assert
+`find.byType(CircularProgressIndicator)` is absent to fail fast with a clear
+signal instead. Note that `pumpAndSettle` **cannot** be used while a progress
+indicator is on screen, since it animates forever — pump a fixed number of
+frames instead.
 
 ## Widget test conventions
 
