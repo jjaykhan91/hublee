@@ -19,6 +19,7 @@ import 'ui/global_search_page.dart';
 import 'ui/bookmarks_page.dart';
 import 'ui/settings_page.dart';
 import 'ui/tajweed_guide_page.dart';
+import 'router_paths.dart';
 import 'ui/splash_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
@@ -28,11 +29,11 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 /// The application's router configuration.
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/splash',
+  initialLocation: AppRoute.splash,
   routes: [
-    // ── Splash (shows 3s then redirects to /home) ─────────────────
+    // ── Splash (preload, then [AppRoute.home]) ────────────────────
     GoRoute(
-      path: '/splash',
+      path: AppRoute.splash,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SplashPage(),
     ),
