@@ -32,6 +32,7 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/bookmarks_page_test.dart` | Empty-state copy matches the bookmark-icon control |
 | `test/hadith_page_test.dart` | Book summaries and lazy Hadith tab list |
 | `test/splash_page_test.dart` | Splash preloads then advances; tap and maxWait skip a hung load |
+| `test/scroll_scrubber_test.dart` | Scrubber pins to the right edge; list gutter matches overlay |
 | `test/tajweed_colors_test.dart` | Rule colours pinned to the documented Madani hex |
 | `test/quran_chapters_repository_test.dart` | 114 chapters load with valid metadata |
 
