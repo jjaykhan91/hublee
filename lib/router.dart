@@ -22,6 +22,7 @@ import 'ui/tajweed_guide_page.dart';
 import 'router_paths.dart';
 import 'ui/splash_page.dart';
 import 'ui/route_error_page.dart';
+import 'ui/diagnostics_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
 /// Used by detail pages that should push above the shell.
@@ -152,9 +153,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const SearchPage(),
     ),
     GoRoute(
-      path: '/tajweed-guide',
+      path: AppRoute.tajweedGuide,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const TajweedGuidePage(),
+    ),
+    GoRoute(
+      path: AppRoute.diagnostics,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const DiagnosticsPage(),
     ),
   ],
 );

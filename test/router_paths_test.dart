@@ -16,6 +16,7 @@ void main() {
       expect(AppRoute.settings, '/settings');
       expect(AppRoute.search, '/search');
       expect(AppRoute.tajweedGuide, '/tajweed-guide');
+      expect(AppRoute.diagnostics, '/diagnostics');
     });
 
     test('surah builds path without ayah', () {

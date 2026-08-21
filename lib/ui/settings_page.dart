@@ -5,6 +5,7 @@
 /// dedicated tab accessible from the bottom navigation bar.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
@@ -280,6 +281,25 @@ class SettingsPage extends StatelessWidget {
               .animate()
               .fadeIn(duration: 400.ms, delay: 360.ms)
               .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 360.ms),
+          if (!kReleaseMode) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                leading: Icon(Icons.speed_rounded, color: colorScheme.primary),
+                title: const Text('Diagnostics'),
+                subtitle: Text(
+                  'Timings, jank, and the performance overlay',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push(AppRoute.diagnostics),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────

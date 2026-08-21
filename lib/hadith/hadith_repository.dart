@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
+import '../services/app_metrics.dart';
 import '../services/search_models.dart';
 
 // ────────────────────────────────────────────────────────────────
@@ -302,51 +303,53 @@ extension HadithSearchExtension on HadithRepository {
     return HadithRepository._searchIndexFuture ??= _buildSearchIndex();
   }
 
-  Future<List<_HadithIndexRow>> _buildSearchIndex() async {
-    final rows = <_HadithIndexRow>[];
-    final collections = await loadCollections();
+  Future<List<_HadithIndexRow>> _buildSearchIndex() {
+    return AppMetrics.instance.time('search.hadithIndex', () async {
+      final rows = <_HadithIndexRow>[];
+      final collections = await loadCollections();
 
-    for (final collection in collections) {
-      late final List<HadithBookMeta> books;
-      try {
-        books = await loadBooksForCollection(collection.id);
-      } catch (_) {
-        continue;
-      }
+      for (final collection in collections) {
+        late final List<HadithBookMeta> books;
+        try {
+          books = await loadBooksForCollection(collection.id);
+        } catch (_) {
+          continue;
+        }
 
-      final loaded = await Future.wait(
-        books.map((bookMeta) async {
-          try {
-            final book = await loadBook(collection.id, bookMeta.file);
-            return (bookMeta, book);
-          } catch (_) {
-            return null;
+        final loaded = await Future.wait(
+          books.map((bookMeta) async {
+            try {
+              final book = await loadBook(collection.id, bookMeta.file);
+              return (bookMeta, book);
+            } catch (_) {
+              return null;
+            }
+          }),
+        );
+
+        for (final item in loaded) {
+          if (item == null) continue;
+          final (bookMeta, book) = item;
+          final bookTitle = book.title.isNotEmpty ? book.title : bookMeta.title;
+          for (var index = 0; index < book.hadiths.length; index++) {
+            final hadith = book.hadiths[index];
+            final english = hadith.english ?? '';
+            rows.add(
+              _HadithIndexRow(
+                collectionId: collection.id,
+                bookFile: bookMeta.file,
+                bookTitle: bookTitle,
+                hadithIndex: index,
+                arabic: hadith.arabic ?? '',
+                english: english,
+                englishLower: english.toLowerCase(),
+              ),
+            );
           }
-        }),
-      );
-
-      for (final item in loaded) {
-        if (item == null) continue;
-        final (bookMeta, book) = item;
-        final bookTitle = book.title.isNotEmpty ? book.title : bookMeta.title;
-        for (var index = 0; index < book.hadiths.length; index++) {
-          final hadith = book.hadiths[index];
-          final english = hadith.english ?? '';
-          rows.add(
-            _HadithIndexRow(
-              collectionId: collection.id,
-              bookFile: bookMeta.file,
-              bookTitle: bookTitle,
-              hadithIndex: index,
-              arabic: hadith.arabic ?? '',
-              english: english,
-              englishLower: english.toLowerCase(),
-            ),
-          );
         }
       }
-    }
-    return rows;
+      return rows;
+    });
   }
 }
 

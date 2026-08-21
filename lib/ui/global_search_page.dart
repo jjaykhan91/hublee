@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import '../router_paths.dart';
 import '../services/hadith_search_service.dart';
 import '../services/quran_search_service.dart';
+import '../services/app_metrics.dart';
 import '../services/search_models.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/section_header.dart';
@@ -80,20 +81,22 @@ class _SearchPageState extends State<SearchPage> {
 
     setState(() => _isSearching = true);
     try {
-      final hadithFuture = widget.hadithSearch.search(query, limit: 100);
-      final quranFuture = widget.quranSearch.search(query, limit: 150);
-      final hadithHits = await hadithFuture;
-      final quranHits = await quranFuture;
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() {
-        _hadithResults
-          ..clear()
-          ..addAll(hadithHits);
-        _quranResults
-          ..clear()
-          ..addAll(quranHits);
-        _isSearching = false;
-      });
+      await AppMetrics.instance.time('search.global', () async {
+        final hadithFuture = widget.hadithSearch.search(query, limit: 100);
+        final quranFuture = widget.quranSearch.search(query, limit: 150);
+        final hadithHits = await hadithFuture;
+        final quranHits = await quranFuture;
+        if (!mounted || generation != _searchGeneration) return;
+        setState(() {
+          _hadithResults
+            ..clear()
+            ..addAll(hadithHits);
+          _quranResults
+            ..clear()
+            ..addAll(quranHits);
+          _isSearching = false;
+        });
+      }, detail: {'queryLen': '${query.length}'});
     } catch (_) {
       if (!mounted || generation != _searchGeneration) return;
       setState(() => _isSearching = false);

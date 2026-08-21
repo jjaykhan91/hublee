@@ -19,6 +19,7 @@ abstract final class AppRoute {
   // ── Full-screen (no bottom nav) ───────────────────────────────
   static const String search = '/search';
   static const String tajweedGuide = '/tajweed-guide';
+  static const String diagnostics = '/diagnostics';
 
   /// Path to surah reader, optionally with ayah to scroll to.
   static String surah(int surahId, {int? ayah}) {

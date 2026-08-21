@@ -7,6 +7,7 @@ library;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../quran/quran_arabic_repository.dart';
+import 'app_metrics.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_translation_repository.dart';
 import 'search_models.dart';
@@ -49,7 +50,10 @@ class QuranSearchService {
     if (trimmed.isEmpty) return [];
     final queryLower = trimmed.toLowerCase();
 
+    final indexWait = Stopwatch()..start();
     final index = await _ensureIndex();
+    final indexElapsed = indexWait.elapsed;
+    final scan = Stopwatch()..start();
     final hits = <QuranSearchHit>[];
 
     for (final row in index) {
@@ -65,9 +69,21 @@ class QuranSearchService {
           snippet: _buildSnippet(row.english, queryLower, trimmed.length),
         ),
       );
-      if (hits.length >= limit) return hits;
+      if (hits.length >= limit) {
+        _recordQuery(scan.elapsed, indexElapsed, hits.length);
+        return hits;
+      }
     }
+    _recordQuery(scan.elapsed, indexElapsed, hits.length);
     return hits;
+  }
+
+  void _recordQuery(Duration scan, Duration indexWait, int hits) {
+    AppMetrics.instance.recordTiming(
+      'search.quran',
+      scan,
+      detail: {'hits': '$hits', 'indexWaitMs': '${indexWait.inMilliseconds}'},
+    );
   }
 
   Future<List<_QuranIndexRow>> _ensureIndex() {
@@ -78,52 +94,54 @@ class QuranSearchService {
     return _indexFuture ??= _buildIndex();
   }
 
-  Future<List<_QuranIndexRow>> _buildIndex() async {
-    final chapters = await _chaptersRepo.loadChapters();
-    final rows = <_QuranIndexRow>[];
+  Future<List<_QuranIndexRow>> _buildIndex() {
+    return AppMetrics.instance.time('search.quranIndex', () async {
+      final chapters = await _chaptersRepo.loadChapters();
+      final rows = <_QuranIndexRow>[];
 
-    for (var i = 0; i < chapters.length; i += _kIndexBatchSize) {
-      final end = i + _kIndexBatchSize < chapters.length
-          ? i + _kIndexBatchSize
-          : chapters.length;
-      final batch = chapters.sublist(i, end);
-      final loaded = await Future.wait(
-        batch.map((chapter) async {
-          try {
-            final arabicAyahs = await _arabicRepo.loadArabicSurah(
-              chapter.id,
-              useGlyphText: false, // aya_text_emlaey — searchable Imla'i
+      for (var i = 0; i < chapters.length; i += _kIndexBatchSize) {
+        final end = i + _kIndexBatchSize < chapters.length
+            ? i + _kIndexBatchSize
+            : chapters.length;
+        final batch = chapters.sublist(i, end);
+        final loaded = await Future.wait(
+          batch.map((chapter) async {
+            try {
+              final arabicAyahs = await _arabicRepo.loadArabicSurah(
+                chapter.id,
+                useGlyphText: false, // aya_text_emlaey — searchable Imla'i
+              );
+              final englishAyahs = await _translationRepo.loadClearQuran(
+                chapter.id,
+              );
+              return (chapter, arabicAyahs, englishAyahs);
+            } catch (_) {
+              return null;
+            }
+          }),
+        );
+
+        for (final item in loaded) {
+          if (item == null) continue;
+          final (chapter, arabicAyahs, englishAyahs) = item;
+          for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
+            final key = '$ayahNum';
+            final english = englishAyahs[key] ?? '';
+            rows.add(
+              _QuranIndexRow(
+                surahId: chapter.id,
+                ayah: ayahNum,
+                surahName: chapter.nameSimple,
+                arabic: arabicAyahs[key] ?? '',
+                english: english,
+                englishLower: english.toLowerCase(),
+              ),
             );
-            final englishAyahs = await _translationRepo.loadClearQuran(
-              chapter.id,
-            );
-            return (chapter, arabicAyahs, englishAyahs);
-          } catch (_) {
-            return null;
           }
-        }),
-      );
-
-      for (final item in loaded) {
-        if (item == null) continue;
-        final (chapter, arabicAyahs, englishAyahs) = item;
-        for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
-          final key = '$ayahNum';
-          final english = englishAyahs[key] ?? '';
-          rows.add(
-            _QuranIndexRow(
-              surahId: chapter.id,
-              ayah: ayahNum,
-              surahName: chapter.nameSimple,
-              arabic: arabicAyahs[key] ?? '',
-              english: english,
-              englishLower: english.toLowerCase(),
-            ),
-          );
         }
       }
-    }
-    return rows;
+      return rows;
+    });
   }
 
   static String? _buildSnippet(
