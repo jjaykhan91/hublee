@@ -2,18 +2,20 @@
 ///
 /// Displays each hadith with its number, optional narrator,
 /// Arabic text (no tajweed), English translation, and a bookmark
-/// toggle. Supports scroll-to-index and in-book search.
+/// toggle. Supports scroll-to-index, chapter jump, and in-book search.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../hadith/hadith_chapters.dart';
 import '../hadith/hadith_repository.dart';
 import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
+import 'widgets/hadith_chapter_sheet.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
 
@@ -97,6 +99,23 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     });
   }
 
+  void _showChapters(HadithBook book) {
+    showHadithChapterSheet(
+      context: context,
+      chapters: book.chapters,
+      hadiths: book.hadiths,
+      onJump: (index) {
+        if (!_scrollController.isAttached) return;
+        _scrollController.scrollTo(
+          index: index,
+          duration: const Duration(milliseconds: 280),
+          alignment: 0.08,
+          curve: Curves.easeInOut,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<HadithBook>(
@@ -158,6 +177,12 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
         overflow: TextOverflow.ellipsis,
       ),
       actions: [
+        if (book != null && book.chapters.length > 1)
+          IconButton(
+            icon: const Icon(Icons.list_alt_rounded),
+            tooltip: 'Chapters',
+            onPressed: () => _showChapters(book),
+          ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this book',
@@ -361,28 +386,81 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             'hadith:${widget.collectionId}:${widget.bookFile}:$index';
         final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
         final colorScheme = Theme.of(context).colorScheme;
+        final chapter = isChapterStart(hadiths, index)
+            ? chapterById(book.chapters, hadith.chapterId)
+            : null;
 
-        return _HadithCard(
-          hadith: hadith,
-          displayIndex: index + 1,
-          colorScheme: colorScheme,
-          arabicZoom: settings.arabicZoom,
-          englishZoom: settings.englishZoom,
-          isBookmarked: isBookmarked,
-          onBookmarkToggle: () {
-            AppHaptics.lightImpact();
-            bookmarkService.toggleBookmark(
-              Bookmark.hadith(
-                collectionId: widget.collectionId,
-                bookFile: widget.bookFile,
-                bookTitle: book.title.isNotEmpty ? book.title : widget.title,
-                hadithIndex: index,
-                snippet: hadith.english,
-              ),
-            );
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (chapter != null) _HadithChapterDivider(chapter: chapter),
+            _HadithCard(
+              hadith: hadith,
+              displayIndex: index + 1,
+              colorScheme: colorScheme,
+              arabicZoom: settings.arabicZoom,
+              englishZoom: settings.englishZoom,
+              isBookmarked: isBookmarked,
+              onBookmarkToggle: () {
+                AppHaptics.lightImpact();
+                bookmarkService.toggleBookmark(
+                  Bookmark.hadith(
+                    collectionId: widget.collectionId,
+                    bookFile: widget.bookFile,
+                    bookTitle: book.title.isNotEmpty
+                        ? book.title
+                        : widget.title,
+                    hadithIndex: index,
+                    snippet: hadith.english,
+                  ),
+                );
+              },
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+/// Chapter heading shown above the first hadith of that chapter.
+class _HadithChapterDivider extends StatelessWidget {
+  final HadithChapter chapter;
+
+  const _HadithChapterDivider({required this.chapter});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final english = chapter.english?.trim();
+    final arabic = chapter.arabic?.trim();
+    final settings = SettingsScope.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (english != null && english.isNotEmpty)
+            Text(
+              english,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          if (arabic != null && arabic.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            ArabicText(
+              arabic,
+              fontSize: 20 * settings.arabicZoom,
+              color: colorScheme.primary,
+            ),
+          ],
+          const SizedBox(height: 8),
+          Divider(color: colorScheme.outline.withValues(alpha: 0.4)),
+        ],
+      ),
     );
   }
 }
