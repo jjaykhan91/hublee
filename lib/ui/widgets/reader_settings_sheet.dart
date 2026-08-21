@@ -12,6 +12,7 @@ import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
 import '../../services/app_scope.dart';
 import '../../theme/app_tokens.dart';
+import 'app_haptics.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -25,9 +26,7 @@ void showReaderSettingsSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _ReaderSettingsSheet(
-      showTajweedToggle: showTajweedToggle,
-    ),
+    builder: (_) => _ReaderSettingsSheet(showTajweedToggle: showTajweedToggle),
   );
 }
 
@@ -71,9 +70,9 @@ class _ReaderSettingsSheet extends StatelessWidget {
               Text(
                 'Reader Settings',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
               ),
             ],
           ),
@@ -113,9 +112,15 @@ class _ReaderSettingsSheet extends StatelessWidget {
             label: isDark ? 'Moon Mode' : 'Sun Mode',
             trailing: Switch(
               value: isDark,
-              onChanged: (_) => AppScope.of(context).toggleTheme(),
+              onChanged: (_) {
+                AppHaptics.selection();
+                AppScope.of(context).toggleTheme();
+              },
             ),
-            onTap: () => AppScope.of(context).toggleTheme(),
+            onTap: () {
+              AppHaptics.selection();
+              AppScope.of(context).toggleTheme();
+            },
             colorScheme: colorScheme,
           ),
 
@@ -127,9 +132,32 @@ class _ReaderSettingsSheet extends StatelessWidget {
               label: 'Tajweed Colors',
               trailing: Switch(
                 value: settings.tajweedEnabled,
-                onChanged: (v) => settings.tajweedEnabled = v,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.tajweedEnabled = v;
+                },
               ),
-              onTap: () => settings.tajweedEnabled = !settings.tajweedEnabled,
+              onTap: () {
+                AppHaptics.selection();
+                settings.tajweedEnabled = !settings.tajweedEnabled;
+              },
+              colorScheme: colorScheme,
+            ),
+            const SizedBox(height: 4),
+            _SettingRow(
+              icon: Icons.touch_app_rounded,
+              label: 'Word by Word',
+              trailing: Switch(
+                value: settings.wordByWordEnabled,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.wordByWordEnabled = v;
+                },
+              ),
+              onTap: () {
+                AppHaptics.selection();
+                settings.wordByWordEnabled = !settings.wordByWordEnabled;
+              },
               colorScheme: colorScheme,
             ),
             const SizedBox(height: 4),
@@ -172,14 +200,17 @@ class _FontPicker extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.font_download_rounded,
-                size: 20, color: colorScheme.primary),
+            Icon(
+              Icons.font_download_rounded,
+              size: 20,
+              color: colorScheme.primary,
+            ),
             const SizedBox(width: 10),
             Text(
               'Arabic Font',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -194,7 +225,10 @@ class _FontPicker extends StatelessWidget {
                 child: ChoiceChip(
                   label: Text(font.label),
                   selected: isSelected,
-                  onSelected: (_) => onChanged(font),
+                  onSelected: (_) {
+                    AppHaptics.selection();
+                    onChanged(font);
+                  },
                   selectedColor: colorScheme.primary.withValues(alpha: 0.15),
                   labelStyle: TextStyle(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -246,9 +280,9 @@ class _ZoomSlider extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         Expanded(
           child: Slider(
@@ -270,9 +304,9 @@ class _ZoomSlider extends StatelessWidget {
           child: Text(
             '${(value * 100).round()}%',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -310,9 +344,9 @@ class _SettingRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             trailing,

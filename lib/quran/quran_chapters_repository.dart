@@ -1,84 +1,95 @@
 /// Loads surah metadata (names, verse counts, juz, revelation info)
-/// from the KFGQPC Mushaf dataset merged with static metadata.
+/// from the compact chapters index merged with static metadata.
+///
+/// Does **not** decode the 4.3 MB mushaf — verse counts and base names
+/// come from [AssetPaths.quranChapters] (`chapters.min.json`).
 library;
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
 import 'models.dart';
 
-/// Builds a list of all 114 [ChapterMeta] objects by scanning the
-/// full ayah dataset and merging with the static surah metadata
-/// file for revelation type, revelation order, and juz ranges.
+/// Builds a list of all 114 [ChapterMeta] objects.
+///
+/// Results are cached for the session so the Quran tab and surah
+/// reader share one decode.
 class QuranChaptersRepository {
   const QuranChaptersRepository();
 
+  static Future<List<ChapterMeta>>? _cacheFuture;
+
   /// Loads all 114 chapters sorted by surah number.
   ///
-  /// Merges per-ayah name/verse data with static metadata for
-  /// revelation type, revelation order, and juz ranges.
-  Future<List<ChapterMeta>> loadChapters() async {
-    // Load all sources in parallel.
+  /// Merges `chapters.min.json` with static metadata for revelation
+  /// type, revelation order, juz ranges, translated names, and
+  /// vowelled Arabic names.
+  Future<List<ChapterMeta>> loadChapters() {
+    return _cacheFuture ??= _loadChaptersUncached();
+  }
+
+  /// Clears the session cache. Tests only.
+  ///
+  /// Each widget test runs in its own fake-async zone, and a `Future` cached
+  /// in one zone never delivers in the next — a page would sit on its loading
+  /// spinner forever. Call this between tests that pump a page.
+  @visibleForTesting
+  static void resetCache() => _cacheFuture = null;
+
+  static Future<List<ChapterMeta>> _loadChaptersUncached() async {
     final results = await Future.wait([
-      rootBundle.loadString(AssetPaths.kfgqpcQuranMushafSmartV8),
+      rootBundle.loadString(AssetPaths.quranChapters),
       rootBundle.loadString(AssetPaths.surahMetadata),
       rootBundle.loadString(AssetPaths.surahTranslatedNames),
       rootBundle.loadString(AssetPaths.surahArabicVowelled),
     ]);
 
-    final List<dynamic> rows = json.decode(results[0]);
+    final List<dynamic> chapterRows = json.decode(results[0]);
     final List<dynamic> metaRows = json.decode(results[1]);
     final List<dynamic> translatedRows = json.decode(results[2]);
     final List<dynamic> vowelledRows = json.decode(results[3]);
 
-    // Index static metadata by surah id.
     final metaById = <int, Map<String, dynamic>>{};
     for (final row in metaRows) {
       final map = row as Map<String, dynamic>;
       metaById[map['id'] as int] = map;
     }
 
-    // Index translated names (English meaning) by surah id.
     final translatedByNameById = <int, String>{};
     for (final row in translatedRows) {
       final map = row as Map<String, dynamic>;
       translatedByNameById[map['id'] as int] = map['name'] as String;
     }
 
-    // Index Arabic names with tashkeel (vowelled) by surah id.
     final vowelledByNameById = <int, String>{};
     for (final row in vowelledRows) {
       final map = row as Map<String, dynamic>;
       vowelledByNameById[map['id'] as int] = map['name'] as String;
     }
 
-    // Accumulate verse counts and names per surah from ayah data.
-    final Map<int, _SurahAccumulator> accumulator = {};
-    for (final row in rows) {
-      final int surahNumber = row['sura_no'] as int;
-      final String nameEn = (row['sura_name_en'] as String).trim();
-      final String nameAr = (row['sura_name_ar'] as String).trim();
+    final chapters = chapterRows.map((row) {
+      final map = row as Map<String, dynamic>;
+      final id = map['id'] as int;
+      final meta = metaById[id];
+      final place = (map['revelation_place'] as String?)?.toLowerCase();
+      final fromPlace = place == 'madinah'
+          ? 'Medinan'
+          : place == 'makkah'
+          ? 'Meccan'
+          : null;
 
-      final bucket = accumulator.putIfAbsent(
-        surahNumber,
-        () => _SurahAccumulator(nameEn, nameAr),
-      );
-      bucket.verseCount++;
-    }
-
-    // Merge all sources into ChapterMeta objects.
-    final chapters = accumulator.entries.map((entry) {
-      final meta = metaById[entry.key];
       return ChapterMeta(
-        id: entry.key,
-        nameSimple: entry.value.nameEn,
-        nameTranslated: translatedByNameById[entry.key],
-        nameArabic: entry.value.nameAr,
-        nameArabicVowelled: vowelledByNameById[entry.key],
-        versesCount: entry.value.verseCount,
-        revelationType: (meta?['revelationType'] as String?) ?? 'Meccan',
+        id: id,
+        nameSimple: (map['name_simple'] as String).trim(),
+        nameTranslated: translatedByNameById[id],
+        nameArabic: (map['name_arabic'] as String).trim(),
+        nameArabicVowelled: vowelledByNameById[id],
+        versesCount: map['verses_count'] as int,
+        revelationType:
+            (meta?['revelationType'] as String?) ?? fromPlace ?? 'Meccan',
         revelationOrder: (meta?['revelationOrder'] as int?) ?? 0,
         startJuz: (meta?['startJuz'] as int?) ?? 1,
         endJuz: (meta?['endJuz'] as int?) ?? 1,
@@ -88,13 +99,4 @@ class QuranChaptersRepository {
     chapters.sort((a, b) => a.id.compareTo(b.id));
     return chapters;
   }
-}
-
-/// Temporary helper to tally verses while iterating the JSON rows.
-class _SurahAccumulator {
-  final String nameEn;
-  final String nameAr;
-  int verseCount = 0;
-
-  _SurahAccumulator(this.nameEn, this.nameAr);
 }

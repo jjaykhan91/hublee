@@ -1,0 +1,108 @@
+---
+description: Performance rules for Hublee — rebuilds, list virtualization, asset parsing, and persistence
+globs: "lib/**/*.dart"
+alwaysApply: false
+---
+
+# Performance
+
+Hublee ships large bundled assets (the KFGQPC mushaf JSON alone is ~4.3 MB) and renders
+complex Arabic text. Both make it easy to write code that is correct but janky. These
+rules exist because each one has already been a real problem in this codebase.
+
+## Never create futures in `build()`
+
+`FutureBuilder(future: repository.load(...))` inside `build()` re-fetches on every
+rebuild and flickers the UI. Cache the future in `initState()`:
+
+```dart
+late final Future<Surah> _surahFuture;
+
+@override
+void initState() {
+  super.initState();
+  _surahFuture = const QuranArabicRepository().loadArabicSurah(widget.surahId);
+}
+```
+
+## Cache parsed assets
+
+Decoding a multi-megabyte JSON file is expensive and happens on the main isolate.
+
+- Parse each asset **once per session** and hold the result in a static cache in the
+  repository, keyed by whatever varies (surah id, book file).
+- Never decode the full mushaf to read a single ayah. Prefer the per-surah files
+  (`assets/quran/ar/<surahId>.json`) when you only need one surah.
+- For genuinely heavy parsing or search, move the work off the main isolate with
+  `compute()`.
+
+## Keep long lists lazy
+
+- Use `ListView.builder` / `ScrollablePositionedList.builder` — never a `ListView` with
+  a pre-built `children:` list for the 114 surahs, the full book list, or any ayah list.
+- Anything wrapped in `SingleChildScrollView` + `Column` builds every child up front.
+- Add `RepaintBoundary` around list items that paint expensive content (tajweed-coloured
+  Arabic) so scrolling doesn't repaint neighbours.
+
+## No expensive work inside `itemBuilder`
+
+`itemBuilder` runs on every scroll frame for every visible item. Inside it, avoid:
+
+- **O(n) lookups.** `bookmarks.any((b) => b.id == id)` per row is O(n²) overall. Back
+  membership checks with a `Set<String>` or `Map`.
+- **Repeated filtering.** Don't filter a list to find "the items in this juz" per row —
+  group once, ahead of the build.
+- **String matching or parsing.** Precompute summaries and titles once.
+- **Re-running tajweed analysis.** `tajweedSpans()` walks the string and does per-letter
+  rule detection; memoize its output per (text, brightness, style) rather than
+  recomputing on every rebuild.
+
+## Keep tab views alive
+
+Children of a `TabBarView` are disposed when they scroll off, so switching tabs
+and coming back rebuilds the list and silently returns the reader to the top.
+Mix in `AutomaticKeepAliveClientMixin`, return `true` from `wantKeepAlive`, and
+call `super.build(context)`. All four `QuranPage` tabs do this.
+
+Once a view is stateful for that reason, move derived data — juz grouping,
+Meccan/Medinan partitioning, revelation-order sorting — into `initState` with a
+`didUpdateWidget` refresh, rather than recomputing it on every build.
+
+## Animate only what the reader can see
+
+Staggered entry animations on a 114-item list are mostly invisible work: past
+the first screenful the animation has finished long before the item scrolls
+into view. Cap the animated prefix (`_animatedCardLimit` in `quran_page.dart`)
+and return the plain widget beyond it.
+
+## Debounce persistence
+
+`SharedPreferences` writes hit disk. A `ChangeNotifier` setter that writes and calls
+`notifyListeners()` on every slider tick causes a write and a full-subtree rebuild per
+frame while dragging.
+
+- Notify immediately for responsive UI, but **debounce the write** (~300 ms).
+- Don't rewrite an entire JSON blob for a single-item change when an incremental
+  update is possible.
+
+## Keep scope rebuilds narrow
+
+`SettingsScope` and `BookmarkScope` are `InheritedNotifier`s near the root, so a
+`notifyListeners()` can rebuild most of the tree.
+
+- Implement `updateShouldNotify` to compare only the fields that matter.
+- Have widgets depend on the narrowest scope they need; don't read `SettingsScope` in a
+  widget that only cares about bookmarks.
+- A toggle that affects one row should not rebuild the whole page.
+
+## Startup
+
+- Don't block first paint on work the first screen doesn't need.
+- Load persisted settings **before** the first frame that depends on them, or the app
+  visibly flashes from the default theme to the user's theme.
+
+## Verifying
+
+Measure before and after — don't assume. Use the Dart/Flutter MCP tools
+(`get_runtime_errors`, `widget_inspector`) and Flutter DevTools' timeline. A change is
+only a performance fix if you can point at a frame time or a removed decode.

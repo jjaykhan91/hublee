@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../theme/app_tokens.dart';
+import 'app_haptics.dart';
 
 /// Overlay scrubber that sits on the right edge of the reader.
 ///
@@ -130,11 +131,18 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     final trackHeight = renderBox.size.height - _kThumbSize;
     if (trackHeight <= 0) return;
 
-    final fraction =
-        ((localPosition.dy - _kThumbSize / 2) / trackHeight).clamp(0.0, 1.0);
-    final targetIndex = (fraction * (widget.itemCount - 1))
-        .round()
-        .clamp(0, widget.itemCount - 1);
+    final fraction = ((localPosition.dy - _kThumbSize / 2) / trackHeight).clamp(
+      0.0,
+      1.0,
+    );
+    final targetIndex = (fraction * (widget.itemCount - 1)).round().clamp(
+      0,
+      widget.itemCount - 1,
+    );
+
+    if (targetIndex != _currentIndex) {
+      AppHaptics.selection();
+    }
 
     setState(() {
       _position = fraction;

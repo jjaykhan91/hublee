@@ -27,7 +27,9 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D3B3B), // Dark teal to match artwork letterboxing
+      backgroundColor: const Color(
+        0xFF0D3B3B,
+      ), // Dark teal to match artwork letterboxing
       body: SizedBox.expand(
         child: Stack(
           fit: StackFit.expand,

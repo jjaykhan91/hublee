@@ -8,6 +8,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'widgets/app_haptics.dart';
+
 /// Persistent bottom-navigation scaffold.
 ///
 /// Receives the [navigationShell] from `StatefulShellRoute` and
@@ -25,13 +27,11 @@ class AppShell extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        top: false,
-        child: navigationShell,
-      ),
+      body: SafeArea(top: false, child: navigationShell),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
+          AppHaptics.selection();
           // When the user taps the already-active tab, go back to
           // the initial location of that branch.
           navigationShell.goBranch(

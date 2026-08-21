@@ -66,31 +66,31 @@ class Bookmark {
 
   /// Serializes this bookmark to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'surahId': surahId,
-        'ayah': ayah,
-        'surahName': surahName,
-        'collectionId': collectionId,
-        'bookFile': bookFile,
-        'bookTitle': bookTitle,
-        'hadithIndex': hadithIndex,
-        'snippet': snippet,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'type': type,
+    'surahId': surahId,
+    'ayah': ayah,
+    'surahName': surahName,
+    'collectionId': collectionId,
+    'bookFile': bookFile,
+    'bookTitle': bookTitle,
+    'hadithIndex': hadithIndex,
+    'snippet': snippet,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   /// Deserializes a bookmark from a JSON map.
   factory Bookmark.fromJson(Map<String, dynamic> json) => Bookmark(
-        type: json['type'] as String,
-        surahId: json['surahId'] as int?,
-        ayah: json['ayah'] as int?,
-        surahName: json['surahName'] as String?,
-        collectionId: json['collectionId'] as String?,
-        bookFile: json['bookFile'] as String?,
-        bookTitle: json['bookTitle'] as String?,
-        hadithIndex: json['hadithIndex'] as int?,
-        snippet: json['snippet'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    type: json['type'] as String,
+    surahId: json['surahId'] as int?,
+    ayah: json['ayah'] as int?,
+    surahName: json['surahName'] as String?,
+    collectionId: json['collectionId'] as String?,
+    bookFile: json['bookFile'] as String?,
+    bookTitle: json['bookTitle'] as String?,
+    hadithIndex: json['hadithIndex'] as int?,
+    snippet: json['snippet'] as String?,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 
   /// Creates a Quran ayah bookmark.
   factory Bookmark.quran({
@@ -98,15 +98,14 @@ class Bookmark {
     required int ayah,
     required String surahName,
     String? snippet,
-  }) =>
-      Bookmark(
-        type: 'quran',
-        surahId: surahId,
-        ayah: ayah,
-        surahName: surahName,
-        snippet: snippet,
-        createdAt: DateTime.now(),
-      );
+  }) => Bookmark(
+    type: 'quran',
+    surahId: surahId,
+    ayah: ayah,
+    surahName: surahName,
+    snippet: snippet,
+    createdAt: DateTime.now(),
+  );
 
   /// Creates a Hadith bookmark.
   factory Bookmark.hadith({
@@ -115,16 +114,15 @@ class Bookmark {
     required String bookTitle,
     required int hadithIndex,
     String? snippet,
-  }) =>
-      Bookmark(
-        type: 'hadith',
-        collectionId: collectionId,
-        bookFile: bookFile,
-        bookTitle: bookTitle,
-        hadithIndex: hadithIndex,
-        snippet: snippet,
-        createdAt: DateTime.now(),
-      );
+  }) => Bookmark(
+    type: 'hadith',
+    collectionId: collectionId,
+    bookFile: bookFile,
+    bookTitle: bookTitle,
+    hadithIndex: hadithIndex,
+    snippet: snippet,
+    createdAt: DateTime.now(),
+  );
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -142,6 +140,7 @@ class BookmarkService extends ChangeNotifier {
   static const _kLastReadHadith = 'last_read_hadith';
 
   List<Bookmark> _bookmarks = [];
+  final Set<String> _bookmarkIds = {};
   Map<String, dynamic>? _lastReadQuran;
   Map<String, dynamic>? _lastReadHadith;
 
@@ -167,7 +166,10 @@ class BookmarkService extends ChangeNotifier {
           .whereType<Map<String, dynamic>>()
           .map(Bookmark.fromJson)
           .toList();
+    } else {
+      _bookmarks = [];
     }
+    _rebuildIdSet();
 
     // Decode last-read positions
     final rawQuran = prefs.getString(_kLastReadQuran);
@@ -180,8 +182,7 @@ class BookmarkService extends ChangeNotifier {
   }
 
   /// Returns `true` if a bookmark with the given [id] exists.
-  bool isBookmarked(String id) =>
-      _bookmarks.any((bookmark) => bookmark.id == id);
+  bool isBookmarked(String id) => _bookmarkIds.contains(id);
 
   /// Adds or removes [bookmark] (toggle behaviour).
   ///
@@ -191,8 +192,10 @@ class BookmarkService extends ChangeNotifier {
     final existingIndex = _bookmarks.indexWhere((b) => b.id == bookmark.id);
     if (existingIndex >= 0) {
       _bookmarks.removeAt(existingIndex);
+      _bookmarkIds.remove(bookmark.id);
     } else {
       _bookmarks.insert(0, bookmark);
+      _bookmarkIds.add(bookmark.id);
     }
     await _persistBookmarks();
     notifyListeners();
@@ -201,6 +204,7 @@ class BookmarkService extends ChangeNotifier {
   /// Removes the bookmark matching [id], if any.
   Future<void> removeBookmark(String id) async {
     _bookmarks.removeWhere((bookmark) => bookmark.id == id);
+    _bookmarkIds.remove(id);
     await _persistBookmarks();
     notifyListeners();
   }
@@ -218,10 +222,7 @@ class BookmarkService extends ChangeNotifier {
       'timestamp': DateTime.now().toIso8601String(),
     };
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kLastReadQuran,
-      json.encode(_lastReadQuran),
-    );
+    await prefs.setString(_kLastReadQuran, json.encode(_lastReadQuran));
     notifyListeners();
   }
 
@@ -240,10 +241,7 @@ class BookmarkService extends ChangeNotifier {
       'timestamp': DateTime.now().toIso8601String(),
     };
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kLastReadHadith,
-      json.encode(_lastReadHadith),
-    );
+    await prefs.setString(_kLastReadHadith, json.encode(_lastReadHadith));
     notifyListeners();
   }
 
@@ -252,9 +250,13 @@ class BookmarkService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _kBookmarks,
-      json.encode(
-        _bookmarks.map((bookmark) => bookmark.toJson()).toList(),
-      ),
+      json.encode(_bookmarks.map((bookmark) => bookmark.toJson()).toList()),
     );
+  }
+
+  void _rebuildIdSet() {
+    _bookmarkIds
+      ..clear()
+      ..addAll(_bookmarks.map((b) => b.id));
   }
 }

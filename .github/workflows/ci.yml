@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Format, analyze, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # Pinned so the bundled `dart format` matches local formatting.
+          # Keep in sync with the Flutter version used for development
+          # (`flutter --version`), or the format check will drift.
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Report toolchain versions
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test tools
+
+      - name: Analyze
+        run: flutter analyze
+
+      # Golden tests are excluded: font rasterization differs between this
+      # Linux runner and a developer machine, so goldens would fail spuriously.
+      # They are a local check — run `flutter test` without the flag locally.
+      - name: Test
+        run: flutter test --exclude-tags golden

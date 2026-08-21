@@ -25,10 +25,7 @@ class AppScope extends InheritedWidget {
   /// Retrieves the nearest [AppScope] from the widget tree.
   static AppScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
-    assert(
-      scope != null,
-      'AppScope.of() called with no AppScope in context.',
-    );
+    assert(scope != null, 'AppScope.of() called with no AppScope in context.');
     return scope!;
   }
 

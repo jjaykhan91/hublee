@@ -49,7 +49,11 @@ app.*.map.json
 !.env.example
 env.*.json
 
-# Cursor (track rules and mcp config, ignore internal files)
+# Cursor (track rules, skills and mcp config, ignore internal files)
 .cursor/*
 !.cursor/rules/
+!.cursor/skills/
 !.cursor/mcp.json
+
+# Local device screenshots used to eyeball a change on an emulator
+.screens/

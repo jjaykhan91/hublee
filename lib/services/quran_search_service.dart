@@ -15,20 +15,16 @@ class QuranSearchService {
     QuranChaptersRepository? chaptersRepo,
     QuranArabicRepository? arabicRepo,
     QuranTranslationRepository? translationRepo,
-  })  : _chaptersRepo = chaptersRepo ?? const QuranChaptersRepository(),
-        _arabicRepo = arabicRepo ?? const QuranArabicRepository(),
-        _translationRepo =
-            translationRepo ?? const QuranTranslationRepository();
+  }) : _chaptersRepo = chaptersRepo ?? const QuranChaptersRepository(),
+       _arabicRepo = arabicRepo ?? const QuranArabicRepository(),
+       _translationRepo = translationRepo ?? const QuranTranslationRepository();
 
   final QuranChaptersRepository _chaptersRepo;
   final QuranArabicRepository _arabicRepo;
   final QuranTranslationRepository _translationRepo;
 
   /// Searches all surahs for ayahs matching [query]. Returns up to [limit] hits.
-  Future<List<QuranSearchHit>> search(
-    String query, {
-    int limit = 150,
-  }) async {
+  Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
     final queryLower = query.trim().toLowerCase();
     if (queryLower.isEmpty) return [];
 
@@ -39,7 +35,10 @@ class QuranSearchService {
       Map<String, String> arabicAyahs = const {};
       Map<String, String> englishAyahs = const {};
       try {
-        arabicAyahs = await _arabicRepo.loadArabicSurah(chapter.id);
+        arabicAyahs = await _arabicRepo.loadArabicSurah(
+          chapter.id,
+          useGlyphText: false, // aya_text_emlaey — searchable Imla'i
+        );
         englishAyahs = await _translationRepo.loadClearQuran(chapter.id);
       } catch (_) {
         continue;
@@ -50,7 +49,8 @@ class QuranSearchService {
         final arabicText = arabicAyahs[key] ?? '';
         final englishText = englishAyahs[key] ?? '';
 
-        final isMatch = arabicText.contains(query) ||
+        final isMatch =
+            arabicText.contains(query) ||
             englishText.toLowerCase().contains(queryLower);
         if (!isMatch) continue;
 
@@ -60,12 +60,14 @@ class QuranSearchService {
           query.trim().length,
         );
 
-        hits.add(QuranSearchHit(
-          surahId: chapter.id,
-          ayah: ayahNum,
-          surahName: chapter.nameSimple,
-          snippet: snippet,
-        ));
+        hits.add(
+          QuranSearchHit(
+            surahId: chapter.id,
+            ayah: ayahNum,
+            surahName: chapter.nameSimple,
+            snippet: snippet,
+          ),
+        );
 
         if (hits.length >= limit) return hits;
       }

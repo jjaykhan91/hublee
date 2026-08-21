@@ -13,6 +13,7 @@ import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
 
@@ -102,8 +103,9 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       future: _bookFuture,
       builder: (context, snapshot) {
         final isLoading = snapshot.connectionState != ConnectionState.done;
-        final errorMessage =
-            snapshot.hasError ? snapshot.error.toString() : null;
+        final errorMessage = snapshot.hasError
+            ? snapshot.error.toString()
+            : null;
         final book = snapshot.data;
 
         return Scaffold(
@@ -112,9 +114,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
               : _buildNormalAppBar(context, book),
           body: () {
             if (isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
             if (errorMessage != null) {
               return Padding(
@@ -207,10 +207,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   }
 
   /// Shows filtered hadith results matching the search query.
-  Widget _buildSearchResults(
-    BuildContext context,
-    HadithBook book,
-  ) {
+  Widget _buildSearchResults(BuildContext context, HadithBook book) {
     final queryLower = _searchQuery.toLowerCase();
     final settings = SettingsScope.of(context);
     final bookmarkService = BookmarkScope.of(context);
@@ -237,20 +234,18 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             Icon(
               Icons.search_off_rounded,
               size: 48,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 12),
             Text(
               'No matching hadiths found',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.5),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -266,9 +261,9 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
           child: Text(
             '${matches.length} result${matches.length == 1 ? '' : 's'} found',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         // Matching hadiths list
@@ -277,7 +272,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: matches.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final hadithIndex = matches[index];
               final hadith = book.hadiths[hadithIndex];
@@ -294,12 +289,14 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                 englishZoom: settings.englishZoom,
                 isBookmarked: isBookmarked,
                 onBookmarkToggle: () {
+                  AppHaptics.lightImpact();
                   bookmarkService.toggleBookmark(
                     Bookmark.hadith(
                       collectionId: widget.collectionId,
                       bookFile: widget.bookFile,
-                      bookTitle:
-                          book.title.isNotEmpty ? book.title : widget.title,
+                      bookTitle: book.title.isNotEmpty
+                          ? book.title
+                          : widget.title,
                       hadithIndex: hadithIndex,
                       snippet: hadith.english,
                     ),
@@ -357,7 +354,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: hadiths.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final hadith = hadiths[index];
         final bookmarkId =
@@ -373,6 +370,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
           englishZoom: settings.englishZoom,
           isBookmarked: isBookmarked,
           onBookmarkToggle: () {
+            AppHaptics.lightImpact();
             bookmarkService.toggleBookmark(
               Bookmark.hadith(
                 collectionId: widget.collectionId,
@@ -436,9 +434,9 @@ class _HadithCard extends StatelessWidget {
                     'Hadith $displayIndex'
                     '${hadith.idInBook != null ? ' \u2022 #${hadith.idInBook}' : ''}',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const Spacer(),
@@ -474,9 +472,9 @@ class _HadithCard extends StatelessWidget {
                 child: Text(
                   hadith.narrator!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -497,10 +495,10 @@ class _HadithCard extends StatelessWidget {
               Text(
                 hadith.english!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 15 * englishZoom,
-                      height: 1.5,
-                      color: colorScheme.onSurface.withValues(alpha: 0.85),
-                    ),
+                  fontSize: 15 * englishZoom,
+                  height: 1.5,
+                  color: colorScheme.onSurface.withValues(alpha: 0.85),
+                ),
               ),
           ],
         ),

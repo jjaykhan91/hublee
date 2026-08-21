@@ -46,10 +46,17 @@ class _HubleeAppState extends State<HubleeApp> {
     _bookmarkService.load();
   }
 
+  @override
+  void dispose() {
+    _settingsController.dispose();
+    super.dispose();
+  }
+
   /// Toggles between light and dark theme, then persists the choice.
   void _toggleTheme() async {
-    final nextMode =
-        _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    final nextMode = _themeMode == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
     setState(() => _themeMode = nextMode);
     await _themeModeService.save(nextMode);
   }

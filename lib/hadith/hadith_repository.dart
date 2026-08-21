@@ -31,10 +31,7 @@ class HadithRepository {
   ///
   /// [collectionId] identifies the collection directory (e.g. `"forties"`).
   /// [bookFile] is the filename within that directory (e.g. `"nawawi40.json"`).
-  Future<HadithBook> loadBook(
-    String collectionId,
-    String bookFile,
-  ) async {
+  Future<HadithBook> loadBook(String collectionId, String bookFile) async {
     final path = AssetPaths.hadith(collectionId, bookFile);
     final rawJson = await rootBundle.loadString(path);
     final root = json.decode(rawJson);
@@ -48,12 +45,13 @@ class HadithRepository {
     // Resolve the display title by checking multiple JSON shapes.
     final title = _resolveBookTitle(root, bookFile);
 
-    final chapters = (root['chapters'] is List
-            ? root['chapters'] as List
-            : const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map<HadithChapter>(HadithChapter.fromJson)
-        .toList(growable: false);
+    final chapters =
+        (root['chapters'] is List
+                ? root['chapters'] as List
+                : const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map<HadithChapter>(HadithChapter.fromJson)
+            .toList(growable: false);
 
     final hadiths =
         (root['hadiths'] is List ? root['hadiths'] as List : const <dynamic>[])
@@ -61,20 +59,13 @@ class HadithRepository {
             .map<Hadith>(Hadith.fromJson)
             .toList(growable: false);
 
-    return HadithBook(
-      title: title,
-      chapters: chapters,
-      hadiths: hadiths,
-    );
+    return HadithBook(title: title, chapters: chapters, hadiths: hadiths);
   }
 
   /// Attempts to extract a book title from the JSON root using
   /// several common key paths. Falls back to a title derived
   /// from the file name.
-  String _resolveBookTitle(
-    Map<String, dynamic> root,
-    String bookFile,
-  ) {
+  String _resolveBookTitle(Map<String, dynamic> root, String bookFile) {
     // Try root.english.title
     final english = root['english'];
     if (english is Map<String, dynamic>) {
@@ -100,7 +91,9 @@ class HadithRepository {
   /// Example: `"nawawi40.json"` → `"Nawawi40"`
   String _titleFromFileName(String file) {
     final baseName = file.split('/').last.split('.').first;
-    return baseName.replaceAll('_', ' ').replaceFirstMapped(
+    return baseName
+        .replaceAll('_', ' ')
+        .replaceFirstMapped(
           RegExp(r'^\w'),
           (match) => match.group(0)!.toUpperCase(),
         );
@@ -143,11 +136,7 @@ class HadithBookMeta {
   /// Number of hadiths in this book, if provided by the index.
   final int? length;
 
-  const HadithBookMeta({
-    required this.file,
-    required this.title,
-    this.length,
-  });
+  const HadithBookMeta({required this.file, required this.title, this.length});
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -165,25 +154,21 @@ extension HadithRepositoryListing on HadithRepository {
   Future<List<HadithCollectionMeta>> loadCollections() async {
     const knownCollections = <HadithCollectionMeta>[
       HadithCollectionMeta(id: 'forties', title: 'Forties'),
-      HadithCollectionMeta(
-        id: 'the_9_books',
-        title: 'The Nine Books',
-      ),
-      HadithCollectionMeta(
-        id: 'other_books',
-        title: 'Other Books',
-      ),
+      HadithCollectionMeta(id: 'the_9_books', title: 'The Nine Books'),
+      HadithCollectionMeta(id: 'other_books', title: 'Other Books'),
     ];
 
     final results = <HadithCollectionMeta>[];
     for (final collection in knownCollections) {
       try {
         final books = await loadBooksForCollection(collection.id);
-        results.add(HadithCollectionMeta(
-          id: collection.id,
-          title: collection.title,
-          count: books.length,
-        ));
+        results.add(
+          HadithCollectionMeta(
+            id: collection.id,
+            title: collection.title,
+            count: books.length,
+          ),
+        );
       } catch (_) {
         // If the index is missing, keep the collection without a count.
         results.add(collection);
@@ -219,10 +204,12 @@ extension HadithRepositoryListing on HadithRepository {
         // Flat map: { "filename.json": "Display title", ... }
         return decoded.entries
             .where((entry) => entry.value is String)
-            .map((entry) => HadithBookMeta(
-                  file: entry.key.toString(),
-                  title: entry.value as String,
-                ))
+            .map(
+              (entry) => HadithBookMeta(
+                file: entry.key.toString(),
+                title: entry.value as String,
+              ),
+            )
             .toList(growable: false);
       }
     } else {
@@ -232,21 +219,19 @@ extension HadithRepositoryListing on HadithRepository {
     return bookList
         .whereType<Map<String, dynamic>>()
         .map<HadithBookMeta>((map) {
-      final file = (map['file'] ?? map['path'] ?? map['name']).toString();
-      final title = (map['bookName'] ??
-              map['title'] ??
-              map['english'] ??
-              map['label'] ??
-              map['name'] ??
-              file)
-          .toString();
-      final length = _toInt(map['length']);
-      return HadithBookMeta(
-        file: file,
-        title: title,
-        length: length,
-      );
-    }).toList(growable: false);
+          final file = (map['file'] ?? map['path'] ?? map['name']).toString();
+          final title =
+              (map['bookName'] ??
+                      map['title'] ??
+                      map['english'] ??
+                      map['label'] ??
+                      map['name'] ??
+                      file)
+                  .toString();
+          final length = _toInt(map['length']);
+          return HadithBookMeta(file: file, title: title, length: length);
+        })
+        .toList(growable: false);
   }
 }
 
@@ -302,8 +287,10 @@ extension HadithSearchExtension on HadithRepository {
             final matchIndex = englishLower.indexOf(queryLower);
             if (matchIndex >= 0) {
               final start = (matchIndex - 40).clamp(0, englishLower.length);
-              final end = (matchIndex + queryLower.length + 60)
-                  .clamp(0, englishLower.length);
+              final end = (matchIndex + queryLower.length + 60).clamp(
+                0,
+                englishLower.length,
+              );
               snippet = (hadith.english ?? '').substring(start, end).trim();
               if (start > 0) snippet = '…$snippet';
               if (end < englishLower.length) snippet = '$snippet…';
@@ -312,13 +299,15 @@ extension HadithSearchExtension on HadithRepository {
             }
           }
 
-          hits.add(HadithSearchHit(
-            collectionId: collection.id,
-            bookFile: bookMeta.file,
-            bookTitle: book.title.isNotEmpty ? book.title : bookMeta.title,
-            hadithIndex: index,
-            snippet: snippet,
-          ));
+          hits.add(
+            HadithSearchHit(
+              collectionId: collection.id,
+              bookFile: bookMeta.file,
+              bookTitle: book.title.isNotEmpty ? book.title : bookMeta.title,
+              hadithIndex: index,
+              snippet: snippet,
+            ),
+          );
 
           if (hits.length >= limit) return hits;
         }
@@ -355,20 +344,15 @@ class HadithChapter {
   final String? arabic;
   final String? english;
 
-  const HadithChapter({
-    this.bookId,
-    this.id,
-    this.arabic,
-    this.english,
-  });
+  const HadithChapter({this.bookId, this.id, this.arabic, this.english});
 
   /// Parses a chapter from its JSON representation.
   factory HadithChapter.fromJson(Map<String, dynamic> json) => HadithChapter(
-        bookId: _toInt(json['bookId']),
-        id: _toInt(json['id']),
-        arabic: json['arabic'] as String?,
-        english: json['english'] as String?,
-      );
+    bookId: _toInt(json['bookId']),
+    id: _toInt(json['id']),
+    arabic: json['arabic'] as String?,
+    english: json['english'] as String?,
+  );
 }
 
 /// A single hadith entry with Arabic text, English translation,

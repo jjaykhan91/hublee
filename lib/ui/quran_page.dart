@@ -113,7 +113,9 @@ class _QuranPageState extends State<QuranPage>
               _JuzGroupView(chapters: chapters, colorScheme: colorScheme),
               _MakkiMadaniView(chapters: chapters, colorScheme: colorScheme),
               _RevelationOrderView(
-                  chapters: chapters, colorScheme: colorScheme),
+                chapters: chapters,
+                colorScheme: colorScheme,
+              ),
             ],
           );
         },
@@ -122,39 +124,64 @@ class _QuranPageState extends State<QuranPage>
   }
 }
 
+/// Number of cards that get an entry animation.
+///
+/// Past roughly the first screenful the animation has finished long before the
+/// card is scrolled into view, so animating all 114 is work the reader never
+/// sees.
+const _animatedCardLimit = 25;
+
+const _cardAnimationDuration = Duration(milliseconds: 300);
+
 // ────────────────────────────────────────────────────────────────
 //  Tab 1: Flat surah list (default)
 // ────────────────────────────────────────────────────────────────
 
-class _SurahListView extends StatelessWidget {
+class _SurahListView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _SurahListView({required this.chapters, required this.colorScheme});
 
   @override
+  State<_SurahListView> createState() => _SurahListViewState();
+}
+
+class _SurahListViewState extends State<_SurahListView>
+    with AutomaticKeepAliveClientMixin {
+  // Kept alive so switching tabs and coming back preserves scroll position
+  // instead of dropping the reader back at Al-Fatiha.
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      itemCount: chapters.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
-      itemBuilder: (context, index) => _SurahCard(
-        chapter: chapters[index],
-        colorScheme: colorScheme,
-      )
-          .animate()
-          .fadeIn(
-            duration: 400.ms,
-            delay: (30 * index).clamp(0, 600).ms,
-          )
-          .slideX(
-            begin: 0.03,
-            end: 0,
-            duration: 400.ms,
-            delay: (30 * index).clamp(0, 600).ms,
-            curve: Curves.easeOut,
-          ),
+      itemCount: widget.chapters.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 6),
+      itemBuilder: (context, index) {
+        final card = _SurahCard(
+          chapter: widget.chapters[index],
+          colorScheme: widget.colorScheme,
+        );
+        if (index >= _animatedCardLimit) return card;
+
+        final delay = (30 * index).clamp(0, 480).ms;
+        return card
+            .animate()
+            .fadeIn(duration: _cardAnimationDuration, delay: delay)
+            .slideX(
+              begin: 0.03,
+              end: 0,
+              duration: _cardAnimationDuration,
+              delay: delay,
+              curve: Curves.easeOut,
+            );
+      },
     );
   }
 }
@@ -163,35 +190,72 @@ class _SurahListView extends StatelessWidget {
 //  Tab 2: Grouped by Juz
 // ────────────────────────────────────────────────────────────────
 
-class _JuzGroupView extends StatelessWidget {
+class _JuzGroupView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _JuzGroupView({required this.chapters, required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
-    // Build juz -> list of surahs mapping.
+  State<_JuzGroupView> createState() => _JuzGroupViewState();
+}
+
+class _JuzGroupViewState extends State<_JuzGroupView>
+    with AutomaticKeepAliveClientMixin {
+  /// Juz number paired with the surahs it covers.
+  ///
+  /// Derived once rather than on every build: grouping is a nested loop with a
+  /// de-duplication scan for surahs spanning several juz, and the result only
+  /// changes if the chapter list itself does.
+  late List<({int number, List<ChapterMeta> chapters})> _groups;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _groups = _groupByJuz(widget.chapters);
+  }
+
+  @override
+  void didUpdateWidget(_JuzGroupView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.chapters, widget.chapters)) {
+      _groups = _groupByJuz(widget.chapters);
+    }
+  }
+
+  static List<({int number, List<ChapterMeta> chapters})> _groupByJuz(
+    List<ChapterMeta> chapters,
+  ) {
     final juzMap = <int, List<ChapterMeta>>{};
     for (final chapter in chapters) {
       for (var juz = chapter.startJuz; juz <= chapter.endJuz; juz++) {
-        juzMap.putIfAbsent(juz, () => []);
-        // Avoid duplicates if a surah spans multiple juz.
-        if (!juzMap[juz]!.any((c) => c.id == chapter.id)) {
-          juzMap[juz]!.add(chapter);
+        final bucket = juzMap.putIfAbsent(juz, () => []);
+        // A surah spanning multiple juz must not appear twice within one.
+        if (!bucket.any((c) => c.id == chapter.id)) {
+          bucket.add(chapter);
         }
       }
     }
-    final sortedJuzKeys = juzMap.keys.toList()..sort();
+    final numbers = juzMap.keys.toList()..sort();
+    return [
+      for (final number in numbers) (number: number, chapters: juzMap[number]!),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
 
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      itemCount: sortedJuzKeys.length,
+      itemCount: _groups.length,
       itemBuilder: (context, index) {
-        final juzNumber = sortedJuzKeys[index];
-        final juzChapters = juzMap[juzNumber]!;
-        final juzName = _juzNames[juzNumber] ?? 'Juz $juzNumber';
+        final group = _groups[index];
+        final juzName = _juzNames[group.number] ?? 'Juz ${group.number}';
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,15 +263,18 @@ class _JuzGroupView extends StatelessWidget {
             if (index > 0) const SizedBox(height: 16),
             _SectionHeader(
               icon: Icons.auto_stories_rounded,
-              title: 'Juz $juzNumber',
+              title: 'Juz ${group.number}',
               subtitle: juzName,
-              color: colorScheme.primary,
+              color: widget.colorScheme.primary,
             ),
             const SizedBox(height: 6),
-            ...juzChapters.map(
+            ...group.chapters.map(
               (chapter) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: _SurahCard(chapter: chapter, colorScheme: colorScheme),
+                child: _SurahCard(
+                  chapter: chapter,
+                  colorScheme: widget.colorScheme,
+                ),
               ),
             ),
           ],
@@ -221,16 +288,47 @@ class _JuzGroupView extends StatelessWidget {
 //  Tab 3: Makki / Madani
 // ────────────────────────────────────────────────────────────────
 
-class _MakkiMadaniView extends StatelessWidget {
+class _MakkiMadaniView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
   const _MakkiMadaniView({required this.chapters, required this.colorScheme});
 
   @override
+  State<_MakkiMadaniView> createState() => _MakkiMadaniViewState();
+}
+
+class _MakkiMadaniViewState extends State<_MakkiMadaniView>
+    with AutomaticKeepAliveClientMixin {
+  late List<ChapterMeta> meccan;
+  late List<ChapterMeta> medinan;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _partition();
+  }
+
+  @override
+  void didUpdateWidget(_MakkiMadaniView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.chapters, widget.chapters)) {
+      _partition();
+    }
+  }
+
+  void _partition() {
+    meccan = widget.chapters.where((c) => c.isMeccan).toList();
+    medinan = widget.chapters.where((c) => c.isMedinan).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final meccan = chapters.where((c) => c.isMeccan).toList();
-    final medinan = chapters.where((c) => c.isMedinan).toList();
+    super.build(context);
+    final colorScheme = widget.colorScheme;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -272,31 +370,60 @@ class _MakkiMadaniView extends StatelessWidget {
 //  Tab 4: Revelation Order
 // ────────────────────────────────────────────────────────────────
 
-class _RevelationOrderView extends StatelessWidget {
+class _RevelationOrderView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
-  const _RevelationOrderView(
-      {required this.chapters, required this.colorScheme});
+  const _RevelationOrderView({
+    required this.chapters,
+    required this.colorScheme,
+  });
+
+  @override
+  State<_RevelationOrderView> createState() => _RevelationOrderViewState();
+}
+
+class _RevelationOrderViewState extends State<_RevelationOrderView>
+    with AutomaticKeepAliveClientMixin {
+  /// Chronological order, sorted once instead of on every build.
+  late List<ChapterMeta> _sorted;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _sort();
+  }
+
+  @override
+  void didUpdateWidget(_RevelationOrderView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.chapters, widget.chapters)) {
+      _sort();
+    }
+  }
+
+  void _sort() {
+    _sorted = List<ChapterMeta>.from(widget.chapters)
+      ..sort((a, b) => a.revelationOrder.compareTo(b.revelationOrder));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sorted = List<ChapterMeta>.from(chapters)
-      ..sort((a, b) => a.revelationOrder.compareTo(b.revelationOrder));
+    super.build(context);
 
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      itemCount: sorted.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
-      itemBuilder: (context, index) {
-        final chapter = sorted[index];
-        return _SurahCard(
-          chapter: chapter,
-          colorScheme: colorScheme,
-          showRevelationOrder: true,
-        );
-      },
+      itemCount: _sorted.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 6),
+      itemBuilder: (context, index) => _SurahCard(
+        chapter: _sorted[index],
+        colorScheme: widget.colorScheme,
+        showRevelationOrder: true,
+      ),
     );
   }
 }
@@ -347,19 +474,18 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
             ],
           ),
@@ -388,8 +514,9 @@ class _SurahCard extends StatelessWidget {
     final isMeccan = chapter.isMeccan;
 
     // Makki = warm amber, Madani = cool green.
-    final accentColor =
-        isMeccan ? const Color(0xFFD4A054) : const Color(0xFF4CAF7D);
+    final accentColor = isMeccan
+        ? const Color(0xFFD4A054)
+        : const Color(0xFF4CAF7D);
     final bgGradient = isMeccan
         ? const [Color(0xFF3D2E1E), Color(0xFF2A1F14)]
         : const [Color(0xFF1A3529), Color(0xFF0F211A)];
@@ -410,7 +537,9 @@ class _SurahCard extends StatelessWidget {
           child: InkWell(
             onTap: () => context.push(AppRoute.surah(chapter.id)),
             child: Container(
-              height: showRevelationOrder ? 96 : (chapter.nameTranslated != null ? 88 : 80),
+              height: showRevelationOrder
+                  ? 96
+                  : (chapter.nameTranslated != null ? 88 : 80),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
@@ -418,135 +547,120 @@ class _SurahCard extends StatelessWidget {
                   colors: bgGradient,
                 ),
               ),
-            child: Stack(
-              children: [
-                // Full-width background image.
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.15,
-                    child: Image.asset(
-                      imagePath,
-                      fit: BoxFit.cover,
+              child: Stack(
+                children: [
+                  // Full-width background image.
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 0.15,
+                      child: Image.asset(imagePath, fit: BoxFit.cover),
                     ),
                   ),
-                ),
 
-                // Content row.
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      // Surah number in modern circular badge (3D shadow).
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border:
-                              Border.all(color: accentColor, width: 1.5),
-                          color: accentColor.withValues(alpha: 0.15),
-                          boxShadow: AppShadows.badge,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          showRevelationOrder
-                              ? '${chapter.revelationOrder}'
-                              : '${chapter.id}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                color: accentColor,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      // English name + translation + ayah count (Quran.com style).
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              chapter.nameSimple,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: textColor,
-                                  ),
-                            ),
-                            if (chapter.nameTranslated != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                chapter.nameTranslated!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: textColor.withValues(alpha: 0.75),
-                                    ),
-                              ),
-                            ],
-                            if (showRevelationOrder) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'Surah ${chapter.id}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color:
-                                          textColor.withValues(alpha: 0.4),
-                                    ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      // Calligraphic Arabic surah name (Tarteel surah-name-v4 ligature).
-                      Expanded(
-                        child: Center(
+                  // Content row.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        // Surah number in modern circular badge (3D shadow).
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: accentColor, width: 1.5),
+                            color: accentColor.withValues(alpha: 0.15),
+                            boxShadow: AppShadows.badge,
+                          ),
+                          alignment: Alignment.center,
                           child: Text(
-                            'surah${chapter.id.toString().padLeft(3, '0')}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
+                            showRevelationOrder
+                                ? '${chapter.revelationOrder}'
+                                : '${chapter.id}',
+                            style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
-                                  fontFamily: 'SurahNameV4',
-                                  fontWeight: FontWeight.bold,
                                   color: accentColor,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textDirection: TextDirection.rtl,
                           ),
                         ),
-                      ),
-                      // Ayah count to the right.
-                      Text(
-                        '${chapter.versesCount} Ayahs',
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(
-                              color: textColor.withValues(alpha: 0.6),
+                        const SizedBox(width: 14),
+                        // English name + translation + ayah count (Quran.com style).
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                chapter.nameSimple,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: textColor,
+                                    ),
+                              ),
+                              if (chapter.nameTranslated != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  chapter.nameTranslated!,
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(
+                                          alpha: 0.75,
+                                        ),
+                                      ),
+                                ),
+                              ],
+                              if (showRevelationOrder) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Surah ${chapter.id}',
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.4),
+                                      ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Calligraphic Arabic surah name (Tarteel surah-name-v4 ligature).
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              'surah${chapter.id.toString().padLeft(3, '0')}',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    fontFamily: 'SurahNameV4',
+                                    fontWeight: FontWeight.bold,
+                                    color: accentColor,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.rtl,
                             ),
-                      ),
-                    ],
+                          ),
+                        ),
+                        // Ayah count to the right.
+                        Text(
+                          '${chapter.versesCount} Ayahs',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: textColor.withValues(alpha: 0.6),
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }

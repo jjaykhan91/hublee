@@ -3,12 +3,12 @@
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },
-    "sequential-thinking": {
+    "android": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
+      "args": ["-y", "android-mcp-server"],
+      "env": {
+        "ANDROID_HOME": "C:/Users/MightK/AppData/Local/Android/Sdk"
+      }
     }
   }
 }

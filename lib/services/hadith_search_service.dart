@@ -9,17 +9,13 @@ import 'search_models.dart';
 
 /// Service that searches Hadith books by Arabic or English text.
 class HadithSearchService {
-  const HadithSearchService({
-    HadithRepository? repo,
-  }) : _repo = repo ?? const HadithRepository();
+  const HadithSearchService({HadithRepository? repo})
+    : _repo = repo ?? const HadithRepository();
 
   final HadithRepository _repo;
 
   /// Searches all hadith collections for [query]. Returns up to [limit] hits.
-  Future<List<HadithSearchHit>> search(
-    String query, {
-    int limit = 100,
-  }) async {
+  Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
     return _repo.searchHadith(query, limit: limit);
   }
 }

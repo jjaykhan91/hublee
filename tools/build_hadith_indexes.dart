@@ -17,11 +17,16 @@ import 'package:path/path.dart' as p;
 
 void main(List<String> args) async {
   final parser = ArgParser()
-    ..addOption('src',
-        help: 'Source folder with collections',
-        defaultsTo: 'tools/utils/by_book')
-    ..addOption('out',
-        help: 'Assets output folder', defaultsTo: 'assets/hadith')
+    ..addOption(
+      'src',
+      help: 'Source folder with collections',
+      defaultsTo: 'tools/utils/by_book',
+    )
+    ..addOption(
+      'out',
+      help: 'Assets output folder',
+      defaultsTo: 'assets/hadith',
+    )
     ..addFlag('minify', help: 'Minify JSON output', defaultsTo: false)
     ..addFlag('clean', help: 'Clean OUT before building', defaultsTo: false);
 
@@ -46,14 +51,16 @@ void main(List<String> args) async {
 
   // Walk top-level collections in src
   for (final coll in srcDir.listSync().whereType<Directory>()) {
-    final collId =
-        p.basename(coll.path); // e.g. forties, other_books, the_9_books
-    final srcBooks = coll
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.toLowerCase().endsWith('.json'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final collId = p.basename(
+      coll.path,
+    ); // e.g. forties, other_books, the_9_books
+    final srcBooks =
+        coll
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.toLowerCase().endsWith('.json'))
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
 
     if (srcBooks.isEmpty) continue;
 
@@ -71,10 +78,12 @@ void main(List<String> args) async {
 
       // Parse enough fields to build index
       try {
-        final j = jsonDecode(await File(f.path).readAsString())
-            as Map<String, dynamic>;
+        final j =
+            jsonDecode(await File(f.path).readAsString())
+                as Map<String, dynamic>;
 
-        final bookId = (j['id'] as num?)?.toInt() ??
+        final bookId =
+            (j['id'] as num?)?.toInt() ??
             int.tryParse(p.basenameWithoutExtension(f.path)) ??
             0;
 
@@ -83,7 +92,8 @@ void main(List<String> args) async {
         final en = (metadata['english'] as Map?) ?? {};
         final enTitle = (en['title'] ?? '').toString();
         final arTitle = (ar['title'] ?? '').toString();
-        final length = (metadata['length'] as num?)?.toInt() ??
+        final length =
+            (metadata['length'] as num?)?.toInt() ??
             ((j['hadiths'] as List?)?.length ?? 0);
 
         totalHadithInCollection += length;
@@ -94,8 +104,8 @@ void main(List<String> args) async {
           'bookName': enTitle.isNotEmpty
               ? enTitle
               : (arTitle.isNotEmpty
-                  ? arTitle
-                  : p.basenameWithoutExtension(dstFile.path)),
+                    ? arTitle
+                    : p.basenameWithoutExtension(dstFile.path)),
           'length': length,
         });
       } catch (e) {
@@ -107,7 +117,8 @@ void main(List<String> args) async {
     final indexFile = File(p.join(outDir.path, collId, 'index.json'));
     await indexFile.writeAsString(enc.convert(index));
     stdout.writeln(
-        '✔ $collId/index.json  (${index.length} books, $totalHadithInCollection hadith)');
+      '✔ $collId/index.json  (${index.length} books, $totalHadithInCollection hadith)',
+    );
 
     collectionsSummary.add({
       'id': collId,
@@ -120,8 +131,9 @@ void main(List<String> args) async {
   // collections.json
   final collectionsJson = File(p.join(outDir.path, 'collections.json'));
   await collectionsJson.writeAsString(enc.convert(collectionsSummary));
-  stdout
-      .writeln('✔ collections.json (${collectionsSummary.length} collections)');
+  stdout.writeln(
+    '✔ collections.json (${collectionsSummary.length} collections)',
+  );
 
   // manifest.json
   final manifest = {
@@ -135,7 +147,8 @@ void main(List<String> args) async {
   stdout.writeln('✔ manifest.json');
 
   stdout.writeln(
-      '✅ Done. Make sure pubspec.yaml includes assets/hadith/** as shown earlier.');
+    '✅ Done. Make sure pubspec.yaml includes assets/hadith/** as shown earlier.',
+  );
 }
 
 String _friendly(String id) => id

@@ -1,0 +1,74 @@
+---
+description: Accessibility, touch target, and inclusive-UX rules for Hublee UI
+globs: "lib/ui/**/*.dart"
+alwaysApply: false
+---
+
+# Accessibility
+
+Hublee is a religious reading app used daily, often by older users and users with low
+vision. Accessibility is a core feature here, not a nice-to-have.
+
+## Touch targets
+
+- Minimum **48 × 48 dp** for anything tappable. Wrap small icons in `IconButton`
+  (which reserves 48 dp) or set `minimumSize` on the button style.
+- `ChoiceChip`, `Chip`, and bare `GestureDetector`s are the usual offenders — check
+  their rendered height rather than assuming.
+- Use `InkWell` / `InkResponse` over `GestureDetector` so taps produce a visible
+  ripple. A tap with no feedback reads as a broken app.
+
+## Screen readers
+
+- **Ligature and PUA fonts are unreadable to screen readers.** The `SurahNameV4` font
+  renders `surah001`–`surah114` as calligraphy, and the KFGQPC font uses private-use
+  glyphs. Any widget using them needs a `Semantics` label with the real name:
+
+```dart
+Semantics(
+  label: 'Surah Al-Fatiha',
+  child: ExcludeSemantics(child: Text('surah001', style: surahNameStyle)),
+)
+```
+
+- Give Arabic ayah text a semantics label that includes the surah and ayah number, so a
+  screen-reader user knows their position.
+- Label icon-only buttons. An `IconButton` with no `tooltip` and no semantics label is
+  announced as just "button".
+- Mark decorative images and gradients with `ExcludeSemantics` so they aren't announced.
+
+## Text scaling
+
+- Respect the platform text scale factor; never hard-code `textScaleFactor: 1.0` to
+  "fix" a layout. Fix the layout instead.
+- Arabic and English zoom are user settings (`SettingsScope.of(context)`). Layouts must
+  survive the **maximum** zoom without clipping or overflow — test at the top of the range.
+- Avoid fixed-height containers around text. Let content size itself.
+
+## Contrast and colour
+
+- Use `Theme.of(context).colorScheme` — never hard-code colours. Hard-coded colours are
+  the main reason dark mode regresses.
+- Tajweed colours are the one exception: they are fixed constants in
+  `lib/ui/widgets/tajweed.dart` because they carry meaning. Only
+  `kNotPronouncedColor(Brightness)` varies, for legibility on dark backgrounds.
+- **Never encode meaning in colour alone.** The tajweed legend and any grading badge
+  need text or an icon alongside the colour, for colour-blind users.
+- Target WCAG AA (4.5:1) for body text in both themes.
+
+## Motion and feedback
+
+- Honour `MediaQuery.of(context).disableAnimations` for decorative animation.
+- Keep staggered list animations short (30 ms per item, capped ~600 ms) so content is
+  never gated behind a long entrance.
+- Add `HapticFeedback.selectionClick()` on meaningful state changes — tab switch,
+  bookmark toggle, settings change. It's most of what makes the app feel native.
+
+## States
+
+Every async surface needs all four states, and none of them should shift layout:
+
+- **Loading** — a sized placeholder or skeleton, not `SizedBox.shrink()`.
+- **Empty** — explain what to do, and describe the action accurately.
+- **Error** — a human message plus a retry affordance, never a raw exception.
+- **Success**.
