@@ -64,6 +64,8 @@ Both reader pages share these features:
 ### Hadith Reader specifics
 - Narrator shown in a distinct container
 - Arabic without tajweed
+- Chapter dividers above the first hadith of each chapter
+- Chapter jump sheet from the app bar list icon when the book has more than one chapter
 
 ## QuranPage Groupings
 
@@ -97,6 +99,7 @@ Each surah card: left = number badge + English name (and translation on some tab
 - `tajweedSpans()` -- Public API in `lib/ui/widgets/tajweed.dart` that converts raw Qur'anic text into colour-coded `InlineSpan`s. Also exposes `tajweedColorAssignments()` for unit testing without `BuildContext`.
 - `GradientTile` -- Card with gradient background, icon, title, subtitle
 - `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)
+- `HadithChapterSheet` -- Chapter table of contents for the hadith reader (`showHadithChapterSheet()`)
 - `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`
 
 ## Animations
