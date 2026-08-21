@@ -639,7 +639,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       itemScrollController: _scrollController,
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
       itemCount: itemCount,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {

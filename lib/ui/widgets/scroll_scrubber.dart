@@ -16,10 +16,24 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 
+const _kThumbSize = 36.0;
+const _kTrackWidth = 20.0;
+
 /// Overlay scrubber that sits on the right edge of the reader.
 ///
 /// Wrap your [ScrollablePositionedList] and this widget in a [Stack].
+/// Give the list right padding of [ScrollScrubber.gutter] so text is
+/// not drawn under the track.
 class ScrollScrubber extends StatefulWidget {
+  /// Inset from the physical right edge of the stack.
+  static const double edgeInset = 8;
+
+  /// Width of the overlay hit area (track + thumb padding).
+  static const double overlayWidth = _kTrackWidth + 24;
+
+  /// Right padding readers should reserve so content clears the overlay.
+  static const double gutter = edgeInset + overlayWidth;
+
   /// Total number of scrollable items.
   final int itemCount;
 
@@ -168,11 +182,6 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     _scheduleHide();
   }
 
-  // Slightly smaller thumb + narrow track so the touchable area is compact
-  // and less likely to occlude content.
-  static const _kThumbSize = 36.0;
-  static const _kTrackWidth = 20.0;
-
   @override
   Widget build(BuildContext context) {
     if (widget.itemCount <= 1) return const SizedBox.shrink();
@@ -182,13 +191,11 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     final thumbTop = _position * trackHeight.clamp(0.0, double.infinity);
 
     return Positioned(
-      // Pin to the left edge so it does not overlap the Arabic text.
-      left: 2,
+      key: const Key('scroll-scrubber-overlay'),
+      right: ScrollScrubber.edgeInset,
       top: 8,
       bottom: 8,
-      // Compact hit area: just wider than the track + thumb, label floats
-      // outside this region.
-      width: _kTrackWidth + 24,
+      width: ScrollScrubber.overlayWidth,
       child: GestureDetector(
         onVerticalDragStart: _onDragStart,
         onVerticalDragUpdate: _onDragUpdate,
@@ -198,9 +205,9 @@ class _ScrollScrubberState extends State<ScrollScrubber>
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Track line
+            // Track line, aligned with the thumb on the physical right.
             Positioned(
-              left: _kTrackWidth / 2 - 1.5,
+              right: _kTrackWidth / 2 - 1.5,
               top: _kThumbSize / 2,
               bottom: _kThumbSize / 2,
               child: Container(
@@ -216,7 +223,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
 
             // Thumb
             Positioned(
-              left: 0,
+              right: 0,
               top: thumbTop,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
@@ -239,9 +246,9 @@ class _ScrollScrubberState extends State<ScrollScrubber>
               ),
             ),
 
-            // Label tooltip (shows on drag/tap)
+            // Label floats inward so it does not hang off the screen.
             Positioned(
-              left: _kTrackWidth + 8,
+              right: _kTrackWidth + 8,
               top: thumbTop + (_kThumbSize - 36) / 2,
               child: FadeTransition(
                 opacity: _fadeAnimation,

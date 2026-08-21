@@ -352,7 +352,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       itemScrollController: _scrollController,
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
       itemCount: hadiths.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
