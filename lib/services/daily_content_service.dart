@@ -8,6 +8,7 @@ library;
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
@@ -169,5 +170,13 @@ class DailyContentService {
     );
     _cachedDay = today;
     return _cachedHadith!;
+  }
+
+  /// Clears the session cache. Tests only.
+  @visibleForTesting
+  static void resetCache() {
+    _cachedVerse = null;
+    _cachedHadith = null;
+    _cachedDay = null;
   }
 }

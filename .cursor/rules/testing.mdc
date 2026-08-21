@@ -28,6 +28,9 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/router_paths_test.dart` | `AppRoute` path building |
 | `test/arabic_rendering_test.dart` | Arabic layout, overflow guards, span integrity, goldens |
 | `test/quran_page_test.dart` | Quran tab keep-alive (scroll survives tab switch) |
+| `test/home_page_test.dart` | Daily-card skeletons hold layout while content loads |
+| `test/bookmarks_page_test.dart` | Empty-state copy matches the bookmark-icon control |
+| `test/hadith_page_test.dart` | Book summaries and lazy Hadith tab list |
 | `test/tajweed_colors_test.dart` | Rule colours pinned to the documented Madani hex |
 | `test/quran_chapters_repository_test.dart` | 114 chapters load with valid metadata |
 

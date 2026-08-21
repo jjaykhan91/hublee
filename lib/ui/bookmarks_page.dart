@@ -55,7 +55,7 @@ class BookmarksPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Long-press any ayah or hadith to bookmark it',
+            'Tap the bookmark icon on any ayah or hadith to save it',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),

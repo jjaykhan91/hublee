@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
+import '../hadith/hadith_book_summaries.dart';
 import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
 
@@ -24,7 +25,7 @@ class HadithPage extends StatefulWidget {
 
 class _HadithPageState extends State<HadithPage> {
   /// Cached future to avoid re-fetching on rebuild.
-  late final Future<List<_CollectionWithBooks>> _dataFuture;
+  late final Future<List<_HadithRow>> _dataFuture;
 
   @override
   void initState() {
@@ -32,28 +33,49 @@ class _HadithPageState extends State<HadithPage> {
     _dataFuture = _loadAllBooks();
   }
 
-  /// Loads all collections and their books in one pass.
-  Future<List<_CollectionWithBooks>> _loadAllBooks() async {
+  /// Loads all collections and flattens them into lazy-list rows.
+  ///
+  /// Summaries are resolved here so [_BookTile] never re-runs the
+  /// string-matching table on every rebuild.
+  Future<List<_HadithRow>> _loadAllBooks() async {
     final repository = const HadithRepository();
     final collections = await repository.loadCollections();
-    final results = <_CollectionWithBooks>[];
+    final rows = <_HadithRow>[];
+    var animIndex = 0;
 
     for (final collection in collections) {
       try {
         final books = await repository.loadBooksForCollection(collection.id);
-        results.add(_CollectionWithBooks(collection: collection, books: books));
+        rows.add(
+          _HadithHeaderRow(title: collection.title, bookCount: books.length),
+        );
+        for (final book in books) {
+          final fileBaseName = book.file.split('/').last.split('.').first;
+          rows.add(
+            _HadithBookRow(
+              book: book,
+              collectionId: collection.id,
+              summary: hadithBookSummary(
+                title: book.title,
+                fileBaseName: fileBaseName,
+              ),
+              animIndex: animIndex,
+            ),
+          );
+          animIndex++;
+        }
       } catch (_) {
         // Skip collections with missing index files.
       }
     }
-    return results;
+    return rows;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Hadith')),
-      body: FutureBuilder<List<_CollectionWithBooks>>(
+      body: FutureBuilder<List<_HadithRow>>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -66,66 +88,89 @@ class _HadithPageState extends State<HadithPage> {
             );
           }
 
-          final groups = snapshot.data ?? [];
-          if (groups.isEmpty) {
+          final rows = snapshot.data ?? [];
+          if (rows.isEmpty) {
             return const Center(child: Text('No hadith books found.'));
           }
 
-          return _buildBookList(context, groups);
+          return _buildBookList(rows);
         },
       ),
     );
   }
 
-  /// Builds a single flat list with collection headers and book
-  /// tiles.
-  Widget _buildBookList(
-    BuildContext context,
-    List<_CollectionWithBooks> groups,
-  ) {
-    // Build a flat list of widgets: header + books per group.
-    final items = <Widget>[];
-    var animIndex = 0;
-    for (final group in groups) {
-      items.add(
-        _CollectionHeader(
-          title: group.collection.title,
-          bookCount: group.books.length,
-        ),
-      );
-      for (final book in group.books) {
-        final delay = (30 * animIndex).clamp(0, 600);
-        items.add(
-          _BookTile(book: book, collectionId: group.collection.id)
-              .animate()
-              .fadeIn(duration: 400.ms, delay: delay.ms)
-              .slideX(
-                begin: 0.03,
-                end: 0,
-                duration: 400.ms,
-                delay: delay.ms,
-                curve: Curves.easeOut,
-              ),
-        );
-        animIndex++;
-      }
-      items.add(const SizedBox(height: 8));
-    }
-
-    return ListView(
+  /// Lazy list of collection headers and book tiles.
+  Widget _buildBookList(List<_HadithRow> rows) {
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      children: items,
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        return switch (row) {
+          _HadithHeaderRow(:final title, :final bookCount) => _CollectionHeader(
+            title: title,
+            bookCount: bookCount,
+          ),
+          _HadithBookRow(
+            :final book,
+            :final collectionId,
+            :final summary,
+            :final animIndex,
+          ) =>
+            _animateBookTile(
+              animIndex,
+              _BookTile(
+                book: book,
+                collectionId: collectionId,
+                summary: summary,
+              ),
+            ),
+        };
+      },
     );
+  }
+
+  /// Entry animation for the first screenful of tiles only.
+  Widget _animateBookTile(int animIndex, Widget tile) {
+    if (animIndex >= 25) return tile;
+    final delay = (30 * animIndex).clamp(0, 600);
+    return tile
+        .animate()
+        .fadeIn(duration: 400.ms, delay: delay.ms)
+        .slideX(
+          begin: 0.03,
+          end: 0,
+          duration: 400.ms,
+          delay: delay.ms,
+          curve: Curves.easeOut,
+        );
   }
 }
 
-/// Groups a collection with its resolved book list.
-class _CollectionWithBooks {
-  final HadithCollectionMeta collection;
-  final List<HadithBookMeta> books;
+sealed class _HadithRow {
+  const _HadithRow();
+}
 
-  const _CollectionWithBooks({required this.collection, required this.books});
+class _HadithHeaderRow extends _HadithRow {
+  final String title;
+  final int bookCount;
+
+  const _HadithHeaderRow({required this.title, required this.bookCount});
+}
+
+class _HadithBookRow extends _HadithRow {
+  final HadithBookMeta book;
+  final String collectionId;
+  final String? summary;
+  final int animIndex;
+
+  const _HadithBookRow({
+    required this.book,
+    required this.collectionId,
+    required this.summary,
+    required this.animIndex,
+  });
 }
 
 /// Section header for a hadith collection group.
@@ -192,8 +237,13 @@ class _CollectionHeader extends StatelessWidget {
 class _BookTile extends StatelessWidget {
   final HadithBookMeta book;
   final String collectionId;
+  final String? summary;
 
-  const _BookTile({required this.book, required this.collectionId});
+  const _BookTile({
+    required this.book,
+    required this.collectionId,
+    this.summary,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -209,8 +259,6 @@ class _BookTile extends StatelessWidget {
     final subtitle = subtitleParts
         .where((part) => part.isNotEmpty)
         .join(' \u2022 ');
-
-    final summary = _lookupBookSummary(book.title, fileBaseName);
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -259,7 +307,7 @@ class _BookTile extends StatelessWidget {
                     if (summary != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        summary,
+                        summary!,
                         style: theme.textTheme.bodySmall?.copyWith(
                           height: 1.3,
                           color: theme.colorScheme.onSurface.withValues(
@@ -281,138 +329,4 @@ class _BookTile extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Returns a brief description for well-known hadith books.
-///
-/// Covers all 17 books bundled in the app: 3 Forties collections,
-/// 5 "Other Books", and the 9 canonical collections.
-String? _lookupBookSummary(String title, String fileBaseName) {
-  final titleLower = title.toLowerCase().trim();
-  final fileLower = fileBaseName.toLowerCase().trim();
-
-  // ── Forties (3) ─────────────────────────────────────────────
-  const nawawiSummary =
-      'Concise foundations of Islam\u2014faith, worship, ethics, '
-      'and sincerity. A beloved set of core principles often '
-      'memorized and taught worldwide.';
-  const qudsiSummary =
-      'Forty sacred sayings in which the Prophet \uFDFA narrates '
-      'the words of Allah outside the Quran\u2014highlighting '
-      'divine mercy, love, justice, and guidance.';
-  const waliullahSummary =
-      'A practical revivalist selection by Shah Waliullah, '
-      'balancing worship, morals, and social conduct\u2014aimed '
-      'at everyday practice of the Sunnah.';
-
-  // ── Other Books (5) ─────────────────────────────────────────
-  const adabAlMufradSummary =
-      'Imam al-Bukhari\u2019s dedicated compilation on Islamic '
-      'manners, etiquette, and social conduct\u2014covering '
-      'kindness to neighbours, parents, guests, and animals.';
-  const bulughAlMaramSummary =
-      'Ibn Hajar al-Asqalani\u2019s concise selection of hadiths '
-      'used as legal evidence in Islamic jurisprudence (fiqh). '
-      'Essential for students of Islamic law.';
-  const mishkatSummary =
-      'A comprehensive collection covering all aspects of Islamic '
-      'life\u2014worship, transactions, manners, and spirituality '
-      '\u2014with hadiths from multiple canonical sources.';
-  const riyadSummary =
-      'Imam Nawawi\u2019s selection of hadiths for righteous '
-      'conduct, organised into chapters on sincerity, patience, '
-      'truthfulness, and daily devotions.';
-  const shamailSummary =
-      'Imam al-Tirmidhi\u2019s renowned description of the '
-      'Prophet\u2019s \uFDFA appearance, character, daily habits, '
-      'worship, and personal qualities.';
-
-  // ── The 9 Books ─────────────────────────────────────────────
-  const bukhariSummary =
-      'The most authentic hadith collection in Sunni Islam, '
-      'compiled by Imam al-Bukhari with strict chains of '
-      'narration. Covers worship, dealings, history, and virtues.';
-  const muslimSummary =
-      'The second most authentic collection, compiled by Imam '
-      'Muslim. Known for its superior arrangement and grouping '
-      'of similar narrations together.';
-  const abuDawudSummary =
-      'Imam Abu Dawud\u2019s collection focused primarily on '
-      'hadiths of legal rulings (ahkam)\u2014covering purification, '
-      'prayer, fasting, trade, and personal conduct.';
-  const tirmidhiSummary =
-      'Imam al-Tirmidhi\u2019s collection notable for including '
-      'scholarly commentary and grading of each hadith. Covers '
-      'faith, worship, virtues, and jurisprudence.';
-  const nasaiSummary =
-      'Imam al-Nasa\u2019i\u2019s rigorous collection focused on '
-      'fiqh-related hadiths, with attention to narrators and '
-      'precise chain verification.';
-  const ibnMajahSummary =
-      'Imam Ibn Majah\u2019s collection covering worship, business, '
-      'asceticism, and virtues. Contains some unique hadiths not '
-      'found in the other five canonical books.';
-  const muwattaSummary =
-      'The earliest compiled hadith book by Imam Malik, blending '
-      'Prophetic traditions with the practice of the people of '
-      'Madinah. Foundation of the Maliki school.';
-  const musnadSummary =
-      'One of the largest hadith compilations by Imam Ahmad ibn '
-      'Hanbal, organised by narrator. An essential reference '
-      'containing thousands of unique narrations.';
-  const darimiSummary =
-      'Imam al-Darimi\u2019s early collection known for its '
-      'valuable introductory chapters on seeking knowledge, '
-      'following the Sunnah, and Islamic methodology.';
-
-  // ── Matching ────────────────────────────────────────────────
-  // Match against title first, then file name.
-  for (final key in [titleLower, fileLower]) {
-    if (key.contains('nawawi') && !key.contains('riyad')) {
-      return nawawiSummary;
-    }
-    if (key.contains('qudsi')) return qudsiSummary;
-    if (key.contains('waliullah') ||
-        key.contains('wali allah') ||
-        key.contains('shah wali') ||
-        key.contains('shahwali')) {
-      return waliullahSummary;
-    }
-    if (key.contains('adab') && key.contains('mufrad')) {
-      return adabAlMufradSummary;
-    }
-    if (key.contains('bulugh') || key.contains('maram')) {
-      return bulughAlMaramSummary;
-    }
-    if (key.contains('mishkat') || key.contains('masabih')) {
-      return mishkatSummary;
-    }
-    if (key.contains('riyad') || key.contains('salihin')) {
-      return riyadSummary;
-    }
-    if (key.contains('shamail') || key.contains('muhammadiyah')) {
-      return shamailSummary;
-    }
-    if (key.contains('bukhari') && !key.contains('adab')) {
-      return bukhariSummary;
-    }
-    if (key.contains('muslim')) return muslimSummary;
-    if (key.contains('abu') && key.contains('dawud')) return abuDawudSummary;
-    if (key.contains('abudawud')) return abuDawudSummary;
-    if (key.contains('tirmidhi')) return tirmidhiSummary;
-    if (key.contains('nasa')) return nasaiSummary;
-    if (key.contains('ibn') && key.contains('majah')) return ibnMajahSummary;
-    if (key.contains('ibnmajah')) return ibnMajahSummary;
-    if (key.contains('muwatta') || key.contains('malik')) {
-      return muwattaSummary;
-    }
-    if (key.contains('musnad') ||
-        key.contains('ahmad') ||
-        key.contains('ahmed')) {
-      return musnadSummary;
-    }
-    if (key.contains('darimi')) return darimiSummary;
-  }
-
-  return null;
 }

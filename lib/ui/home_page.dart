@@ -26,14 +26,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final Future<DailyVerse> _verseFuture;
-  late final Future<DailyHadith> _hadithFuture;
+  late Future<DailyVerse> _verseFuture;
+  late Future<DailyHadith> _hadithFuture;
 
   @override
   void initState() {
     super.initState();
     _verseFuture = DailyContentService.loadVerseOfTheDay();
     _hadithFuture = DailyContentService.loadHadithOfTheDay();
+  }
+
+  void _reloadVerse() {
+    setState(() {
+      _verseFuture = DailyContentService.loadVerseOfTheDay();
+    });
+  }
+
+  void _reloadHadith() {
+    setState(() {
+      _hadithFuture = DailyContentService.loadHadithOfTheDay();
+    });
   }
 
   @override
@@ -106,8 +118,18 @@ class _HomePageState extends State<HomePage> {
                 FutureBuilder<DailyVerse>(
                   future: _verseFuture,
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return _DailyCardError(
+                        key: const Key('verse-of-the-day-error'),
+                        message: "Couldn't load ayah of the day",
+                        onRetry: _reloadVerse,
+                      );
+                    }
                     if (!snapshot.hasData) {
-                      return const SizedBox.shrink();
+                      return const _DailyCardSkeleton(
+                        key: Key('verse-of-the-day-skeleton'),
+                        label: 'Loading ayah of the day',
+                      );
                     }
                     return _VerseOfTheDayCard(verse: snapshot.data!)
                         .animate()
@@ -126,8 +148,18 @@ class _HomePageState extends State<HomePage> {
                 FutureBuilder<DailyHadith>(
                   future: _hadithFuture,
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return _DailyCardError(
+                        key: const Key('hadith-of-the-day-error'),
+                        message: "Couldn't load hadith of the day",
+                        onRetry: _reloadHadith,
+                      );
+                    }
                     if (!snapshot.hasData) {
-                      return const SizedBox.shrink();
+                      return const _DailyCardSkeleton(
+                        key: Key('hadith-of-the-day-skeleton'),
+                        label: 'Loading hadith of the day',
+                      );
                     }
                     return _HadithOfTheDayCard(hadith: snapshot.data!)
                         .animate()
@@ -619,6 +651,75 @@ class _ContinueReadingCard extends StatelessWidget {
             color: colorScheme.onSurface.withValues(alpha: 0.4),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Placeholder sized to the daily feature cards so the home layout
+/// does not jump when verse/hadith finish loading.
+class _DailyCardSkeleton extends StatelessWidget {
+  final String label;
+
+  const _DailyCardSkeleton({super.key, required this.label});
+
+  static const double height = 168;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: label,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
+          borderRadius: AppRadius.featureCard,
+        ),
+      ),
+    );
+  }
+}
+
+/// Same footprint as [_DailyCardSkeleton], with a retry action.
+class _DailyCardError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _DailyCardError({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      child: Container(
+        height: _DailyCardSkeleton.height,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: AppRadius.featureCard,
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.4)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(onPressed: onRetry, child: const Text('Try again')),
+          ],
+        ),
       ),
     );
   }

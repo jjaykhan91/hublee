@@ -300,8 +300,7 @@ class _MakkiMadaniView extends StatefulWidget {
 
 class _MakkiMadaniViewState extends State<_MakkiMadaniView>
     with AutomaticKeepAliveClientMixin {
-  late List<ChapterMeta> meccan;
-  late List<ChapterMeta> medinan;
+  late List<_TypeRow> _rows;
 
   @override
   bool get wantKeepAlive => true;
@@ -321,49 +320,89 @@ class _MakkiMadaniViewState extends State<_MakkiMadaniView>
   }
 
   void _partition() {
-    meccan = widget.chapters.where((c) => c.isMeccan).toList();
-    medinan = widget.chapters.where((c) => c.isMedinan).toList();
+    final meccan = widget.chapters.where((c) => c.isMeccan).toList();
+    final medinan = widget.chapters.where((c) => c.isMedinan).toList();
+    _rows = [
+      _TypeHeaderRow(
+        icon: Icons.mosque_rounded,
+        title: 'Meccan (${meccan.length})',
+        subtitle: 'Revealed in Mecca',
+        color: const Color(0xFFD97706),
+      ),
+      for (final chapter in meccan) _TypeCardRow(chapter),
+      const _TypeSpacerRow(),
+      _TypeHeaderRow(
+        icon: Icons.account_balance_rounded,
+        title: 'Medinan (${medinan.length})',
+        subtitle: 'Revealed in Medina',
+        color: const Color(0xFF0D9488),
+      ),
+      for (final chapter in medinan) _TypeCardRow(chapter),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final colorScheme = widget.colorScheme;
 
-    return ListView(
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      children: [
-        _SectionHeader(
-          icon: Icons.mosque_rounded,
-          title: 'Meccan (${meccan.length})',
-          subtitle: 'Revealed in Mecca',
-          color: const Color(0xFFD97706),
-        ),
-        const SizedBox(height: 6),
-        ...meccan.map(
-          (chapter) => Padding(
+      itemCount: _rows.length,
+      itemBuilder: (context, index) {
+        return switch (_rows[index]) {
+          _TypeHeaderRow(
+            :final icon,
+            :final title,
+            :final subtitle,
+            :final color,
+          ) =>
+            _SectionHeader(
+              icon: icon,
+              title: title,
+              subtitle: subtitle,
+              color: color,
+            ),
+          _TypeCardRow(:final chapter) => Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: _SurahCard(chapter: chapter, colorScheme: colorScheme),
+            child: _SurahCard(
+              chapter: chapter,
+              colorScheme: widget.colorScheme,
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        _SectionHeader(
-          icon: Icons.account_balance_rounded,
-          title: 'Medinan (${medinan.length})',
-          subtitle: 'Revealed in Medina',
-          color: const Color(0xFF0D9488),
-        ),
-        const SizedBox(height: 6),
-        ...medinan.map(
-          (chapter) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _SurahCard(chapter: chapter, colorScheme: colorScheme),
-          ),
-        ),
-      ],
+          _TypeSpacerRow() => const SizedBox(height: 20),
+        };
+      },
     );
   }
+}
+
+sealed class _TypeRow {
+  const _TypeRow();
+}
+
+class _TypeHeaderRow extends _TypeRow {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+
+  const _TypeHeaderRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
+}
+
+class _TypeCardRow extends _TypeRow {
+  final ChapterMeta chapter;
+
+  const _TypeCardRow(this.chapter);
+}
+
+class _TypeSpacerRow extends _TypeRow {
+  const _TypeSpacerRow();
 }
 
 // ────────────────────────────────────────────────────────────────
