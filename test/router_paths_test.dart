@@ -8,6 +8,7 @@ import 'package:hublee/router_paths.dart';
 void main() {
   group('AppRoute', () {
     test('tab roots are constant', () {
+      expect(AppRoute.splash, '/splash');
       expect(AppRoute.home, '/home');
       expect(AppRoute.quran, '/quran');
       expect(AppRoute.hadith, '/hadith');
