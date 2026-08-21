@@ -347,7 +347,21 @@ class SettingsPage extends StatelessWidget {
                         'Word-by-word English from "The Glorious Qur\u2019an: '
                         'Word-for-Word Translation to Facilitate Learning of '
                         'Qur\u2019anic Arabic" by Dr. Shehnaz Shaikh and '
-                        'Ms. Kausar Khatri.',
+                        'Ms. Kausar Khatri. The in-app dictionary and '
+                        'learning cards use that same glossary — it covers '
+                        'the Quran, not modern newspaper Arabic.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Modern Arabic dictionary: Wiktionary (English edition) '
+                        'via kaikki.org / wiktextract, CC BY-SA 3.0 and GFDL, '
+                        'plus a Hublee newspaper-Arabic core list. Grammar '
+                        'lessons are original Hublee notes; verb forms follow '
+                        'the classical I–X paradigm.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.65),
                           height: 1.5,

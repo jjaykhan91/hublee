@@ -24,6 +24,10 @@ import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../services/vocab_scope.dart';
+import '../services/vocab_service.dart';
+import '../services/srs_scope.dart';
+import '../services/srs_service.dart';
 import '../theme/app_tokens.dart';
 
 import 'widgets/arabic_text.dart';
@@ -349,6 +353,43 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                           ? null
                           : '${chapterMeta.nameSimple} '
                                 '${widget.surahId}:$_wordSelectionAyah',
+                      isFavorite:
+                          _wordSelection != null &&
+                          VocabScope.of(context).isSavedWord(
+                            _wordSelection!.arabic,
+                            _wordSelection!.gloss,
+                          ),
+                      onToggleFavorite:
+                          _wordSelection == null || _wordSelectionAyah == null
+                          ? null
+                          : () {
+                              final selection = _wordSelection!;
+                              final ayah = _wordSelectionAyah!;
+                              VocabScope.of(context).toggle(
+                                VocabEntry.fromReader(
+                                  arabic: selection.arabic,
+                                  gloss: selection.gloss,
+                                  surahId: widget.surahId,
+                                  ayah: ayah,
+                                  surahName:
+                                      chapterMeta?.nameSimple ??
+                                      'Surah ${widget.surahId}',
+                                ),
+                              );
+                              SrsScope.of(context).ensure(
+                                SrsCard(
+                                  id: SrsCard.cardId(
+                                    deck: 'quran',
+                                    arabic: selection.arabic,
+                                    english: selection.gloss,
+                                  ),
+                                  deck: 'quran',
+                                  arabic: selection.arabic,
+                                  english: selection.gloss,
+                                  due: DateTime.now(),
+                                ),
+                              );
+                            },
                       onDismiss: _clearWordSelection,
                     ),
                   ),

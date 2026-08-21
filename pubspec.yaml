@@ -49,6 +49,7 @@ flutter:
     - assets/quran/surah_info.json
     - assets/quran/en.clearquran/
     - assets/quran/en.wordbyword/
+    - assets/arabic/
     - assets/hadith/manifest.json
     - assets/hadith/collections.json
     - assets/hadith/forties/

@@ -36,7 +36,7 @@ void main() {
     expect(find.byKey(const Key('hadith-of-the-day-skeleton')), findsOneWidget);
     expect(find.text('Ayah of the Day'), findsNothing);
 
-    // Explore tiles animate on first paint; flush those timers so the
+    // Daily cards animate on first paint; flush those timers so the
     // test binding does not fail on dispose.
     await tester.pump(const Duration(seconds: 2));
   });

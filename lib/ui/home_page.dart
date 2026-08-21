@@ -1,7 +1,7 @@
 /// Landing page shown in the Home tab.
 ///
 /// Displays Verse of the Day, Hadith of the Day, a search shortcut,
-/// "Continue Reading" cards for last-read positions, and explore tiles.
+/// and "Continue Reading" cards for last-read positions.
 library;
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,6 @@ import '../services/daily_content_service.dart';
 import '../services/settings_controller.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
-import 'widgets/gradient_tile.dart';
 import 'widgets/hublee_card.dart';
 
 /// Home tab content with daily content, search, continue-reading.
@@ -229,74 +228,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 10),
                 ],
-
-                // ── Explore section ──────────────────────────────
-                if (bookmarkService.lastReadQuran != null ||
-                    bookmarkService.lastReadHadith != null)
-                  const SizedBox(height: 8),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colorScheme.primary.withValues(alpha: 0.14),
-                            colorScheme.tertiary.withValues(alpha: 0.06),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.explore_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Explore',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
-                const SizedBox(height: 12),
-
-                GradientTile(
-                      icon: Icons.menu_book_rounded,
-                      title: 'Quran',
-                      subtitle: 'Read by surah with translations and tajweed',
-                      onTap: () => context.go(AppRoute.quran),
-                    )
-                    .animate()
-                    .fadeIn(duration: 500.ms, delay: 400.ms)
-                    .slideY(
-                      begin: 0.04,
-                      end: 0,
-                      duration: 500.ms,
-                      delay: 400.ms,
-                    ),
-                const SizedBox(height: 12),
-                GradientTile(
-                      icon: Icons.library_books_rounded,
-                      title: 'Hadith',
-                      subtitle: 'Forties, The Nine Books, and more',
-                      onTap: () => context.go(AppRoute.hadith),
-                    )
-                    .animate()
-                    .fadeIn(duration: 500.ms, delay: 500.ms)
-                    .slideY(
-                      begin: 0.04,
-                      end: 0,
-                      duration: 500.ms,
-                      delay: 500.ms,
-                    ),
               ],
             ),
           );

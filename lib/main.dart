@@ -14,6 +14,10 @@ import 'services/settings_scope.dart';
 import 'services/app_scope.dart';
 import 'services/bookmark_service.dart';
 import 'services/bookmark_scope.dart';
+import 'services/vocab_service.dart';
+import 'services/vocab_scope.dart';
+import 'services/srs_service.dart';
+import 'services/srs_scope.dart';
 import 'services/app_metrics.dart';
 import 'router.dart';
 import 'ui/widgets/metrics_hud.dart';
@@ -38,6 +42,8 @@ class _HubleeAppState extends State<HubleeApp> {
   final _themeModeService = ThemeModeService();
   final _settingsController = SettingsController();
   final _bookmarkService = BookmarkService();
+  final _vocabService = VocabService();
+  final _srsService = SrsService();
 
   ThemeMode _themeMode = ThemeMode.system;
   bool _overlayEnabled = false;
@@ -48,6 +54,8 @@ class _HubleeAppState extends State<HubleeApp> {
     _themeModeService.load().then((mode) => setState(() => _themeMode = mode));
     _settingsController.load();
     _bookmarkService.load();
+    _vocabService.load();
+    _srsService.load();
     AppMetrics.instance.attachFrameTiming();
     AppMetrics.instance.addListener(_onOverlay);
     appRouter.routerDelegate.addListener(_onRoute);
@@ -70,6 +78,8 @@ class _HubleeAppState extends State<HubleeApp> {
     AppMetrics.instance.removeListener(_onOverlay);
     appRouter.routerDelegate.removeListener(_onRoute);
     _settingsController.dispose();
+    _vocabService.dispose();
+    _srsService.dispose();
     super.dispose();
   }
 
@@ -88,32 +98,40 @@ class _HubleeAppState extends State<HubleeApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the app in scoped providers so any descendant can access
-    // settings, bookmarks, and the theme toggle.
     return SettingsScope(
       controller: _settingsController,
       child: BookmarkScope(
         service: _bookmarkService,
-        child: AppScope(
-          toggleTheme: _toggleTheme,
-          child: MaterialApp.router(
-            title: 'Hublee',
-            debugShowCheckedModeBanner: false,
-            showPerformanceOverlay: _overlayEnabled,
-            theme: buildLightTheme(),
-            darkTheme: buildDarkTheme(),
-            themeMode: _themeMode,
-            routerConfig: appRouter,
-            builder: (context, child) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  child ?? const SizedBox.shrink(),
-                  if (!kReleaseMode)
-                    const Positioned(left: 8, bottom: 88, child: MetricsHud()),
-                ],
-              );
-            },
+        child: VocabScope(
+          service: _vocabService,
+          child: SrsScope(
+            service: _srsService,
+            child: AppScope(
+              toggleTheme: _toggleTheme,
+              child: MaterialApp.router(
+                title: 'Hublee',
+                debugShowCheckedModeBanner: false,
+                showPerformanceOverlay: _overlayEnabled,
+                theme: buildLightTheme(),
+                darkTheme: buildDarkTheme(),
+                themeMode: _themeMode,
+                routerConfig: appRouter,
+                builder: (context, child) {
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      child ?? const SizedBox.shrink(),
+                      if (!kReleaseMode)
+                        const Positioned(
+                          left: 8,
+                          bottom: 88,
+                          child: MetricsHud(),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
