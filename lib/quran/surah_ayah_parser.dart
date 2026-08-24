@@ -27,3 +27,8 @@ SurahAyahRef? tryParseSurahAyah(String raw) {
   if (surahId == null || ayah == null || ayah < 1) return null;
   return SurahAyahRef(surahId: surahId, ayah: ayah);
 }
+
+/// Whether [ayah] exists in a chapter that has [versesCount] ayat.
+bool ayahExistsInChapter(int ayah, int versesCount) {
+  return ayah >= 1 && versesCount >= 1 && ayah <= versesCount;
+}

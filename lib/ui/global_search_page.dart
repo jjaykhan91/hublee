@@ -58,6 +58,9 @@ class _SearchPageState extends State<SearchPage> {
   _SearchScope _scope = _SearchScope.all;
   final List<HadithSearchHit> _hadithResults = [];
   final List<QuranSearchHit> _quranResults = [];
+  int _quranTotal = 0;
+  int _hadithTotal = 0;
+  String? _jumpHint;
 
   @override
   void initState() {
@@ -102,6 +105,9 @@ class _SearchPageState extends State<SearchPage> {
         _activeQuery = '';
         _hadithResults.clear();
         _quranResults.clear();
+        _quranTotal = 0;
+        _hadithTotal = 0;
+        _jumpHint = null;
       });
       return;
     }
@@ -111,16 +117,19 @@ class _SearchPageState extends State<SearchPage> {
       await AppMetrics.instance.time('search.global', () async {
         final hadithFuture = widget.hadithSearch.search(query, limit: 100);
         final quranFuture = widget.quranSearch.search(query, limit: 150);
-        final hadithHits = await hadithFuture;
-        final quranHits = await quranFuture;
+        final hadithResult = await hadithFuture;
+        final quranResult = await quranFuture;
         if (!mounted || generation != _searchGeneration) return;
         setState(() {
           _hadithResults
             ..clear()
-            ..addAll(hadithHits);
+            ..addAll(hadithResult.hits);
           _quranResults
             ..clear()
-            ..addAll(quranHits);
+            ..addAll(quranResult.hits);
+          _quranTotal = quranResult.totalCount;
+          _hadithTotal = hadithResult.totalCount;
+          _jumpHint = quranResult.invalidJumpHint;
           _activeQuery = query;
           _isSearching = false;
           _clampScope();
@@ -186,7 +195,7 @@ class _SearchPageState extends State<SearchPage> {
             Text(
               idle
                   ? 'Search across Quran and Hadith'
-                  : 'No verses or hadiths match “$_activeQuery”',
+                  : (_jumpHint ?? 'No verses or hadiths match “$_activeQuery”'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: cs.onSurface.withValues(alpha: 0.5),
@@ -235,31 +244,51 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildScopeChips() {
     final quranCount = _quranResults.length;
     final hadithCount = _hadithResults.length;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Row(
-        children: [
-          _ScopeChip(
-            label: 'All',
-            selected: _scope == _SearchScope.all,
-            onSelected: () => _selectScope(_SearchScope.all),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_jumpHint != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              _jumpHint!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-          _ScopeChip(
-            label: 'Quran ($quranCount)',
-            selected: _scope == _SearchScope.quran,
-            enabled: quranCount > 0,
-            onSelected: () => _selectScope(_SearchScope.quran),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Row(
+            children: [
+              _ScopeChip(
+                label: 'All',
+                selected: _scope == _SearchScope.all,
+                onSelected: () => _selectScope(_SearchScope.all),
+              ),
+              _ScopeChip(
+                label: _countChip('Quran', quranCount, _quranTotal),
+                selected: _scope == _SearchScope.quran,
+                enabled: quranCount > 0,
+                onSelected: () => _selectScope(_SearchScope.quran),
+              ),
+              _ScopeChip(
+                label: _countChip('Hadith', hadithCount, _hadithTotal),
+                selected: _scope == _SearchScope.hadith,
+                enabled: hadithCount > 0,
+                onSelected: () => _selectScope(_SearchScope.hadith),
+              ),
+            ],
           ),
-          _ScopeChip(
-            label: 'Hadith ($hadithCount)',
-            selected: _scope == _SearchScope.hadith,
-            enabled: hadithCount > 0,
-            onSelected: () => _selectScope(_SearchScope.hadith),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  String _countChip(String name, int shown, int total) {
+    if (total > shown) return '$name ($shown of $total)';
+    return '$name ($shown)';
   }
 
   /// Builds the grouped results list (Quran first, then Hadith).
@@ -381,7 +410,7 @@ class _HadithResultTile extends StatelessWidget {
               children: [
                 Text(
                   '${hit.bookTitle ?? hit.bookFile}'
-                  ' \u2022 Hadith ${hit.hadithIndex + 1}',
+                  ' \u2022 ${hit.numberLabel}',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

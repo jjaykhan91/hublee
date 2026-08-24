@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/foundation.dart' show visibleForTesting, immutable;
 
+import '../quran/arabic_fold.dart';
 import '../quran/arabic_word_segmenter.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_chapters_repository.dart';
@@ -80,7 +81,7 @@ class QuranDictionaryService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
     final needle = trimmed.toLowerCase();
-    final foldedNeedle = _foldForSearch(trimmed);
+    final foldedNeedle = foldArabicForSearch(trimmed);
     final needles = <String>{needle, ...?_englishAliases[needle]};
 
     final index = await _ensureIndex();
@@ -251,7 +252,7 @@ int? _matchRank(
   final tokens = _englishTokens(entry.gloss);
   final arabicHit =
       foldedNeedle.isNotEmpty &&
-      _foldForSearch(entry.arabic).contains(foldedNeedle);
+      foldArabicForSearch(entry.arabic).contains(foldedNeedle);
 
   if (arabicHit) best = 3;
 
@@ -296,20 +297,4 @@ bool _sharesStem(String token, String needle) {
   return token.length >= 4 &&
       needle.length >= 4 &&
       token.substring(0, 4) == needle.substring(0, 4);
-}
-
-/// Strips tashkeel and folds alef variants so ٱللَّهِ matches الله.
-String _foldForSearch(String text) {
-  final buffer = StringBuffer();
-  for (final rune in text.runes) {
-    if (rune >= 0x064B && rune <= 0x065F) continue;
-    if (rune == 0x0670 || rune == 0x0640) continue;
-    if (rune >= 0x06D6 && rune <= 0x06ED) continue;
-    if (rune == 0x0622 || rune == 0x0623 || rune == 0x0625 || rune == 0x0671) {
-      buffer.writeCharCode(0x0627);
-      continue;
-    }
-    buffer.writeCharCode(rune);
-  }
-  return buffer.toString();
 }

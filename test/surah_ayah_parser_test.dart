@@ -18,4 +18,14 @@ void main() {
     expect(tryParseSurahAyah('115:1'), isNull);
     expect(tryParseSurahAyah('2'), isNull);
   });
+
+  test('ayahExistsInChapter rejects 2:999 against 286 verses', () {
+    final parsed = tryParseSurahAyah('2:999');
+    expect(parsed?.surahId, 2);
+    expect(parsed?.ayah, 999);
+    expect(ayahExistsInChapter(parsed!.ayah, 286), isFalse);
+    expect(ayahExistsInChapter(255, 286), isTrue);
+    expect(ayahExistsInChapter(286, 286), isTrue);
+    expect(ayahExistsInChapter(0, 286), isFalse);
+  });
 }

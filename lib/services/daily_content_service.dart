@@ -12,6 +12,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
+import '../quran/quran_arabic_repository.dart';
+import '../quran/quran_translation_repository.dart';
 
 /// Verse of the day result.
 class DailyVerse {
@@ -62,42 +64,37 @@ class DailyContentService {
   static int get _today => DateTime.now().difference(DateTime(2024)).inDays;
 
   /// Returns the verse of the day, loading from assets if needed.
-  static Future<DailyVerse> loadVerseOfTheDay() async {
+  ///
+  /// Arabic comes from the shared mushaf decode in
+  /// [QuranArabicRepository] so Home does not parse the 4.3 MB file
+  /// a second time after search warmup.
+  static Future<DailyVerse> loadVerseOfTheDay({
+    QuranArabicRepository arabicRepo = const QuranArabicRepository(),
+    QuranTranslationRepository translationRepo =
+        const QuranTranslationRepository(),
+  }) async {
     final today = _today;
     if (_cachedVerse != null && _cachedDay == today) {
       return _cachedVerse!;
     }
 
-    final rawJson = await rootBundle.loadString(
-      AssetPaths.kfgqpcQuranMushafSmartV8,
-    );
-    final List<dynamic> allAyahs = json.decode(rawJson);
-
-    // Pick a deterministic random ayah from the full Quran.
+    final count = await arabicRepo.mushafAyahCount();
     final rng = Random(today);
-    final row = allAyahs[rng.nextInt(allAyahs.length)];
-    final surahId = row['sura_no'] as int;
-    final ayahNum = row['aya_no'] as int;
-    final surahName = (row['sura_name_en'] as String).trim();
-    final arabic = (row['aya_text'] as String?) ?? '';
+    final picked = await arabicRepo.loadMushafAyahAt(rng.nextInt(count));
 
-    // Load the English translation for this ayah.
-    String english = '';
+    var english = '';
     try {
-      final enJson = await rootBundle.loadString(
-        AssetPaths.quranClearQuran(surahId),
-      );
-      final enMap = json.decode(enJson) as Map<String, dynamic>;
-      english = (enMap['$ayahNum'] as String?) ?? '';
+      final enMap = await translationRepo.loadClearQuran(picked.surahId);
+      english = enMap['${picked.ayah}'] ?? '';
     } catch (_) {
       // Translation may not be available; leave empty.
     }
 
     _cachedVerse = DailyVerse(
-      surahId: surahId,
-      ayah: ayahNum,
-      surahName: surahName,
-      arabic: arabic,
+      surahId: picked.surahId,
+      ayah: picked.ayah,
+      surahName: picked.surahName,
+      arabic: picked.glyphText,
       english: english,
     );
     _cachedDay = today;
@@ -111,8 +108,7 @@ class DailyContentService {
       return _cachedHadith!;
     }
 
-    // Load Nawawi 40 as the daily hadith source.
-    const path = 'assets/hadith/forties/nawawi40.json';
+    final path = AssetPaths.hadith('forties', 'nawawi40.json');
     String rawJson;
     try {
       rawJson = await rootBundle.loadString(path);

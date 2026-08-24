@@ -36,6 +36,9 @@ class Bookmark {
   /// Zero-based index of the hadith within its book.
   final int? hadithIndex;
 
+  /// Catalog number within the book, when the source provides it.
+  final int? idInBook;
+
   /// Short Arabic or English preview text for display in lists.
   final String? snippet;
 
@@ -51,6 +54,7 @@ class Bookmark {
     this.bookFile,
     this.bookTitle,
     this.hadithIndex,
+    this.idInBook,
     this.snippet,
     required this.createdAt,
   });
@@ -74,6 +78,7 @@ class Bookmark {
     'bookFile': bookFile,
     'bookTitle': bookTitle,
     'hadithIndex': hadithIndex,
+    'idInBook': idInBook,
     'snippet': snippet,
     'createdAt': createdAt.toIso8601String(),
   };
@@ -88,9 +93,21 @@ class Bookmark {
     bookFile: json['bookFile'] as String?,
     bookTitle: json['bookTitle'] as String?,
     hadithIndex: json['hadithIndex'] as int?,
+    idInBook: json['idInBook'] as int?,
     snippet: json['snippet'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
+
+  /// Parses [json] or returns null when the row is corrupt.
+  static Bookmark? tryFromJson(Map<String, dynamic> json) {
+    try {
+      final type = json['type'];
+      if (type != 'quran' && type != 'hadith') return null;
+      return Bookmark.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Creates a Quran ayah bookmark.
   factory Bookmark.quran({
@@ -113,6 +130,7 @@ class Bookmark {
     required String bookFile,
     required String bookTitle,
     required int hadithIndex,
+    int? idInBook,
     String? snippet,
   }) => Bookmark(
     type: 'hadith',
@@ -120,6 +138,7 @@ class Bookmark {
     bookFile: bookFile,
     bookTitle: bookTitle,
     hadithIndex: hadithIndex,
+    idInBook: idInBook,
     snippet: snippet,
     createdAt: DateTime.now(),
   );
@@ -158,25 +177,18 @@ class BookmarkService extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Decode bookmarks list
+    // Decode bookmarks list; skip corrupt rows so a bad prefs write
+    // cannot brick launch.
     final rawBookmarks = prefs.getString(_kBookmarks);
     if (rawBookmarks != null) {
-      final List<dynamic> decoded = json.decode(rawBookmarks);
-      _bookmarks = decoded
-          .whereType<Map<String, dynamic>>()
-          .map(Bookmark.fromJson)
-          .toList();
+      _bookmarks = _decodeBookmarks(rawBookmarks);
     } else {
       _bookmarks = [];
     }
     _rebuildIdSet();
 
-    // Decode last-read positions
-    final rawQuran = prefs.getString(_kLastReadQuran);
-    if (rawQuran != null) _lastReadQuran = json.decode(rawQuran);
-
-    final rawHadith = prefs.getString(_kLastReadHadith);
-    if (rawHadith != null) _lastReadHadith = json.decode(rawHadith);
+    _lastReadQuran = _decodeLastReadMap(prefs.getString(_kLastReadQuran));
+    _lastReadHadith = _decodeLastReadMap(prefs.getString(_kLastReadHadith));
 
     notifyListeners();
   }
@@ -292,5 +304,32 @@ class BookmarkService extends ChangeNotifier {
     _bookmarkIds
       ..clear()
       ..addAll(_bookmarks.map((b) => b.id));
+  }
+}
+
+List<Bookmark> _decodeBookmarks(String raw) {
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is! List) return [];
+    final bookmarks = <Bookmark>[];
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final bookmark = Bookmark.tryFromJson(Map<String, dynamic>.from(item));
+      if (bookmark != null) bookmarks.add(bookmark);
+    }
+    return bookmarks;
+  } catch (_) {
+    return [];
+  }
+}
+
+Map<String, dynamic>? _decodeLastReadMap(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is! Map) return null;
+    return Map<String, dynamic>.from(decoded);
+  } catch (_) {
+    return null;
   }
 }

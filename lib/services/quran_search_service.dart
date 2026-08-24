@@ -6,12 +6,14 @@ library;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
+import '../quran/arabic_fold.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/surah_ayah_parser.dart';
 import 'app_metrics.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_translation_repository.dart';
 import 'search_models.dart';
+import 'search_match.dart';
 
 /// How many surahs to decode in parallel while building the index.
 const _kIndexBatchSize = 24;
@@ -51,43 +53,73 @@ class QuranSearchService {
   }
 
   /// Searches all surahs for ayahs matching [query]. Returns up to [limit] hits.
-  Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
+  Future<QuranSearchResult> search(String query, {int limit = 150}) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return [];
+    if (trimmed.isEmpty) return const QuranSearchResult();
     final queryLower = trimmed.toLowerCase();
+    final foldedQuery = foldArabicForSearch(trimmed);
 
     final indexWait = Stopwatch()..start();
     final index = await _ensureIndex();
     final indexElapsed = indexWait.elapsed;
     final scan = Stopwatch()..start();
-    final pending = <({_QuranIndexRow row, bool isJump, bool arabicMatch})>[];
+    final pending = <({_QuranIndexRow row, int score, bool arabicMatch})>[];
 
-    final jump = tryParseSurahAyah(trimmed);
-    if (jump != null) {
+    String? invalidJumpHint;
+    _QuranIndexRow? jumpRow;
+    final parsed = tryParseSurahAyah(trimmed);
+    if (parsed != null) {
+      _QuranIndexRow? chapterRow;
       for (final row in index) {
-        if (row.surahId != jump.surahId || row.ayah != jump.ayah) continue;
-        pending.add((row: row, isJump: true, arabicMatch: false));
-        break;
+        if (row.surahId != parsed.surahId) continue;
+        chapterRow ??= row;
+        if (row.ayah == parsed.ayah) {
+          jumpRow = row;
+          break;
+        }
       }
+      final versesCount = chapterRow?.versesCount ?? 0;
+      if (!ayahExistsInChapter(parsed.ayah, versesCount)) {
+        final name = chapterRow?.surahName ?? 'Surah ${parsed.surahId}';
+        invalidJumpHint =
+            '$name has $versesCount ayahs, so '
+            '${parsed.surahId}:${parsed.ayah} is not a verse';
+      }
+    }
+
+    if (jumpRow != null) {
+      pending.add((row: jumpRow, score: 0, arabicMatch: false));
     }
 
     for (final row in index) {
-      if (jump != null &&
-          row.surahId == jump.surahId &&
-          row.ayah == jump.ayah) {
+      if (jumpRow != null &&
+          row.surahId == jumpRow.surahId &&
+          row.ayah == jumpRow.ayah) {
         continue;
       }
-      final arabicMatch = row.arabic.contains(trimmed);
+      final arabicMatch =
+          foldedQuery.isNotEmpty && row.arabicFold.contains(foldedQuery);
       final englishMatch = row.englishLower.contains(queryLower);
       if (!arabicMatch && !englishMatch) continue;
 
-      pending.add((row: row, isJump: false, arabicMatch: arabicMatch));
-      if (pending.length >= limit) break;
+      final score = englishExactWordMatch(row.englishLower, queryLower) ? 1 : 2;
+      pending.add((row: row, score: score, arabicMatch: arabicMatch));
     }
 
+    pending.sort((a, b) {
+      final byScore = a.score.compareTo(b.score);
+      if (byScore != 0) return byScore;
+      final bySurah = a.row.surahId.compareTo(b.row.surahId);
+      if (bySurah != 0) return bySurah;
+      return a.row.ayah.compareTo(b.row.ayah);
+    });
+
+    final totalCount = pending.length;
+    final ranked = pending.take(limit).toList(growable: false);
+
     final needUthmani = <int>{
-      for (final hit in pending)
-        if (hit.isJump || hit.arabicMatch) hit.row.surahId,
+      for (final hit in ranked)
+        if (hit.score == 0 || hit.arabicMatch) hit.row.surahId,
     };
     final uthmaniBySurah = <int, Map<String, String>>{};
     if (needUthmani.isNotEmpty) {
@@ -101,18 +133,22 @@ class QuranSearchService {
     }
 
     final hits = [
-      for (final hit in pending)
+      for (final hit in ranked)
         _hitFromRow(
           hit.row,
           queryLower,
           trimmed,
-          isJump: hit.isJump,
+          isJump: hit.score == 0,
           arabicMatch: hit.arabicMatch,
           uthmani: uthmaniBySurah[hit.row.surahId]?['${hit.row.ayah}'],
         ),
     ];
     _recordQuery(scan.elapsed, indexElapsed, hits.length);
-    return hits;
+    return QuranSearchResult(
+      hits: hits,
+      totalCount: totalCount,
+      invalidJumpHint: invalidJumpHint,
+    );
   }
 
   void _recordQuery(Duration scan, Duration indexWait, int hits) {
@@ -162,12 +198,15 @@ class QuranSearchService {
           for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
             final key = '$ayahNum';
             final english = englishAyahs[key] ?? '';
+            final arabic = arabicAyahs[key] ?? '';
             rows.add(
               _QuranIndexRow(
                 surahId: chapter.id,
                 ayah: ayahNum,
                 surahName: chapter.nameSimple,
-                arabic: arabicAyahs[key] ?? '',
+                versesCount: chapter.versesCount,
+                arabic: arabic,
+                arabicFold: foldArabicForSearch(arabic),
                 english: english,
                 englishLower: english.toLowerCase(),
               ),
@@ -239,7 +278,9 @@ class _QuranIndexRow {
     required this.surahId,
     required this.ayah,
     required this.surahName,
+    required this.versesCount,
     required this.arabic,
+    required this.arabicFold,
     required this.english,
     required this.englishLower,
   });
@@ -247,7 +288,9 @@ class _QuranIndexRow {
   final int surahId;
   final int ayah;
   final String surahName;
+  final int versesCount;
   final String arabic;
+  final String arabicFold;
   final String english;
   final String englishLower;
 }

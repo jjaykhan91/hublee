@@ -377,6 +377,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                           ? book.title
                           : widget.title,
                       hadithIndex: hadithIndex,
+                      idInBook: hadith.idInBook,
                       snippet: hadith.english,
                     ),
                   );
@@ -472,6 +473,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                           ? book.title
                           : widget.title,
                       hadithIndex: index,
+                      idInBook: hadith.idInBook,
                       snippet: hadith.english,
                     ),
                   );
@@ -556,7 +558,12 @@ class _HadithCard extends StatelessWidget {
     required this.showTranslation,
   });
 
-  String get _reference => '$bookTitle, Hadith $displayIndex';
+  String get _reference {
+    if (hadith.idInBook != null) {
+      return '$bookTitle, Hadith ${hadith.idInBook}';
+    }
+    return '$bookTitle, Hadith $displayIndex';
+  }
 
   @override
   Widget build(BuildContext context) {

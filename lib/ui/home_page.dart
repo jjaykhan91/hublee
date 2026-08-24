@@ -348,6 +348,19 @@ class _VerseOfTheDayCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                if (verse.english.isNotEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      'ClearQuran',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
 
                 const SizedBox(height: 10),
 

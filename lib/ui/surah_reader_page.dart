@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../quran/arabic_fold.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_arabic_repository.dart';
 import '../quran/quran_translation_repository.dart';
@@ -31,6 +32,8 @@ import '../services/vocab_scope.dart';
 import '../services/vocab_service.dart';
 import '../services/srs_scope.dart';
 import '../services/srs_service.dart';
+import '../services/recitation_scope.dart';
+import '../services/recitation_service.dart';
 import '../theme/app_tokens.dart';
 
 import 'widgets/arabic_text.dart';
@@ -42,6 +45,19 @@ import 'widgets/word_by_word_arabic_text.dart';
 import 'widgets/word_gloss_card.dart';
 import 'widgets/passage_actions.dart';
 import 'widgets/reading_width.dart';
+
+/// PUA glyph column is only for plain KFGQPC reading. Tajweed and
+/// word-by-word need standard Uthmani, so the 4.3 MB mushaf decode
+/// can wait until this returns true.
+bool surahReaderNeedsGlyphColumn({
+  required bool tajweedEnabled,
+  required bool wordByWordEnabled,
+  required ArabicFontOption font,
+}) {
+  return font == ArabicFontOption.uthmanic &&
+      !tajweedEnabled &&
+      !wordByWordEnabled;
+}
 
 /// Displays all ayahs of a single surah with bookmarking and
 /// tajweed rendering.
@@ -62,8 +78,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   final _scrollController = ItemScrollController();
   final _positionsListener = ItemPositionsListener.create();
 
-  /// Cached future so rebuilds don't re-fetch data.
-  late final Future<List<dynamic>> _dataFuture;
+  /// Columns loaded for the current settings. Glyph, emlaey, and
+  /// word-by-word are filled only when that path is actually used.
+  _SurahReaderData? _data;
+  bool _loading = true;
+  Object? _loadError;
+  int _loadGeneration = 0;
 
   /// Ensures last-read is saved only once per page visit.
   bool _hasPersistedLastRead = false;
@@ -73,6 +93,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
   Timer? _lastReadTimer;
   BookmarkService? _bookmarks;
+  RecitationService? _recitation;
   String? _surahName;
   bool _hasBismillah = false;
   int? _visibleAyah;
@@ -97,21 +118,98 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   @override
   void initState() {
     super.initState();
-    // Load PUA glyph text (KFGQPC), standard Uthmanic (tajweed/fonts),
-    // English translation, Imla'i (in-surah search matching), and
-    // word-by-word glosses.
-    _dataFuture = Future.wait([
-      const QuranChaptersRepository().loadChapters(),
-      const QuranArabicRepository().loadArabicSurah(widget.surahId),
-      const QuranTranslationRepository().loadClearQuran(widget.surahId),
-      const QuranArabicRepository().loadUthmaniStandard(widget.surahId),
-      const QuranArabicRepository().loadArabicSurah(
-        widget.surahId,
-        useGlyphText: false,
-      ),
-      const WordByWordRepository().loadSurah(widget.surahId),
-    ]);
     _positionsListener.itemPositions.addListener(_onScrollPositions);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _recitation = RecitationScope.maybeOf(context);
+    unawaited(_ensureData());
+  }
+
+  /// Loads chapters, translation, and Uthmani always. Glyph, emlaey,
+  /// and word-by-word only when the current settings need them.
+  Future<void> _ensureData() async {
+    final settings = SettingsScope.of(context);
+    final needGlyph = surahReaderNeedsGlyphColumn(
+      tajweedEnabled: settings.tajweedEnabled,
+      wordByWordEnabled: settings.wordByWordEnabled,
+      font: settings.arabicFont,
+    );
+    final needWbw = settings.wordByWordEnabled;
+    final needEmlaey = _isSearching;
+
+    final existing = _data;
+    final missingCore = existing == null;
+    final missingGlyph = needGlyph && existing?.glyph == null;
+    final missingWbw = needWbw && existing?.glosses == null;
+    final missingEmlaey = needEmlaey && existing?.emlaey == null;
+    if (!missingCore && !missingGlyph && !missingWbw && !missingEmlaey) {
+      return;
+    }
+
+    final generation = ++_loadGeneration;
+    if (missingCore && mounted) {
+      setState(() {
+        _loading = true;
+        _loadError = null;
+      });
+    }
+
+    try {
+      final arabicRepo = const QuranArabicRepository();
+      final chaptersF = const QuranChaptersRepository().loadChapters();
+      final englishF = const QuranTranslationRepository().loadClearQuran(
+        widget.surahId,
+      );
+      final uthmaniF = arabicRepo.loadUthmaniStandard(widget.surahId);
+      final glyphF = existing?.glyph != null
+          ? Future.value(existing!.glyph)
+          : (needGlyph ? arabicRepo.loadArabicSurah(widget.surahId) : null);
+      final wbwF = existing?.glosses != null
+          ? Future.value(existing!.glosses)
+          : (needWbw
+                ? const WordByWordRepository().loadSurah(widget.surahId)
+                : null);
+      final emlaeyF = existing?.emlaey != null
+          ? Future.value(existing!.emlaey)
+          : (needEmlaey
+                ? arabicRepo.loadArabicSurah(
+                    widget.surahId,
+                    useGlyphText: false,
+                  )
+                : null);
+
+      final chapters = await chaptersF;
+      final english = await englishF;
+      final uthmani = await uthmaniF;
+      final glyph = glyphF == null ? existing?.glyph : await glyphF;
+      final glosses = wbwF == null ? existing?.glosses : await wbwF;
+      final emlaey = emlaeyF == null ? existing?.emlaey : await emlaeyF;
+
+      if (!mounted || generation != _loadGeneration) return;
+
+      final chapter = chapters.firstWhere((item) => item.id == widget.surahId);
+      setState(() {
+        _data = _SurahReaderData(
+          chapter: chapter,
+          english: english,
+          uthmani: uthmani,
+          glyph: glyph,
+          emlaey: emlaey,
+          glosses: glosses,
+        );
+        _loading = false;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        if (existing == null) _loading = false;
+        _loadError = error;
+      });
+    }
   }
 
   void _onScrollPositions() {
@@ -169,6 +267,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   void dispose() {
     _positionsListener.itemPositions.removeListener(_onScrollPositions);
     _lastReadTimer?.cancel();
+    unawaited(_recitation?.stop());
     final name = _surahName;
     final ayah = _visibleAyah ?? widget.scrollToAyah ?? 1;
     if (name != null) {
@@ -193,6 +292,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _wordSelectionAyah = null;
     });
     _searchFocusNode.requestFocus();
+    unawaited(_ensureData());
   }
 
   /// Closes the in-surah search bar and shows all ayahs.
@@ -320,145 +420,127 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      future: _dataFuture,
-      builder: (context, snapshot) {
-        final isLoading = snapshot.connectionState != ConnectionState.done;
-        final errorMessage = snapshot.hasError
-            ? snapshot.error.toString()
-            : null;
+    final data = _data;
+    final chapterMeta = data?.chapter;
+    final arabicGlyphAyahs = data?.glyph ?? const <String, String>{};
+    final englishAyahs = data?.english ?? const <String, String>{};
+    final arabicStandardAyahs = data?.uthmani ?? const <String, String>{};
+    final arabicEmlaeyAyahs = data?.emlaey ?? const <String, String>{};
+    final wordGlosses = data?.glosses ?? const <int, List<String>>{};
+    final isLoading = _loading && data == null;
+    final errorMessage = _loadError?.toString();
 
-        ChapterMeta? chapterMeta;
-        Map<String, String> arabicGlyphAyahs = const {};
-        Map<String, String> englishAyahs = const {};
-        Map<String, String> arabicStandardAyahs = const {};
-        Map<String, String> arabicEmlaeyAyahs = const {};
-        Map<int, List<String>> wordGlosses = const {};
+    return Scaffold(
+      appBar: _isSearching
+          ? _buildSearchAppBar(context)
+          : _buildNormalAppBar(context, chapterMeta),
+      body: ConstrainedReadingBody(
+        child: () {
+          if (isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (data == null) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Error: ${errorMessage ?? 'Could not load surah'}'),
+            );
+          }
 
-        if (snapshot.hasData) {
-          final chapters = snapshot.data![0] as List<ChapterMeta>;
-          chapterMeta = chapters.firstWhere(
-            (chapter) => chapter.id == widget.surahId,
+          if (_isSearching && _searchQuery.isNotEmpty) {
+            if (data.emlaey == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return _buildSearchResults(
+              context,
+              chapterMeta!,
+              arabicGlyphAyahs,
+              englishAyahs,
+              arabicStandardAyahs,
+              arabicEmlaeyAyahs,
+            );
+          }
+
+          final totalAyahs = chapterMeta!.versesCount;
+          final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
+          final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
+
+          return Stack(
+            children: [
+              _buildAyahList(
+                context,
+                chapterMeta,
+                arabicGlyphAyahs,
+                englishAyahs,
+                arabicStandardAyahs,
+                wordGlosses,
+              ),
+              ScrollScrubber(
+                itemCount: itemCount,
+                labelBuilder: (index) {
+                  if (hasBismillah && index == 0) {
+                    return 'Bismillah';
+                  }
+                  final ayahIndex = index - (hasBismillah ? 1 : 0);
+                  return 'Ayah ${ayahIndex + 1} of $totalAyahs';
+                },
+                scrollController: _scrollController,
+                positionsListener: _positionsListener,
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: SafeArea(
+                  top: false,
+                  child: WordGlossCard(
+                    selection: _wordSelection,
+                    reference: _wordSelectionAyah == null
+                        ? null
+                        : '${chapterMeta.nameSimple} '
+                              '${widget.surahId}:$_wordSelectionAyah',
+                    isFavorite:
+                        _wordSelection != null &&
+                        VocabScope.of(context).isSavedWord(
+                          _wordSelection!.arabic,
+                          _wordSelection!.gloss,
+                        ),
+                    onToggleFavorite:
+                        _wordSelection == null || _wordSelectionAyah == null
+                        ? null
+                        : () {
+                            final selection = _wordSelection!;
+                            final ayah = _wordSelectionAyah!;
+                            VocabScope.of(context).toggle(
+                              VocabEntry.fromReader(
+                                arabic: selection.arabic,
+                                gloss: selection.gloss,
+                                surahId: widget.surahId,
+                                ayah: ayah,
+                                surahName: chapterMeta.nameSimple,
+                              ),
+                            );
+                            SrsScope.of(context).ensure(
+                              SrsCard(
+                                id: SrsCard.cardId(
+                                  deck: 'quran',
+                                  arabic: selection.arabic,
+                                  english: selection.gloss,
+                                ),
+                                deck: 'quran',
+                                arabic: selection.arabic,
+                                english: selection.gloss,
+                                due: DateTime.now(),
+                              ),
+                            );
+                          },
+                    onDismiss: _clearWordSelection,
+                  ),
+                ),
+              ),
+            ],
           );
-          arabicGlyphAyahs = snapshot.data![1] as Map<String, String>;
-          englishAyahs = snapshot.data![2] as Map<String, String>;
-          arabicStandardAyahs = snapshot.data![3] as Map<String, String>;
-          arabicEmlaeyAyahs = snapshot.data![4] as Map<String, String>;
-          wordGlosses = snapshot.data![5] as Map<int, List<String>>;
-        }
-
-        return Scaffold(
-          appBar: _isSearching
-              ? _buildSearchAppBar(context)
-              : _buildNormalAppBar(context, chapterMeta),
-          body: ConstrainedReadingBody(
-            child: () {
-              if (isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (errorMessage != null) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Error: $errorMessage'),
-                );
-              }
-
-              if (_isSearching && _searchQuery.isNotEmpty) {
-                return _buildSearchResults(
-                  context,
-                  chapterMeta!,
-                  arabicGlyphAyahs,
-                  englishAyahs,
-                  arabicStandardAyahs,
-                  arabicEmlaeyAyahs,
-                );
-              }
-
-              final totalAyahs = chapterMeta!.versesCount;
-              final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
-              final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
-
-              return Stack(
-                children: [
-                  _buildAyahList(
-                    context,
-                    chapterMeta,
-                    arabicGlyphAyahs,
-                    englishAyahs,
-                    arabicStandardAyahs,
-                    wordGlosses,
-                  ),
-                  ScrollScrubber(
-                    itemCount: itemCount,
-                    labelBuilder: (index) {
-                      if (hasBismillah && index == 0) {
-                        return 'Bismillah';
-                      }
-                      final ayahIndex = index - (hasBismillah ? 1 : 0);
-                      return 'Ayah ${ayahIndex + 1} of $totalAyahs';
-                    },
-                    scrollController: _scrollController,
-                    positionsListener: _positionsListener,
-                  ),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
-                    child: SafeArea(
-                      top: false,
-                      child: WordGlossCard(
-                        selection: _wordSelection,
-                        reference: _wordSelectionAyah == null
-                            ? null
-                            : '${chapterMeta.nameSimple} '
-                                  '${widget.surahId}:$_wordSelectionAyah',
-                        isFavorite:
-                            _wordSelection != null &&
-                            VocabScope.of(context).isSavedWord(
-                              _wordSelection!.arabic,
-                              _wordSelection!.gloss,
-                            ),
-                        onToggleFavorite:
-                            _wordSelection == null || _wordSelectionAyah == null
-                            ? null
-                            : () {
-                                final selection = _wordSelection!;
-                                final ayah = _wordSelectionAyah!;
-                                VocabScope.of(context).toggle(
-                                  VocabEntry.fromReader(
-                                    arabic: selection.arabic,
-                                    gloss: selection.gloss,
-                                    surahId: widget.surahId,
-                                    ayah: ayah,
-                                    surahName:
-                                        chapterMeta?.nameSimple ??
-                                        'Surah ${widget.surahId}',
-                                  ),
-                                );
-                                SrsScope.of(context).ensure(
-                                  SrsCard(
-                                    id: SrsCard.cardId(
-                                      deck: 'quran',
-                                      arabic: selection.arabic,
-                                      english: selection.gloss,
-                                    ),
-                                    deck: 'quran',
-                                    arabic: selection.arabic,
-                                    english: selection.gloss,
-                                    due: DateTime.now(),
-                                  ),
-                                );
-                              },
-                        onDismiss: _clearWordSelection,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }(),
-          ),
-        );
-      },
+        }(),
+      ),
     );
   }
 
@@ -568,15 +650,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     final queryLower = _searchQuery.toLowerCase();
     final settings = SettingsScope.of(context);
     final bookmarkService = BookmarkScope.of(context);
-    final isUthmanic = settings.arabicFont == ArabicFontOption.uthmanic;
 
-    // Match against Imla'i (keyboard-friendly) and English — not PUA glyphs
-    // and not fully vowelled Uthmani (plain typed Arabic would miss).
+    final queryFolded = foldArabicForSearch(_searchQuery);
     final matches = <int>[];
     for (var ayahNum = 1; ayahNum <= chapterMeta.versesCount; ayahNum++) {
       final arabic = arabicEmlaeyAyahs['$ayahNum'] ?? '';
       final english = englishAyahs['$ayahNum'] ?? '';
-      if (arabic.contains(_searchQuery) ||
+      if ((queryFolded.isNotEmpty &&
+              foldArabicForSearch(arabic).contains(queryFolded)) ||
           english.toLowerCase().contains(queryLower)) {
         matches.add(ayahNum);
       }
@@ -632,9 +713,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             itemBuilder: (context, index) {
               final ayahNumber = matches[index];
               // When tajweed is on, always use standard text.
-              final usePua = isUthmanic && !settings.tajweedEnabled;
+              final usePua = surahReaderNeedsGlyphColumn(
+                tajweedEnabled: settings.tajweedEnabled,
+                wordByWordEnabled: false,
+                font: settings.arabicFont,
+              );
               final arabicText = usePua
-                  ? arabicGlyphAyahs['$ayahNumber']
+                  ? (arabicGlyphAyahs['$ayahNumber'] ??
+                        arabicStandardAyahs['$ayahNumber'])
                   : arabicStandardAyahs['$ayahNumber'];
               final englishText = englishAyahs['$ayahNumber'];
               final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
@@ -735,7 +821,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
     final settings = SettingsScope.of(context);
     final bookmarkService = BookmarkScope.of(context);
-    final isUthmanic = settings.arabicFont == ArabicFontOption.uthmanic;
 
     // Total items: optional bismillah + ayahs.
     final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
@@ -761,9 +846,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         // tajweed needs parseable Arabic, so either feature rules out the PUA
         // glyph column. It is only used for plain KFGQPC reading.
         final wordByWord = settings.wordByWordEnabled;
-        final usePua = isUthmanic && !settings.tajweedEnabled && !wordByWord;
+        final usePua = surahReaderNeedsGlyphColumn(
+          tajweedEnabled: settings.tajweedEnabled,
+          wordByWordEnabled: wordByWord,
+          font: settings.arabicFont,
+        );
         final arabicText = usePua
-            ? arabicGlyphAyahs['$ayahNumber']
+            ? (arabicGlyphAyahs['$ayahNumber'] ??
+                  arabicStandardAyahs['$ayahNumber'])
             : arabicStandardAyahs['$ayahNumber'];
         final englishText = englishAyahs['$ayahNumber'];
         final bookmarkId = 'quran:${widget.surahId}:$ayahNumber';
@@ -803,6 +893,24 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       },
     );
   }
+}
+
+class _SurahReaderData {
+  const _SurahReaderData({
+    required this.chapter,
+    required this.english,
+    required this.uthmani,
+    this.glyph,
+    this.emlaey,
+    this.glosses,
+  });
+
+  final ChapterMeta chapter;
+  final Map<String, String> english;
+  final Map<String, String> uthmani;
+  final Map<String, String>? glyph;
+  final Map<String, String>? emlaey;
+  final Map<int, List<String>>? glosses;
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -958,6 +1066,8 @@ class _AyahCard extends StatelessWidget {
                     ),
                   ],
                   const Spacer(),
+                  if (RecitationScope.maybeOf(context) != null)
+                    _AyahPlayButton(surahId: surahId, ayahNumber: ayahNumber),
                   PassageActionsButton(
                     reference: _reference,
                     arabic: arabic,
@@ -999,7 +1109,9 @@ class _AyahCard extends StatelessWidget {
                   ),
               if (arabic != null && arabic!.isNotEmpty)
                 const SizedBox(height: 20),
-              if (showTranslation && english != null && english!.isNotEmpty)
+              if (showTranslation &&
+                  english != null &&
+                  english!.isNotEmpty) ...[
                 Text(
                   english!,
                   textAlign: TextAlign.left,
@@ -1011,10 +1123,55 @@ class _AyahCard extends StatelessWidget {
                     color: colorScheme.onSurface.withValues(alpha: 0.85),
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  'ClearQuran',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AyahPlayButton extends StatelessWidget {
+  const _AyahPlayButton({required this.surahId, required this.ayahNumber});
+
+  final int surahId;
+  final int ayahNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    final recitation = RecitationScope.maybeOf(context);
+    if (recitation == null) return const SizedBox.shrink();
+
+    return ListenableBuilder(
+      listenable: recitation,
+      builder: (context, _) {
+        final playing = recitation.isPlayingPassage(surahId, ayahNumber);
+        return IconButton(
+          tooltip: playing ? 'Pause recitation' : 'Play recitation',
+          icon: Icon(
+            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            size: 22,
+          ),
+          onPressed: () async {
+            final error = await recitation.toggle(
+              surahId: surahId,
+              ayah: ayahNumber,
+            );
+            if (error == null || !context.mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(error)));
+          },
+        );
+      },
     );
   }
 }

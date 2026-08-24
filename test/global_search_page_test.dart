@@ -13,14 +13,14 @@ import 'package:hublee/ui/widgets/search_highlight.dart';
 import 'package:hublee/ui/global_search_page.dart';
 
 class _GatedQuranSearch extends QuranSearchService {
-  final Map<String, Completer<List<QuranSearchHit>>> gates = {};
+  final Map<String, Completer<QuranSearchResult>> gates = {};
 
   @override
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<QuranSearchHit>> search(String query, {int limit = 150}) {
-    return (gates[query] ??= Completer<List<QuranSearchHit>>()).future;
+  Future<QuranSearchResult> search(String query, {int limit = 150}) {
+    return (gates[query] ??= Completer<QuranSearchResult>()).future;
   }
 }
 
@@ -29,8 +29,8 @@ class _EmptyHadithSearch extends HadithSearchService {
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
-    return const [];
+  Future<HadithSearchResult> search(String query, {int limit = 100}) async {
+    return const HadithSearchResult();
   }
 }
 
@@ -39,15 +39,18 @@ class _FixedQuranSearch extends QuranSearchService {
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
-    return const [
-      QuranSearchHit(
-        surahId: 2,
-        ayah: 87,
-        surahName: 'Al-Baqarah',
-        snippet: 'We gave Jesus the Gospel',
-      ),
-    ];
+  Future<QuranSearchResult> search(String query, {int limit = 150}) async {
+    return const QuranSearchResult(
+      totalCount: 1,
+      hits: [
+        QuranSearchHit(
+          surahId: 2,
+          ayah: 87,
+          surahName: 'Al-Baqarah',
+          snippet: 'We gave Jesus the Gospel',
+        ),
+      ],
+    );
   }
 }
 
@@ -56,16 +59,32 @@ class _FixedHadithSearch extends HadithSearchService {
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
-    return const [
-      HadithSearchHit(
-        collectionId: 'forties',
-        bookFile: 'nawawi40.json',
-        bookTitle: 'Nawawi 40',
-        hadithIndex: 0,
-        snippet: 'Jesus son of Mary',
-      ),
-    ];
+  Future<HadithSearchResult> search(String query, {int limit = 100}) async {
+    return const HadithSearchResult(
+      totalCount: 1,
+      hits: [
+        HadithSearchHit(
+          collectionId: 'forties',
+          bookFile: 'nawawi40.json',
+          bookTitle: 'Nawawi 40',
+          hadithIndex: 0,
+          idInBook: 1,
+          snippet: 'Jesus son of Mary',
+        ),
+      ],
+    );
+  }
+}
+
+class _OutOfRangeQuranSearch extends QuranSearchService {
+  @override
+  Future<void> warmIndex() async {}
+
+  @override
+  Future<QuranSearchResult> search(String query, {int limit = 150}) async {
+    return const QuranSearchResult(
+      invalidJumpHint: 'Al-Baqarah has 286 ayahs, so 2:999 is not a verse',
+    );
   }
 }
 
@@ -86,25 +105,35 @@ void main() {
     await tester.enterText(find.byType(TextField), 'new');
     await tester.pump(const Duration(milliseconds: 300));
 
-    quran.gates['old']!.complete([
-      const QuranSearchHit(
-        surahId: 1,
-        ayah: 1,
-        surahName: 'Al-Fatiha',
-        snippet: 'old hit',
+    quran.gates['old']!.complete(
+      const QuranSearchResult(
+        totalCount: 1,
+        hits: [
+          QuranSearchHit(
+            surahId: 1,
+            ayah: 1,
+            surahName: 'Al-Fatiha',
+            snippet: 'old hit',
+          ),
+        ],
       ),
-    ]);
+    );
     await tester.pump();
     expect(find.text('Al-Fatiha • Ayah 1'), findsNothing);
 
-    quran.gates['new']!.complete([
-      const QuranSearchHit(
-        surahId: 2,
-        ayah: 255,
-        surahName: 'Al-Baqarah',
-        snippet: 'new hit',
+    quran.gates['new']!.complete(
+      const QuranSearchResult(
+        totalCount: 1,
+        hits: [
+          QuranSearchHit(
+            surahId: 2,
+            ayah: 255,
+            surahName: 'Al-Baqarah',
+            snippet: 'new hit',
+          ),
+        ],
       ),
-    ]);
+    );
     await tester.pump();
     expect(find.text('Al-Baqarah • Ayah 255'), findsOneWidget);
     expect(find.text('Al-Fatiha • Ayah 1'), findsNothing);
@@ -126,11 +155,33 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'xyzzy');
     await tester.pump(const Duration(milliseconds: 300));
-    quran.gates['xyzzy']!.complete(const []);
+    quran.gates['xyzzy']!.complete(const QuranSearchResult());
     await tester.pump();
 
     expect(find.text('Search across Quran and Hadith'), findsNothing);
     expect(find.text('No verses or hadiths match “xyzzy”'), findsOneWidget);
+  });
+
+  testWidgets('out-of-range jump shows a hint instead of a silent miss', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SearchPage(
+          quranSearch: _OutOfRangeQuranSearch(),
+          hadithSearch: _EmptyHadithSearch(),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), '2:999');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(
+      find.text('Al-Baqarah has 286 ayahs, so 2:999 is not a verse'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Hadith chip shows hadith hits without scrolling Quran', (
@@ -153,18 +204,18 @@ void main() {
     expect(find.text('Quran (1)'), findsWidgets);
     expect(find.text('Hadith (1)'), findsWidgets);
     expect(find.text('Al-Baqarah • Ayah 87'), findsOneWidget);
-    expect(find.text('Nawawi 40 • Hadith 1'), findsOneWidget);
+    expect(find.text('Nawawi 40 • #1'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilterChip, 'Hadith (1)'));
     await tester.pump();
 
     expect(find.text('Al-Baqarah • Ayah 87'), findsNothing);
-    expect(find.text('Nawawi 40 • Hadith 1'), findsOneWidget);
+    expect(find.text('Nawawi 40 • #1'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilterChip, 'Quran (1)'));
     await tester.pump();
 
     expect(find.text('Al-Baqarah • Ayah 87'), findsOneWidget);
-    expect(find.text('Nawawi 40 • Hadith 1'), findsNothing);
+    expect(find.text('Nawawi 40 • #1'), findsNothing);
   });
 }

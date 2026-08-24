@@ -29,10 +29,27 @@ class QuranSearchHit {
   });
 }
 
+/// Ranked Quran hits plus metadata for the search UI.
+class QuranSearchResult {
+  const QuranSearchResult({
+    this.hits = const [],
+    this.totalCount = 0,
+    this.invalidJumpHint,
+  });
+
+  final List<QuranSearchHit> hits;
+
+  /// Matches before the result cap, used for "150 of 400" chips.
+  final int totalCount;
+
+  /// Set when the query looks like `2:999` but that ayah does not exist.
+  final String? invalidJumpHint;
+}
+
 /// A single Hadith search result.
 ///
 /// [collectionId] and [bookFile] locate the book; [hadithIndex]
-/// is the zero-based position within that book.
+/// is the zero-based position within that book (used to scroll).
 class HadithSearchHit {
   final String collectionId;
   final String bookFile;
@@ -40,6 +57,9 @@ class HadithSearchHit {
 
   /// Zero-based index of the hadith within its book.
   final int hadithIndex;
+
+  /// Catalog number within the book, when the source JSON provides it.
+  final int? idInBook;
 
   /// Optional preview text from the matched hadith.
   final String? snippet;
@@ -49,6 +69,19 @@ class HadithSearchHit {
     required this.bookFile,
     this.bookTitle,
     required this.hadithIndex,
+    this.idInBook,
     this.snippet,
   });
+
+  /// Number shown in search tiles: catalog `#n` when known.
+  String get numberLabel =>
+      idInBook != null ? '#$idInBook' : 'Hadith ${hadithIndex + 1}';
+}
+
+/// Ranked hadith hits plus the uncapped match count.
+class HadithSearchResult {
+  const HadithSearchResult({this.hits = const [], this.totalCount = 0});
+
+  final List<HadithSearchHit> hits;
+  final int totalCount;
 }
