@@ -88,4 +88,23 @@ void main() {
       controller.dispose();
     });
   });
+
+  test('showTranslation defaults on and persists', () {
+    fakeAsync((async) {
+      final controller = SettingsController();
+      controller.load();
+      async.flushMicrotasks();
+
+      expect(controller.showTranslation, isTrue);
+      controller.showTranslation = false;
+      async.flushMicrotasks();
+
+      SharedPreferences.getInstance().then((prefs) {
+        expect(prefs.getBool('settings.showTranslation'), isFalse);
+      });
+      async.flushMicrotasks();
+
+      controller.dispose();
+    });
+  });
 }

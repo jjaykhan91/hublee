@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
+import 'theme/app_appearance.dart';
 import 'services/theme_mode_service.dart';
 import 'services/settings_controller.dart';
 import 'services/settings_scope.dart';
@@ -19,6 +20,7 @@ import 'services/vocab_scope.dart';
 import 'services/srs_service.dart';
 import 'services/srs_scope.dart';
 import 'services/app_metrics.dart';
+import 'services/launch_preload.dart';
 import 'router.dart';
 import 'ui/widgets/metrics_hud.dart';
 
@@ -45,13 +47,15 @@ class _HubleeAppState extends State<HubleeApp> {
   final _vocabService = VocabService();
   final _srsService = SrsService();
 
-  ThemeMode _themeMode = ThemeMode.system;
+  AppAppearance _appearance = AppAppearance.system;
   bool _overlayEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    _themeModeService.load().then((mode) => setState(() => _themeMode = mode));
+    _themeModeService.load().then(
+      (appearance) => setState(() => _appearance = appearance),
+    );
     _settingsController.load();
     _bookmarkService.load();
     _vocabService.load();
@@ -59,6 +63,9 @@ class _HubleeAppState extends State<HubleeApp> {
     AppMetrics.instance.attachFrameTiming();
     AppMetrics.instance.addListener(_onOverlay);
     appRouter.routerDelegate.addListener(_onRoute);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      startSearchIndexWarmup();
+    });
   }
 
   void _onOverlay() {
@@ -83,17 +90,11 @@ class _HubleeAppState extends State<HubleeApp> {
     super.dispose();
   }
 
-  /// Toggles between light and dark theme, then persists the choice.
-  void _toggleTheme() async {
-    final nextMode = _themeMode == ThemeMode.dark
-        ? ThemeMode.light
-        : ThemeMode.dark;
-    setState(() => _themeMode = nextMode);
-    AppMetrics.instance.recordUi(
-      'theme',
-      detail: {'mode': nextMode == ThemeMode.dark ? 'dark' : 'light'},
-    );
-    await _themeModeService.save(nextMode);
+  /// Applies and persists [appearance].
+  void _setAppearance(AppAppearance appearance) async {
+    setState(() => _appearance = appearance);
+    AppMetrics.instance.recordUi('theme', detail: {'mode': appearance.name});
+    await _themeModeService.save(appearance);
   }
 
   @override
@@ -107,14 +108,17 @@ class _HubleeAppState extends State<HubleeApp> {
           child: SrsScope(
             service: _srsService,
             child: AppScope(
-              toggleTheme: _toggleTheme,
+              appearance: _appearance,
+              setAppearance: _setAppearance,
               child: MaterialApp.router(
                 title: 'Hublee',
                 debugShowCheckedModeBanner: false,
                 showPerformanceOverlay: _overlayEnabled,
-                theme: buildLightTheme(),
+                theme: _appearance == AppAppearance.paper
+                    ? buildPaperTheme()
+                    : buildLightTheme(),
                 darkTheme: buildDarkTheme(),
-                themeMode: _themeMode,
+                themeMode: _appearance.themeMode,
                 routerConfig: appRouter,
                 builder: (context, child) {
                   return Stack(

@@ -1,28 +1,26 @@
-/// Provides top-level app actions (e.g. theme toggle) via an
-/// [InheritedWidget] so any descendant can access them.
+/// Provides appearance and theme actions via an [InheritedWidget].
 library;
 
 import 'package:flutter/widgets.dart';
 
-/// Exposes global app-level actions through the widget tree.
-///
-/// Usage:
-/// ```dart
-/// AppScope.of(context).toggleTheme();
-/// ```
-class AppScope extends InheritedWidget {
-  final VoidCallback _toggleTheme;
+import '../theme/app_appearance.dart';
 
+/// Exposes [AppAppearance] so Settings and the reader sheet can set it.
+class AppScope extends InheritedWidget {
   const AppScope({
     super.key,
-    required VoidCallback toggleTheme,
+    required this.appearance,
+    required ValueChanged<AppAppearance> setAppearance,
     required super.child,
-  }) : _toggleTheme = toggleTheme;
+  }) : _setAppearance = setAppearance;
 
-  /// Switches between light and dark mode.
-  void toggleTheme() => _toggleTheme();
+  final AppAppearance appearance;
+  final ValueChanged<AppAppearance> _setAppearance;
 
-  /// Retrieves the nearest [AppScope] from the widget tree.
+  /// Applies [value] and persists it.
+  void setAppearance(AppAppearance value) => _setAppearance(value);
+
+  /// Retrieves the nearest [AppScope].
   static AppScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
     assert(scope != null, 'AppScope.of() called with no AppScope in context.');
@@ -31,5 +29,6 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      oldWidget._toggleTheme != _toggleTheme;
+      oldWidget.appearance != appearance ||
+      oldWidget._setAppearance != _setAppearance;
 }

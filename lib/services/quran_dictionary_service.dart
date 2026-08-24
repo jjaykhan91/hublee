@@ -14,7 +14,7 @@ import '../quran/word_by_word_repository.dart';
 import 'app_metrics.dart';
 import 'vocab_service.dart';
 
-const _kBatchSize = 8;
+const _kBatchSize = 16;
 const _kMaxSamples = 8;
 
 /// One occurrence of a dictionary headword.

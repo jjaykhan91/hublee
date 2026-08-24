@@ -10,6 +10,8 @@
 /// - Tajweed colour legend at the bottom
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -19,6 +21,7 @@ import '../quran/quran_translation_repository.dart';
 import '../quran/surah_info_repository.dart';
 import '../quran/word_by_word_repository.dart';
 import '../quran/models.dart';
+import '../quran/sajdah.dart';
 
 import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
@@ -37,6 +40,8 @@ import 'widgets/scroll_scrubber.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
 import 'widgets/word_by_word_arabic_text.dart';
 import 'widgets/word_gloss_card.dart';
+import 'widgets/passage_actions.dart';
+import 'widgets/reading_width.dart';
 
 /// Displays all ayahs of a single surah with bookmarking and
 /// tajweed rendering.
@@ -65,6 +70,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
   /// Ensures scroll-to-ayah fires only once.
   bool _hasScrolledToAyah = false;
+
+  Timer? _lastReadTimer;
+  BookmarkService? _bookmarks;
+  String? _surahName;
+  bool _hasBismillah = false;
+  int? _visibleAyah;
 
   // ── In-surah search state ──────────────────────────────────
   bool _isSearching = false;
@@ -100,6 +111,42 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       ),
       const WordByWordRepository().loadSurah(widget.surahId),
     ]);
+    _positionsListener.itemPositions.addListener(_onScrollPositions);
+  }
+
+  void _onScrollPositions() {
+    if (!mounted || _isSearching || _surahName == null) return;
+    final positions = _positionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+    final visible = positions.where(
+      (position) =>
+          position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1,
+    );
+    if (visible.isEmpty) return;
+    final top = visible.reduce(
+      (a, b) => a.itemLeadingEdge < b.itemLeadingEdge ? a : b,
+    );
+    var ayahIndex = top.index - (_hasBismillah ? 1 : 0);
+    if (ayahIndex < 0) ayahIndex = 0;
+    final ayah = ayahIndex + 1;
+    if (_visibleAyah == ayah) return;
+    _visibleAyah = ayah;
+    _scheduleLastRead();
+  }
+
+  void _scheduleLastRead() {
+    final name = _surahName;
+    final ayah = _visibleAyah;
+    if (name == null || ayah == null) return;
+    _lastReadTimer?.cancel();
+    _lastReadTimer = Timer(const Duration(milliseconds: 400), () {
+      _bookmarks?.saveLastReadQuran(
+        surahId: widget.surahId,
+        ayah: ayah,
+        surahName: name,
+        notify: false,
+      );
+    });
   }
 
   /// Reveals [selection] within [ayahNumber], or clears when null.
@@ -120,6 +167,17 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
   @override
   void dispose() {
+    _positionsListener.itemPositions.removeListener(_onScrollPositions);
+    _lastReadTimer?.cancel();
+    final name = _surahName;
+    final ayah = _visibleAyah ?? widget.scrollToAyah ?? 1;
+    if (name != null) {
+      _bookmarks?.saveLastReadQuran(
+        surahId: widget.surahId,
+        ayah: ayah,
+        surahName: name,
+      );
+    }
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -293,110 +351,112 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           appBar: _isSearching
               ? _buildSearchAppBar(context)
               : _buildNormalAppBar(context, chapterMeta),
-          body: () {
-            if (isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (errorMessage != null) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $errorMessage'),
-              );
-            }
+          body: ConstrainedReadingBody(
+            child: () {
+              if (isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (errorMessage != null) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Error: $errorMessage'),
+                );
+              }
 
-            if (_isSearching && _searchQuery.isNotEmpty) {
-              return _buildSearchResults(
-                context,
-                chapterMeta!,
-                arabicGlyphAyahs,
-                englishAyahs,
-                arabicStandardAyahs,
-                arabicEmlaeyAyahs,
-              );
-            }
-
-            final totalAyahs = chapterMeta!.versesCount;
-            final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
-            final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
-
-            return Stack(
-              children: [
-                _buildAyahList(
+              if (_isSearching && _searchQuery.isNotEmpty) {
+                return _buildSearchResults(
                   context,
-                  chapterMeta,
+                  chapterMeta!,
                   arabicGlyphAyahs,
                   englishAyahs,
                   arabicStandardAyahs,
-                  wordGlosses,
-                ),
-                ScrollScrubber(
-                  itemCount: itemCount,
-                  labelBuilder: (index) {
-                    if (hasBismillah && index == 0) {
-                      return 'Bismillah';
-                    }
-                    final ayahIndex = index - (hasBismillah ? 1 : 0);
-                    return 'Ayah ${ayahIndex + 1} of $totalAyahs';
-                  },
-                  scrollController: _scrollController,
-                  positionsListener: _positionsListener,
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: SafeArea(
-                    top: false,
-                    child: WordGlossCard(
-                      selection: _wordSelection,
-                      reference: _wordSelectionAyah == null
-                          ? null
-                          : '${chapterMeta.nameSimple} '
-                                '${widget.surahId}:$_wordSelectionAyah',
-                      isFavorite:
-                          _wordSelection != null &&
-                          VocabScope.of(context).isSavedWord(
-                            _wordSelection!.arabic,
-                            _wordSelection!.gloss,
-                          ),
-                      onToggleFavorite:
-                          _wordSelection == null || _wordSelectionAyah == null
-                          ? null
-                          : () {
-                              final selection = _wordSelection!;
-                              final ayah = _wordSelectionAyah!;
-                              VocabScope.of(context).toggle(
-                                VocabEntry.fromReader(
-                                  arabic: selection.arabic,
-                                  gloss: selection.gloss,
-                                  surahId: widget.surahId,
-                                  ayah: ayah,
-                                  surahName:
-                                      chapterMeta?.nameSimple ??
-                                      'Surah ${widget.surahId}',
-                                ),
-                              );
-                              SrsScope.of(context).ensure(
-                                SrsCard(
-                                  id: SrsCard.cardId(
+                  arabicEmlaeyAyahs,
+                );
+              }
+
+              final totalAyahs = chapterMeta!.versesCount;
+              final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
+              final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
+
+              return Stack(
+                children: [
+                  _buildAyahList(
+                    context,
+                    chapterMeta,
+                    arabicGlyphAyahs,
+                    englishAyahs,
+                    arabicStandardAyahs,
+                    wordGlosses,
+                  ),
+                  ScrollScrubber(
+                    itemCount: itemCount,
+                    labelBuilder: (index) {
+                      if (hasBismillah && index == 0) {
+                        return 'Bismillah';
+                      }
+                      final ayahIndex = index - (hasBismillah ? 1 : 0);
+                      return 'Ayah ${ayahIndex + 1} of $totalAyahs';
+                    },
+                    scrollController: _scrollController,
+                    positionsListener: _positionsListener,
+                  ),
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                    child: SafeArea(
+                      top: false,
+                      child: WordGlossCard(
+                        selection: _wordSelection,
+                        reference: _wordSelectionAyah == null
+                            ? null
+                            : '${chapterMeta.nameSimple} '
+                                  '${widget.surahId}:$_wordSelectionAyah',
+                        isFavorite:
+                            _wordSelection != null &&
+                            VocabScope.of(context).isSavedWord(
+                              _wordSelection!.arabic,
+                              _wordSelection!.gloss,
+                            ),
+                        onToggleFavorite:
+                            _wordSelection == null || _wordSelectionAyah == null
+                            ? null
+                            : () {
+                                final selection = _wordSelection!;
+                                final ayah = _wordSelectionAyah!;
+                                VocabScope.of(context).toggle(
+                                  VocabEntry.fromReader(
+                                    arabic: selection.arabic,
+                                    gloss: selection.gloss,
+                                    surahId: widget.surahId,
+                                    ayah: ayah,
+                                    surahName:
+                                        chapterMeta?.nameSimple ??
+                                        'Surah ${widget.surahId}',
+                                  ),
+                                );
+                                SrsScope.of(context).ensure(
+                                  SrsCard(
+                                    id: SrsCard.cardId(
+                                      deck: 'quran',
+                                      arabic: selection.arabic,
+                                      english: selection.gloss,
+                                    ),
                                     deck: 'quran',
                                     arabic: selection.arabic,
                                     english: selection.gloss,
+                                    due: DateTime.now(),
                                   ),
-                                  deck: 'quran',
-                                  arabic: selection.arabic,
-                                  english: selection.gloss,
-                                  due: DateTime.now(),
-                                ),
-                              );
-                            },
-                      onDismiss: _clearWordSelection,
+                                );
+                              },
+                        onDismiss: _clearWordSelection,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }(),
+                ],
+              );
+            }(),
+          ),
         );
       },
     );
@@ -604,7 +664,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                       ),
                     );
                   },
-                  isMeccan: chapterMeta.isMeccan,
+                  surahId: widget.surahId,
+                  surahName: chapterMeta.nameSimple,
+                  showTranslation: settings.showTranslation,
+                  isSajdah:
+                      isSajdahAyah(widget.surahId, ayahNumber) ||
+                      hasSajdahMarker(arabicText),
                 ),
               );
             },
@@ -629,16 +694,20 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     // Bismillah is shown for all surahs except Al-Fatiha (1)
     // and At-Tawba (9).
     final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
+    _hasBismillah = hasBismillah;
+    _surahName = chapterMeta.nameSimple;
+    _visibleAyah ??= widget.scrollToAyah ?? 1;
+    _bookmarks = BookmarkScope.of(context);
 
-    // Persist last-read position only once.
     if (!_hasPersistedLastRead) {
       _hasPersistedLastRead = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        BookmarkScope.of(context).saveLastReadQuran(
+        _bookmarks?.saveLastReadQuran(
           surahId: widget.surahId,
-          ayah: widget.scrollToAyah ?? 1,
+          ayah: _visibleAyah ?? 1,
           surahName: chapterMeta.nameSimple,
+          notify: false,
         );
       });
     }
@@ -676,6 +745,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
+      minCacheExtent: AppSpacing.cacheExtent,
       itemCount: itemCount,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -722,7 +792,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 ),
               );
             },
-            isMeccan: chapterMeta.isMeccan,
+            surahId: widget.surahId,
+            surahName: chapterMeta.nameSimple,
+            showTranslation: settings.showTranslation,
+            isSajdah:
+                isSajdahAyah(widget.surahId, ayahNumber) ||
+                hasSajdahMarker(arabicText),
           ),
         );
       },
@@ -776,7 +851,7 @@ class _BismillahHeader extends StatelessWidget {
 }
 
 /// A single ayah card showing the ayah number badge, Arabic text
-/// with tajweed, English translation, and a bookmark toggle.
+/// with tajweed, English translation, bookmark, and copy/share.
 class _AyahCard extends StatelessWidget {
   final int ayahNumber;
   final String? arabic;
@@ -786,7 +861,10 @@ class _AyahCard extends StatelessWidget {
   final bool isBookmarked;
   final bool tajweedEnabled;
   final VoidCallback onBookmarkToggle;
-  final bool isMeccan;
+  final int surahId;
+  final String surahName;
+  final bool showTranslation;
+  final bool isSajdah;
 
   /// One gloss per word, or null when word-by-word is off for this card.
   final List<String>? glosses;
@@ -805,109 +883,136 @@ class _AyahCard extends StatelessWidget {
     required this.isBookmarked,
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
-    required this.isMeccan,
+    required this.surahId,
+    required this.surahName,
+    required this.showTranslation,
+    required this.isSajdah,
     required this.onWordSelected,
     this.glosses,
     this.selection,
   });
 
+  String get _reference => '$surahName $surahId:$ayahNumber';
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Subtle Makki/Madani accent backgrounds to mirror the Quran list cards.
-    const makkiBg = Color(0xFFFFF7EC); // light warm parchment
-    const madaniBg = Color(0xFFE9F6F1); // light cool green
-
-    final cardColor = Theme.of(context).brightness == Brightness.dark
-        ? colorScheme.surface
-        : (isMeccan ? makkiBg : madaniBg);
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: cardColor,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Ayah number badge + bookmark icon
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$ayahNumber',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
+      color: colorScheme.surface,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () => showPassageActionsSheet(
+          context,
+          reference: _reference,
+          arabic: arabic,
+          english: english,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$ayahNumber',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(
-                    isBookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_outline_rounded,
-                    color: isBookmarked
-                        ? colorScheme.primary
-                        : colorScheme.onSurface.withValues(alpha: 0.3),
-                    size: 22,
+                  if (isSajdah) ...[
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Prostration is recommended',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.tertiary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Sajdah \u06E9',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: colorScheme.tertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  PassageActionsButton(
+                    reference: _reference,
+                    arabic: arabic,
+                    english: english,
                   ),
-                  onPressed: onBookmarkToggle,
-                  tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // Arabic text: tappable words when word-by-word is on, plain
-            // otherwise. Tajweed colouring applies either way.
-            if (arabic != null && arabic!.isNotEmpty)
-              if (glosses case final wordGlosses?)
-                WordByWordArabicText(
-                  text: arabic!,
-                  glosses: wordGlosses,
-                  tajweed: tajweedEnabled,
-                  fontSize: 34 * arabicZoom,
-                  weight: FontWeight.bold,
-                  selectedPhrase: selection?.phrase,
-                  onPhraseSelected: onWordSelected,
-                )
-              else
-                ArabicText(
-                  arabic!,
-                  tajweed: tajweedEnabled,
-                  fontSize: 34 * arabicZoom,
-                  weight: FontWeight.bold,
-                ),
-            if (arabic != null && arabic!.isNotEmpty)
-              const SizedBox(height: 20),
-
-            // English translation
-            if (english != null && english!.isNotEmpty)
-              Text(
-                english!,
-                textAlign: TextAlign.left,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Roboto',
-                  fontFamilyFallback: const ['Arial', 'sans-serif'],
-                  fontSize: 17 * englishZoom,
-                  height: 1.5,
-                  letterSpacing: 0.1,
-                  color: colorScheme.onSurface.withValues(alpha: 0.85),
-                ),
+                  IconButton(
+                    icon: Icon(
+                      isBookmarked
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_outline_rounded,
+                      color: isBookmarked
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.3),
+                      size: 22,
+                    ),
+                    onPressed: onBookmarkToggle,
+                    tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                  ),
+                ],
               ),
-          ],
+              const SizedBox(height: 10),
+              if (arabic != null && arabic!.isNotEmpty)
+                if (glosses case final wordGlosses?)
+                  WordByWordArabicText(
+                    text: arabic!,
+                    glosses: wordGlosses,
+                    tajweed: tajweedEnabled,
+                    fontSize: 34 * arabicZoom,
+                    weight: FontWeight.bold,
+                    selectedPhrase: selection?.phrase,
+                    onPhraseSelected: onWordSelected,
+                  )
+                else
+                  ArabicText(
+                    arabic!,
+                    tajweed: tajweedEnabled,
+                    fontSize: 34 * arabicZoom,
+                    weight: FontWeight.bold,
+                  ),
+              if (arabic != null && arabic!.isNotEmpty)
+                const SizedBox(height: 20),
+              if (showTranslation && english != null && english!.isNotEmpty)
+                Text(
+                  english!,
+                  textAlign: TextAlign.left,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 17 * englishZoom,
+                    height: 1.5,
+                    letterSpacing: 0.1,
+                    color: colorScheme.onSurface.withValues(alpha: 0.85),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

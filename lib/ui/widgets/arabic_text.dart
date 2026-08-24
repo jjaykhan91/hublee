@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../services/settings_controller.dart';
 import '../../services/settings_scope.dart';
 import '../../theme/app_tokens.dart';
+import 'search_highlight.dart';
 import 'tajweed.dart';
 
 /// Resolves the [TextStyle] for the given [ArabicFontOption].
@@ -127,6 +128,9 @@ class ArabicText extends StatelessWidget {
   /// When non-null, overrides the user's font setting.
   final ArabicFontOption? fontOverride;
 
+  /// When set (and [tajweed] is off), bolds words that contain this query.
+  final String? highlightQuery;
+
   const ArabicText(
     this.text, {
     super.key,
@@ -140,6 +144,7 @@ class ArabicText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.fontOverride,
+    this.highlightQuery,
   });
 
   @override
@@ -164,24 +169,34 @@ class ArabicText extends StatelessWidget {
       _ => Alignment.centerRight,
     };
 
-    // Without tajweed: render as a simple Text widget.
+    // Without tajweed: plain text, or highlighted search hits.
     if (!tajweed) {
-      return Align(
-        alignment: alignment,
-        child: Text(
-          text,
-          textDirection: TextDirection.rtl,
-          textAlign: resolvedAlign,
-          style: resolvedStyle,
-          strutStyle: strutStyle,
-          maxLines: maxLines,
-          overflow: overflow,
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
-          ),
-        ),
-      );
+      final highlight = highlightQuery?.trim();
+      final child = highlight == null || highlight.isEmpty
+          ? Text(
+              text,
+              textDirection: TextDirection.rtl,
+              textAlign: resolvedAlign,
+              style: resolvedStyle,
+              strutStyle: strutStyle,
+              maxLines: maxLines,
+              overflow: overflow,
+              textHeightBehavior: const TextHeightBehavior(
+                applyHeightToFirstAscent: false,
+                applyHeightToLastDescent: false,
+              ),
+            )
+          : HighlightedSnippet(
+              text,
+              query: highlight,
+              style: resolvedStyle,
+              strutStyle: strutStyle,
+              maxLines: maxLines,
+              overflow: overflow ?? TextOverflow.ellipsis,
+              textDirection: TextDirection.rtl,
+              textAlign: resolvedAlign,
+            );
+      return Align(alignment: alignment, child: child);
     }
 
     // With tajweed: render as RichText with colour-coded spans.

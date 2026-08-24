@@ -21,6 +21,7 @@ import 'ui/settings_page.dart';
 import 'ui/tajweed_guide_page.dart';
 import 'router_paths.dart';
 import 'ui/splash_page.dart';
+import 'ui/onboarding_page.dart';
 import 'ui/route_error_page.dart';
 import 'ui/diagnostics_page.dart';
 import 'ui/dictionary_page.dart';
@@ -43,11 +44,16 @@ final GoRouter appRouter = GoRouter(
     message: state.error?.toString() ?? "That link isn't valid.",
   ),
   routes: [
-    // ── Splash (preload, then [AppRoute.home]) ────────────────────
+    // ── Splash (preload, then Home or first-run intro) ────────────
     GoRoute(
       path: AppRoute.splash,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SplashPage(),
+    ),
+    GoRoute(
+      path: AppRoute.onboarding,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const OnboardingPage(),
     ),
 
     // ── Bottom navigation shell ──────────────────────────────────

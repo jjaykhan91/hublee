@@ -21,4 +21,10 @@ void main() {
     expect(builders[TargetPlatform.linux], isNotNull);
     expect(builders[TargetPlatform.macOS], isNotNull);
   });
+
+  test('paper theme is light and uses elevation 1 cards', () {
+    final theme = buildPaperTheme();
+    expect(theme.brightness, Brightness.light);
+    expect(theme.cardTheme.elevation, 1);
+  });
 }

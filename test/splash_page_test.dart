@@ -29,6 +29,7 @@ void main() {
             preload: preload,
             minDisplay: minDisplay,
             maxWait: maxWait,
+            resolveNext: () async => AppRoute.home,
           ),
         ),
         GoRoute(path: AppRoute.home, builder: (_, _) => const Text('HOME')),

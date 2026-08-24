@@ -9,71 +9,104 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widgets/app_haptics.dart';
+import 'widgets/reading_width.dart';
 
-/// Persistent bottom-navigation scaffold.
+const _destinations = <({IconData icon, IconData selected, String label})>[
+  (icon: Icons.home_outlined, selected: Icons.home_rounded, label: 'Home'),
+  (
+    icon: Icons.menu_book_outlined,
+    selected: Icons.menu_book_rounded,
+    label: 'Quran',
+  ),
+  (
+    icon: Icons.library_books_outlined,
+    selected: Icons.library_books_rounded,
+    label: 'Hadith',
+  ),
+  (icon: Icons.school_outlined, selected: Icons.school_rounded, label: 'Learn'),
+  (
+    icon: Icons.bookmark_outline_rounded,
+    selected: Icons.bookmark_rounded,
+    label: 'Saved',
+  ),
+  (
+    icon: Icons.settings_outlined,
+    selected: Icons.settings_rounded,
+    label: 'Settings',
+  ),
+];
+
+/// Persistent navigation scaffold.
 ///
-/// Receives the [navigationShell] from `StatefulShellRoute` and
-/// renders a 6-tab [NavigationBar] (Home, Quran, Hadith, Learn,
-/// Saved, Settings).
+/// Phone: 6-tab [NavigationBar]. Wide windows: [NavigationRail] and a
+/// capped reading column.
 class AppShell extends StatelessWidget {
   /// The shell that manages the active tab body and branch state.
   final StatefulNavigationShell navigationShell;
 
   const AppShell({super.key, required this.navigationShell});
 
+  void _select(int index) {
+    AppHaptics.selection();
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final wide = ReadingLayout.useRail(MediaQuery.sizeOf(context).width);
+
+    if (wide) {
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: _select,
+              labelType: NavigationRailLabelType.selected,
+              backgroundColor: isDark
+                  ? const Color(0xFF0B0F14)
+                  : colorScheme.surface,
+              destinations: [
+                for (final dest in _destinations)
+                  NavigationRailDestination(
+                    icon: Icon(dest.icon),
+                    selectedIcon: Icon(dest.selected),
+                    label: Text(dest.label),
+                  ),
+              ],
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: ConstrainedReadingBody(
+                child: SafeArea(top: false, child: navigationShell),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(top: false, child: navigationShell),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          AppHaptics.selection();
-          // When the user taps the already-active tab, go back to
-          // the initial location of that branch.
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
+        onDestinationSelected: _select,
         backgroundColor: isDark ? const Color(0xFF0B0F14) : colorScheme.surface,
         indicatorColor: colorScheme.primary.withValues(alpha: 0.15),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         height: 68,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'Quran',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(Icons.library_books_rounded),
-            label: 'Hadith',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school_rounded),
-            label: 'Learn',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bookmark_outline_rounded),
-            selectedIcon: Icon(Icons.bookmark_rounded),
-            label: 'Saved',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-          ),
+        destinations: [
+          for (final dest in _destinations)
+            NavigationDestination(
+              icon: Icon(dest.icon),
+              selectedIcon: Icon(dest.selected),
+              label: dest.label,
+            ),
         ],
       ),
     );

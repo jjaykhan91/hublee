@@ -17,6 +17,7 @@ import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
+import 'widgets/appearance_chips.dart';
 
 /// Settings tab: display preferences, appearance, and about info.
 class SettingsPage extends StatelessWidget {
@@ -26,7 +27,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = SettingsScope.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appearance = AppScope.of(context).appearance;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -249,38 +250,50 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 8),
 
           Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      AppearanceChips(
+                        value: appearance,
+                        onChanged: (value) =>
+                            AppScope.of(context).setAppearance(value),
+                      ),
+                    ],
                   ),
-                  leading: Icon(
-                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                    color: colorScheme.primary,
-                  ),
-                  title: Text(isDark ? 'Moon Mode' : 'Sun Mode'),
-                  subtitle: Text(
-                    isDark
-                        ? 'Easier on the eyes at night'
-                        : 'Bright and clear display',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  trailing: Switch(
-                    value: isDark,
-                    onChanged: (_) {
-                      AppHaptics.selection();
-                      AppScope.of(context).toggleTheme();
-                    },
-                  ),
-                  onTap: () {
-                    AppHaptics.selection();
-                    AppScope.of(context).toggleTheme();
-                  },
                 ),
               )
               .animate()
               .fadeIn(duration: 400.ms, delay: 360.ms)
               .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 360.ms),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              secondary: Icon(
+                Icons.translate_rounded,
+                color: colorScheme.primary,
+              ),
+              title: const Text('Show translation'),
+              subtitle: const Text('Hide English to read Arabic only'),
+              value: settings.showTranslation,
+              onChanged: (value) {
+                AppHaptics.selection();
+                settings.showTranslation = value;
+              },
+            ),
+          ),
           if (!kReleaseMode) ...[
             const SizedBox(height: 12),
             Card(

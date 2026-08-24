@@ -223,39 +223,60 @@ class BookmarkService extends ChangeNotifier {
   }
 
   /// Saves the user's last-read Quran position.
+  ///
+  /// Pass [notify] false while the reader is scrolling so the page does
+  /// not rebuild on every persist. Call again with [notify] true on
+  /// dispose so Home's Continue Reading card refreshes.
   Future<void> saveLastReadQuran({
     required int surahId,
     required int ayah,
     required String surahName,
+    bool notify = true,
   }) async {
-    _lastReadQuran = {
-      'surahId': surahId,
-      'ayah': ayah,
-      'surahName': surahName,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLastReadQuran, json.encode(_lastReadQuran));
-    notifyListeners();
+    final unchanged =
+        _lastReadQuran != null &&
+        _lastReadQuran!['surahId'] == surahId &&
+        _lastReadQuran!['ayah'] == ayah;
+    if (!unchanged) {
+      _lastReadQuran = {
+        'surahId': surahId,
+        'ayah': ayah,
+        'surahName': surahName,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kLastReadQuran, json.encode(_lastReadQuran));
+    }
+    if (notify) notifyListeners();
   }
 
   /// Saves the user's last-read Hadith position.
+  ///
+  /// See [saveLastReadQuran] for [notify].
   Future<void> saveLastReadHadith({
     required String collectionId,
     required String bookFile,
     required String bookTitle,
     required int hadithIndex,
+    bool notify = true,
   }) async {
-    _lastReadHadith = {
-      'collectionId': collectionId,
-      'bookFile': bookFile,
-      'bookTitle': bookTitle,
-      'hadithIndex': hadithIndex,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLastReadHadith, json.encode(_lastReadHadith));
-    notifyListeners();
+    final unchanged =
+        _lastReadHadith != null &&
+        _lastReadHadith!['collectionId'] == collectionId &&
+        _lastReadHadith!['bookFile'] == bookFile &&
+        _lastReadHadith!['hadithIndex'] == hadithIndex;
+    if (!unchanged) {
+      _lastReadHadith = {
+        'collectionId': collectionId,
+        'bookFile': bookFile,
+        'bookTitle': bookTitle,
+        'hadithIndex': hadithIndex,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kLastReadHadith, json.encode(_lastReadHadith));
+    }
+    if (notify) notifyListeners();
   }
 
   /// Writes the current bookmarks list to SharedPreferences.

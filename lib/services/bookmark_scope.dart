@@ -30,4 +30,11 @@ class BookmarkScope extends InheritedNotifier<BookmarkService> {
     );
     return scope!.notifier!;
   }
+
+  /// Like [of], or `null` when tests mount a page without a scope.
+  static BookmarkService? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<BookmarkScope>()
+        ?.notifier;
+  }
 }

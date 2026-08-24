@@ -8,6 +8,7 @@ import '../router_paths.dart';
 import '../services/quran_dictionary_service.dart';
 import '../services/vocab_scope.dart';
 import '../services/vocab_service.dart';
+import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
 
@@ -169,6 +170,8 @@ class _EntryList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: entries.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {

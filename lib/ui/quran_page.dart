@@ -161,6 +161,8 @@ class _SurahListViewState extends State<_SurahListView>
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: widget.chapters.length,
       separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
@@ -202,12 +204,9 @@ class _JuzGroupView extends StatefulWidget {
 
 class _JuzGroupViewState extends State<_JuzGroupView>
     with AutomaticKeepAliveClientMixin {
-  /// Juz number paired with the surahs it covers.
-  ///
-  /// Derived once rather than on every build: grouping is a nested loop with a
-  /// de-duplication scan for surahs spanning several juz, and the result only
-  /// changes if the chapter list itself does.
-  late List<({int number, List<ChapterMeta> chapters})> _groups;
+  /// Flattened header + card rows so a juz with many surahs is not one
+  /// giant [Column] that builds every card at once.
+  late List<_TypeRow> _rows;
 
   @override
   bool get wantKeepAlive => true;
@@ -215,15 +214,35 @@ class _JuzGroupViewState extends State<_JuzGroupView>
   @override
   void initState() {
     super.initState();
-    _groups = _groupByJuz(widget.chapters);
+    _rows = _juzRows(widget.chapters, widget.colorScheme);
   }
 
   @override
   void didUpdateWidget(_JuzGroupView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.chapters, widget.chapters)) {
-      _groups = _groupByJuz(widget.chapters);
+    if (!identical(oldWidget.chapters, widget.chapters) ||
+        oldWidget.colorScheme != widget.colorScheme) {
+      _rows = _juzRows(widget.chapters, widget.colorScheme);
     }
+  }
+
+  static List<_TypeRow> _juzRows(
+    List<ChapterMeta> chapters,
+    ColorScheme colorScheme,
+  ) {
+    final groups = _groupByJuz(chapters);
+    return [
+      for (var i = 0; i < groups.length; i++) ...[
+        if (i > 0) const _TypeSpacerRow(),
+        _TypeHeaderRow(
+          icon: Icons.auto_stories_rounded,
+          title: 'Juz ${groups[i].number}',
+          subtitle: _juzNames[groups[i].number] ?? 'Juz ${groups[i].number}',
+          color: colorScheme.primary,
+        ),
+        for (final chapter in groups[i].chapters) _TypeCardRow(chapter),
+      ],
+    ];
   }
 
   static List<({int number, List<ChapterMeta> chapters})> _groupByJuz(
@@ -252,33 +271,32 @@ class _JuzGroupViewState extends State<_JuzGroupView>
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      itemCount: _groups.length,
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
+      itemCount: _rows.length,
       itemBuilder: (context, index) {
-        final group = _groups[index];
-        final juzName = _juzNames[group.number] ?? 'Juz ${group.number}';
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (index > 0) const SizedBox(height: 16),
+        return switch (_rows[index]) {
+          _TypeHeaderRow(
+            :final icon,
+            :final title,
+            :final subtitle,
+            :final color,
+          ) =>
             _SectionHeader(
-              icon: Icons.auto_stories_rounded,
-              title: 'Juz ${group.number}',
-              subtitle: juzName,
-              color: widget.colorScheme.primary,
+              icon: icon,
+              title: title,
+              subtitle: subtitle,
+              color: color,
             ),
-            const SizedBox(height: 6),
-            ...group.chapters.map(
-              (chapter) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: _SurahCard(
-                  chapter: chapter,
-                  colorScheme: widget.colorScheme,
-                ),
-              ),
+          _TypeCardRow(:final chapter) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: _SurahCard(
+              chapter: chapter,
+              colorScheme: widget.colorScheme,
             ),
-          ],
-        );
+          ),
+          _TypeSpacerRow() => const SizedBox(height: 16),
+        };
       },
     );
   }
@@ -348,6 +366,8 @@ class _MakkiMadaniViewState extends State<_MakkiMadaniView>
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: _rows.length,
       itemBuilder: (context, index) {
         return switch (_rows[index]) {
@@ -456,6 +476,8 @@ class _RevelationOrderViewState extends State<_RevelationOrderView>
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: _sorted.length,
       separatorBuilder: (_, _) => const SizedBox(height: 6),
       itemBuilder: (context, index) => _SurahCard(

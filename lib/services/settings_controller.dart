@@ -47,6 +47,7 @@ class SettingsController extends ChangeNotifier {
   static const _kTajweedEnabledKey = 'settings.tajweedEnabled';
   static const _kArabicFontKey = 'settings.arabicFont';
   static const _kWordByWordEnabledKey = 'settings.wordByWordEnabled';
+  static const _kShowTranslationKey = 'settings.showTranslation';
 
   /// Delay before a zoom change is written to disk.
   @visibleForTesting
@@ -56,6 +57,7 @@ class SettingsController extends ChangeNotifier {
   double _englishZoom = 1.0;
   bool _tajweedEnabled = true;
   bool _wordByWordEnabled = false;
+  bool _showTranslation = true;
   ArabicFontOption _arabicFont = ArabicFontOption.uthmanic;
 
   Timer? _arabicZoomPersistTimer;
@@ -75,6 +77,9 @@ class SettingsController extends ChangeNotifier {
   /// Off by default: it makes every word a tap target, which is what a learner
   /// wants but not what someone simply reading expects.
   bool get wordByWordEnabled => _wordByWordEnabled;
+
+  /// Whether English translation is shown under Arabic in readers.
+  bool get showTranslation => _showTranslation;
 
   /// Currently selected Arabic font family.
   ArabicFontOption get arabicFont => _arabicFont;
@@ -131,6 +136,14 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
+  set showTranslation(bool value) {
+    if (value != _showTranslation) {
+      _showTranslation = value;
+      _persistBool(_kShowTranslationKey, value);
+      notifyListeners();
+    }
+  }
+
   /// Restores saved settings from [SharedPreferences].
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -138,6 +151,7 @@ class SettingsController extends ChangeNotifier {
     _englishZoom = prefs.getDouble(_kEnglishZoomKey) ?? 1.0;
     _tajweedEnabled = prefs.getBool(_kTajweedEnabledKey) ?? true;
     _wordByWordEnabled = prefs.getBool(_kWordByWordEnabledKey) ?? false;
+    _showTranslation = prefs.getBool(_kShowTranslationKey) ?? true;
     final fontName = prefs.getString(_kArabicFontKey);
     if (fontName != null) {
       _arabicFont = ArabicFontOption.values.firstWhere(
