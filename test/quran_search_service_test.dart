@@ -12,6 +12,7 @@ import 'package:hublee/services/quran_search_service.dart';
 class _RecordingArabicRepo implements QuranArabicRepository {
   bool? lastUseGlyphText;
   int loadCount = 0;
+  int uthmaniLoadCount = 0;
 
   @override
   Future<Map<String, String>> loadArabicSurah(
@@ -28,9 +29,15 @@ class _RecordingArabicRepo implements QuranArabicRepository {
   }
 
   @override
-  Future<Map<String, String>> loadUthmaniStandard(int surahId) async => {
-    '1': 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ',
-  };
+  Future<Map<int, Map<String, String>>> loadAllEmlaey() async {
+    return {1: await loadArabicSurah(1, useGlyphText: false)};
+  }
+
+  @override
+  Future<Map<String, String>> loadUthmaniStandard(int surahId) async {
+    uthmaniLoadCount++;
+    return {'1': 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ'};
+  }
 }
 
 class _StubChaptersRepo implements QuranChaptersRepository {
@@ -119,5 +126,37 @@ void main() {
       translationRepo: _StubTranslationRepo(),
     );
     expect(await service.search('   '), isEmpty);
+  });
+
+  test('1:1 jumps to the verse even without a text match', () async {
+    final service = QuranSearchService(
+      chaptersRepo: _StubChaptersRepo(),
+      arabicRepo: _RecordingArabicRepo(),
+      translationRepo: _StubTranslationRepo(),
+    );
+    final hits = await service.search('1:1');
+    expect(hits, hasLength(1));
+    expect(hits.single.surahId, 1);
+    expect(hits.single.ayah, 1);
+    expect(hits.single.arabicSnippet, isNotNull);
+  });
+
+  test('index skips uthmani until a hit needs an Arabic snippet', () async {
+    final arabicRepo = _RecordingArabicRepo();
+    final service = QuranSearchService(
+      chaptersRepo: _StubChaptersRepo(),
+      arabicRepo: arabicRepo,
+      translationRepo: _StubTranslationRepo(),
+    );
+
+    await service.warmIndex();
+    expect(arabicRepo.uthmaniLoadCount, 0);
+
+    await service.search('Merciful');
+    expect(arabicRepo.uthmaniLoadCount, 0);
+
+    final arabicHits = await service.search('بسم');
+    expect(arabicRepo.uthmaniLoadCount, 1);
+    expect(arabicHits.single.arabicSnippet, contains('ٱللَّهِ'));
   });
 }

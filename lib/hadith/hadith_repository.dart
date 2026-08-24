@@ -264,6 +264,11 @@ extension HadithRepositoryListing on HadithRepository {
 
 /// Extends [HadithRepository] with full-text search across all collections.
 extension HadithSearchExtension on HadithRepository {
+  /// Builds the session index if needed. Safe to call from splash warmup.
+  Future<void> warmSearchIndex() async {
+    await _ensureSearchIndex();
+  }
+
   /// Searches all hadith text (English and Arabic) for [query].
   ///
   /// Returns up to [limit] matching [HadithSearchHit] results.
@@ -305,8 +310,9 @@ extension HadithSearchExtension on HadithRepository {
 
   Future<List<_HadithIndexRow>> _buildSearchIndex() {
     return AppMetrics.instance.time('search.hadithIndex', () async {
-      final rows = <_HadithIndexRow>[];
       final collections = await loadCollections();
+      const bookBatch = 6;
+      final specs = <({String collectionId, HadithBookMeta meta})>[];
 
       for (final collection in collections) {
         late final List<HadithBookMeta> books;
@@ -315,28 +321,34 @@ extension HadithSearchExtension on HadithRepository {
         } catch (_) {
           continue;
         }
+        for (final bookMeta in books) {
+          specs.add((collectionId: collection.id, meta: bookMeta));
+        }
+      }
 
+      final rows = <_HadithIndexRow>[];
+      for (var i = 0; i < specs.length; i += bookBatch) {
+        final end = i + bookBatch < specs.length ? i + bookBatch : specs.length;
         final loaded = await Future.wait(
-          books.map((bookMeta) async {
+          specs.sublist(i, end).map((spec) async {
             try {
-              final book = await loadBook(collection.id, bookMeta.file);
-              return (bookMeta, book);
+              final book = await loadBook(spec.collectionId, spec.meta.file);
+              return (spec.collectionId, spec.meta, book);
             } catch (_) {
               return null;
             }
           }),
         );
-
         for (final item in loaded) {
           if (item == null) continue;
-          final (bookMeta, book) = item;
+          final (collectionId, bookMeta, book) = item;
           final bookTitle = book.title.isNotEmpty ? book.title : bookMeta.title;
           for (var index = 0; index < book.hadiths.length; index++) {
             final hadith = book.hadiths[index];
             final english = hadith.english ?? '';
             rows.add(
               _HadithIndexRow(
-                collectionId: collection.id,
+                collectionId: collectionId,
                 bookFile: bookMeta.file,
                 bookTitle: bookTitle,
                 hadithIndex: index,
@@ -347,6 +359,7 @@ extension HadithSearchExtension on HadithRepository {
             );
           }
         }
+        await Future<void>.delayed(Duration.zero);
       }
       return rows;
     });

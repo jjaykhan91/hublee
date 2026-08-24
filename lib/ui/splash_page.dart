@@ -1,7 +1,7 @@
 /// Full-screen splash shown at app launch.
 ///
 /// Warms launch caches, keeps the logo on screen for a short minimum,
-/// then navigates to home. A hung load cannot trap the user past
+/// then navigates to Home or the first-run intro. A hung load cannot trap the user past
 /// [SplashPage.maxWait], and a tap skips the wait.
 library;
 
@@ -10,11 +10,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../router_paths.dart';
 import '../services/launch_preload.dart';
 import '../services/app_metrics.dart';
+import '../services/onboarding_service.dart';
 
-/// Splash screen: background image, preload, then [AppRoute.home].
+/// Splash screen: background image, preload, then Home or first-run intro.
 class SplashPage extends StatefulWidget {
   /// Work to finish before leaving splash. Defaults to [warmLaunchCaches].
   final Future<void> Function()? preload;
@@ -25,11 +25,15 @@ class SplashPage extends StatefulWidget {
   /// Hard cap so a stuck preload still reaches home.
   final Duration maxWait;
 
+  /// Override the post-splash route. Tests only.
+  final Future<String> Function()? resolveNext;
+
   const SplashPage({
     super.key,
     this.preload,
     this.minDisplay = const Duration(milliseconds: 400),
     this.maxWait = const Duration(seconds: 8),
+    this.resolveNext,
   });
 
   @override
@@ -76,7 +80,13 @@ class _SplashPageState extends State<SplashPage> {
     _left = true;
     _minTimer?.cancel();
     _maxTimer?.cancel();
-    context.go(AppRoute.home);
+    _openNext();
+  }
+
+  Future<void> _openNext() async {
+    final next = await (widget.resolveNext ?? OnboardingService.nextRoute)();
+    if (!mounted) return;
+    context.go(next);
   }
 
   @override

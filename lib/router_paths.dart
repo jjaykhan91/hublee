@@ -19,6 +19,7 @@ abstract final class AppRoute {
 
   // ── Full-screen (no bottom nav) ───────────────────────────────
   static const String search = '/search';
+  static const String onboarding = '/onboarding';
   static const String tajweedGuide = '/tajweed-guide';
   static const String diagnostics = '/diagnostics';
   static const String dictionary = '/dictionary';

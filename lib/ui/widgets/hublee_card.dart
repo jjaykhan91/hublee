@@ -8,11 +8,18 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_tokens.dart';
 
-/// A [Card] with theme styling, optional [onTap], and [AppRadius.card] padding.
+/// A [Card] with theme styling, optional tap/long-press, and card padding.
 class HubleeCard extends StatelessWidget {
-  const HubleeCard({super.key, this.onTap, required this.child, this.padding});
+  const HubleeCard({
+    super.key,
+    this.onTap,
+    this.onLongPress,
+    required this.child,
+    this.padding,
+  });
 
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget child;
 
   /// Override default card padding (defaults to [AppSpacing.cardTight]).
@@ -20,12 +27,18 @@ class HubleeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: AppRadius.card,
-        onTap: onTap,
-        child: Padding(padding: padding ?? AppSpacing.cardTight, child: child),
+    return RepaintBoundary(
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: padding ?? AppSpacing.cardTight,
+            child: child,
+          ),
+        ),
       ),
     );
   }

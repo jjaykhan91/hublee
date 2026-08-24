@@ -161,6 +161,8 @@ class _EntryList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: AppSpacing.list,
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: entries.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {

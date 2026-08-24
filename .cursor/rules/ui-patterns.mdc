@@ -16,7 +16,7 @@ alwaysApply: true
 | `settings_page.dart` | `SettingsPage` | Settings tab |
 | `global_search_page.dart` | `SearchPage` | Full-screen global search |
 | `tajweed_guide_page.dart` | `TajweedGuidePage` | Full-screen tajweed colour legend & rules guide |
-| `app_shell.dart` | `AppShell` | Bottom nav shell (5 tabs) |
+| `app_shell.dart` | `AppShell` | Bottom nav shell (6 tabs) |
 
 ## Navigation
 
@@ -34,14 +34,14 @@ context.push('/search');
 ## Key Architecture Rules
 
 - **Cache futures in `initState()`** -- NEVER create futures inside `build()`. This causes re-fetching on every rebuild and UI flickering.
-- **Save last-read only once** -- Use a `_hasPersistedLastRead` flag. Saving inside `build()` triggers `notifyListeners()` which causes infinite rebuilds.
+- **Do not save last-read from `build()`** -- Use a `_hasPersistedLastRead` flag for the initial write. Scroll updates use a debounce and `notify: false` so the reader does not rebuild.
 - **Scroll-to only once** -- Use a `_hasScrolledToAyah` flag to prevent repeated scrolling on rebuilds.
 - Detail pages push full-screen via `parentNavigatorKey` (hides bottom nav)
 
 ## Scope Access
 
 - Font zoom: `SettingsScope.of(context).arabicZoom` / `.englishZoom`
-- Theme toggle: `AppScope.of(context).toggleTheme()`
+- Theme: `AppScope.of(context).setAppearance(...)`
 - Bookmarks: `BookmarkScope.of(context)`
 - Theme mode: `Theme.of(context).brightness`
 
@@ -49,10 +49,10 @@ context.push('/search');
 
 Both reader pages share these features:
 - **In-page search**: Search icon opens a text field that filters items within the current surah/book (NOT global search)
-- **Settings bottom sheet**: Gear icon opens `ReaderSettingsSheet` for live font size adjustment and theme toggle
+- **Settings bottom sheet**: Gear icon opens `ReaderSettingsSheet` for live font size, appearance, and show-translation
 - **Scroll scrubber**: Custom `ScrollScrubber` overlaid on the right edge, works with `ItemScrollController`/`ItemPositionsListener`
 - **Bookmarking**: Per-ayah (Quran) or per-hadith toggle
-- **Auto-save**: Last-read position saved once per visit
+- **Auto-save**: Last-read position saved on open and as you scroll (`notify: false`)
 
 ### Surah Reader specifics
 - **App bar:** Info (surah details), Quran Reading & Tajweed guide (book icon → `showQuranReadingGuideSheet()`), in-page search, settings
@@ -79,8 +79,11 @@ Each surah card: left = number badge + English name (and translation on some tab
 
 ## Hadith Page (Tab)
 
-- Shows ALL books from ALL collections in a single flat list
-- Grouped by collection with section headers (Forties, The Nine Books, Other Books)
+- Search bar always visible; collection chips (All / Forties / Nine Books / Other)
+- **Start here** row for the three 40-hadith collections when browsing All
+- Continue-reading banner when `lastReadHadith` exists
+- Compact numbered book rows (count, resume chip, bookmark, about sheet)
+- Summaries live in the about sheet (info icon / long-press), not on the card
 - Tapping a book opens HadithReaderPage
 
 ## Home Page

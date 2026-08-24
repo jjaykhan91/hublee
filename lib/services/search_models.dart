@@ -14,14 +14,18 @@ class QuranSearchHit {
   final int ayah;
   final String surahName;
 
-  /// Optional preview text from the matched ayah.
+  /// Optional preview text from the matched ayah (usually English).
   final String? snippet;
+
+  /// Optional Uthmani preview when the query matched Arabic.
+  final String? arabicSnippet;
 
   const QuranSearchHit({
     required this.surahId,
     required this.ayah,
     required this.surahName,
     this.snippet,
+    this.arabicSnippet,
   });
 }
 

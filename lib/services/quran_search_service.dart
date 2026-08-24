@@ -7,13 +7,14 @@ library;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../quran/quran_arabic_repository.dart';
+import '../quran/surah_ayah_parser.dart';
 import 'app_metrics.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/quran_translation_repository.dart';
 import 'search_models.dart';
 
 /// How many surahs to decode in parallel while building the index.
-const _kIndexBatchSize = 8;
+const _kIndexBatchSize = 24;
 
 /// Service that searches Quran ayahs by Arabic or English text.
 class QuranSearchService {
@@ -44,6 +45,11 @@ class QuranSearchService {
     _indexOwner = null;
   }
 
+  /// Builds the session index if needed. Safe to call from splash warmup.
+  Future<void> warmIndex() async {
+    await _ensureIndex();
+  }
+
   /// Searches all surahs for ayahs matching [query]. Returns up to [limit] hits.
   Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
     final trimmed = query.trim();
@@ -54,26 +60,57 @@ class QuranSearchService {
     final index = await _ensureIndex();
     final indexElapsed = indexWait.elapsed;
     final scan = Stopwatch()..start();
-    final hits = <QuranSearchHit>[];
+    final pending = <({_QuranIndexRow row, bool isJump, bool arabicMatch})>[];
 
-    for (final row in index) {
-      final isMatch =
-          row.arabic.contains(trimmed) || row.englishLower.contains(queryLower);
-      if (!isMatch) continue;
-
-      hits.add(
-        QuranSearchHit(
-          surahId: row.surahId,
-          ayah: row.ayah,
-          surahName: row.surahName,
-          snippet: _buildSnippet(row.english, queryLower, trimmed.length),
-        ),
-      );
-      if (hits.length >= limit) {
-        _recordQuery(scan.elapsed, indexElapsed, hits.length);
-        return hits;
+    final jump = tryParseSurahAyah(trimmed);
+    if (jump != null) {
+      for (final row in index) {
+        if (row.surahId != jump.surahId || row.ayah != jump.ayah) continue;
+        pending.add((row: row, isJump: true, arabicMatch: false));
+        break;
       }
     }
+
+    for (final row in index) {
+      if (jump != null &&
+          row.surahId == jump.surahId &&
+          row.ayah == jump.ayah) {
+        continue;
+      }
+      final arabicMatch = row.arabic.contains(trimmed);
+      final englishMatch = row.englishLower.contains(queryLower);
+      if (!arabicMatch && !englishMatch) continue;
+
+      pending.add((row: row, isJump: false, arabicMatch: arabicMatch));
+      if (pending.length >= limit) break;
+    }
+
+    final needUthmani = <int>{
+      for (final hit in pending)
+        if (hit.isJump || hit.arabicMatch) hit.row.surahId,
+    };
+    final uthmaniBySurah = <int, Map<String, String>>{};
+    if (needUthmani.isNotEmpty) {
+      await Future.wait(
+        needUthmani.map((id) async {
+          try {
+            uthmaniBySurah[id] = await _arabicRepo.loadUthmaniStandard(id);
+          } catch (_) {}
+        }),
+      );
+    }
+
+    final hits = [
+      for (final hit in pending)
+        _hitFromRow(
+          hit.row,
+          queryLower,
+          trimmed,
+          isJump: hit.isJump,
+          arabicMatch: hit.arabicMatch,
+          uthmani: uthmaniBySurah[hit.row.surahId]?['${hit.row.ayah}'],
+        ),
+    ];
     _recordQuery(scan.elapsed, indexElapsed, hits.length);
     return hits;
   }
@@ -97,6 +134,7 @@ class QuranSearchService {
   Future<List<_QuranIndexRow>> _buildIndex() {
     return AppMetrics.instance.time('search.quranIndex', () async {
       final chapters = await _chaptersRepo.loadChapters();
+      final emlaeyAll = await _arabicRepo.loadAllEmlaey();
       final rows = <_QuranIndexRow>[];
 
       for (var i = 0; i < chapters.length; i += _kIndexBatchSize) {
@@ -107,14 +145,10 @@ class QuranSearchService {
         final loaded = await Future.wait(
           batch.map((chapter) async {
             try {
-              final arabicAyahs = await _arabicRepo.loadArabicSurah(
-                chapter.id,
-                useGlyphText: false, // aya_text_emlaey — searchable Imla'i
-              );
               final englishAyahs = await _translationRepo.loadClearQuran(
                 chapter.id,
               );
-              return (chapter, arabicAyahs, englishAyahs);
+              return (chapter, englishAyahs);
             } catch (_) {
               return null;
             }
@@ -123,7 +157,8 @@ class QuranSearchService {
 
         for (final item in loaded) {
           if (item == null) continue;
-          final (chapter, arabicAyahs, englishAyahs) = item;
+          final (chapter, englishAyahs) = item;
+          final arabicAyahs = emlaeyAll[chapter.id] ?? const <String, String>{};
           for (var ayahNum = 1; ayahNum <= chapter.versesCount; ayahNum++) {
             final key = '$ayahNum';
             final english = englishAyahs[key] ?? '';
@@ -139,6 +174,8 @@ class QuranSearchService {
             );
           }
         }
+        // Let a frame run so splash/onboarding stay responsive.
+        await Future<void>.delayed(Duration.zero);
       }
       return rows;
     });
@@ -160,6 +197,39 @@ class QuranSearchService {
       return snippet;
     }
     return text;
+  }
+
+  static QuranSearchHit _hitFromRow(
+    _QuranIndexRow row,
+    String queryLower,
+    String trimmed, {
+    bool isJump = false,
+    bool arabicMatch = false,
+    String? uthmani,
+  }) {
+    return QuranSearchHit(
+      surahId: row.surahId,
+      ayah: row.ayah,
+      surahName: row.surahName,
+      snippet: isJump || row.english.isNotEmpty
+          ? _buildSnippet(row.english, queryLower, trimmed.length)
+          : null,
+      arabicSnippet: (isJump || arabicMatch)
+          ? _arabicSnippet(uthmani ?? '')
+          : null,
+    );
+  }
+
+  /// Truncates Uthmani text at a word boundary. Never used for search
+  /// matching — [arabic] (emlaey) is the index field.
+  static String? _arabicSnippet(String uthmani) {
+    final trimmed = uthmani.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.length <= 120) return trimmed;
+    final cut = trimmed.substring(0, 120);
+    final lastSpace = cut.lastIndexOf(' ');
+    final body = lastSpace > 40 ? cut.substring(0, lastSpace) : cut;
+    return '$body\u2026';
   }
 }
 

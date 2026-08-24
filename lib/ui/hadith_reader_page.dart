@@ -5,6 +5,8 @@
 /// toggle. Supports scroll-to-index, chapter jump, and in-book search.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -13,11 +15,14 @@ import '../hadith/hadith_repository.dart';
 import '../services/settings_scope.dart';
 import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
+import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/hadith_chapter_sheet.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
+import 'widgets/passage_actions.dart';
+import 'widgets/reading_width.dart';
 
 /// Loads and renders all hadiths within a single book.
 class HadithReaderPage extends StatefulWidget {
@@ -58,6 +63,11 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   /// Ensures scroll-to-index fires only once.
   bool _hasScrolledToIndex = false;
 
+  Timer? _lastReadTimer;
+  BookmarkService? _bookmarks;
+  String? _bookTitle;
+  int? _visibleIndex;
+
   // ── In-book search state ───────────────────────────────────
   bool _isSearching = false;
   String _searchQuery = '';
@@ -71,10 +81,52 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       widget.collectionId,
       widget.bookFile,
     );
+    _positionsListener.itemPositions.addListener(_onScrollPositions);
+  }
+
+  void _onScrollPositions() {
+    if (!mounted || _isSearching || _bookTitle == null) return;
+    final positions = _positionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+    final visible = positions.where(
+      (position) =>
+          position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1,
+    );
+    if (visible.isEmpty) return;
+    final top = visible.reduce(
+      (a, b) => a.itemLeadingEdge < b.itemLeadingEdge ? a : b,
+    );
+    if (_visibleIndex == top.index) return;
+    _visibleIndex = top.index;
+    _lastReadTimer?.cancel();
+    _lastReadTimer = Timer(const Duration(milliseconds: 400), () {
+      final index = _visibleIndex;
+      final title = _bookTitle;
+      if (index == null || title == null) return;
+      _bookmarks?.saveLastReadHadith(
+        collectionId: widget.collectionId,
+        bookFile: widget.bookFile,
+        bookTitle: title,
+        hadithIndex: index,
+        notify: false,
+      );
+    });
   }
 
   @override
   void dispose() {
+    _positionsListener.itemPositions.removeListener(_onScrollPositions);
+    _lastReadTimer?.cancel();
+    final title = _bookTitle;
+    final index = _visibleIndex ?? widget.scrollToIndex ?? 0;
+    if (title != null) {
+      _bookmarks?.saveLastReadHadith(
+        collectionId: widget.collectionId,
+        bookFile: widget.bookFile,
+        bookTitle: title,
+        hadithIndex: index,
+      );
+    }
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -131,35 +183,37 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
           appBar: _isSearching
               ? _buildSearchAppBar(context)
               : _buildNormalAppBar(context, book),
-          body: () {
-            if (isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (errorMessage != null) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $errorMessage'),
+          body: ConstrainedReadingBody(
+            child: () {
+              if (isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (errorMessage != null) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Error: $errorMessage'),
+                );
+              }
+
+              if (_isSearching && _searchQuery.isNotEmpty) {
+                return _buildSearchResults(context, book!);
+              }
+
+              final loadedBook = book!;
+              return Stack(
+                children: [
+                  _buildHadithList(context, loadedBook),
+                  ScrollScrubber(
+                    itemCount: loadedBook.hadiths.length,
+                    labelBuilder: (index) =>
+                        'Hadith ${index + 1} of ${loadedBook.hadiths.length}',
+                    scrollController: _scrollController,
+                    positionsListener: _positionsListener,
+                  ),
+                ],
               );
-            }
-
-            if (_isSearching && _searchQuery.isNotEmpty) {
-              return _buildSearchResults(context, book!);
-            }
-
-            final loadedBook = book!;
-            return Stack(
-              children: [
-                _buildHadithList(context, loadedBook),
-                ScrollScrubber(
-                  itemCount: loadedBook.hadiths.length,
-                  labelBuilder: (index) =>
-                      'Hadith ${index + 1} of ${loadedBook.hadiths.length}',
-                  scrollController: _scrollController,
-                  positionsListener: _positionsListener,
-                ),
-              ],
-            );
-          }(),
+            }(),
+          ),
         );
       },
     );
@@ -327,6 +381,8 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                     ),
                   );
                 },
+                bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+                showTranslation: settings.showTranslation,
               );
             },
           ),
@@ -338,17 +394,20 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   /// Builds the scrollable hadith list with auto-scroll support.
   Widget _buildHadithList(BuildContext context, HadithBook book) {
     final hadiths = book.hadiths;
+    _bookTitle = book.title.isNotEmpty ? book.title : widget.title;
+    _visibleIndex ??= widget.scrollToIndex ?? 0;
+    _bookmarks = BookmarkScope.of(context);
 
-    // Persist last-read position only once.
     if (!_hasPersistedLastRead) {
       _hasPersistedLastRead = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        BookmarkScope.of(context).saveLastReadHadith(
+        _bookmarks?.saveLastReadHadith(
           collectionId: widget.collectionId,
           bookFile: widget.bookFile,
-          bookTitle: book.title.isNotEmpty ? book.title : widget.title,
-          hadithIndex: widget.scrollToIndex ?? 0,
+          bookTitle: _bookTitle!,
+          hadithIndex: _visibleIndex ?? 0,
+          notify: false,
         );
       });
     }
@@ -378,6 +437,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
+      minCacheExtent: AppSpacing.cacheExtent,
       itemCount: hadiths.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -390,33 +450,37 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             ? chapterById(book.chapters, hadith.chapterId)
             : null;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (chapter != null) _HadithChapterDivider(chapter: chapter),
-            _HadithCard(
-              hadith: hadith,
-              displayIndex: index + 1,
-              colorScheme: colorScheme,
-              arabicZoom: settings.arabicZoom,
-              englishZoom: settings.englishZoom,
-              isBookmarked: isBookmarked,
-              onBookmarkToggle: () {
-                AppHaptics.lightImpact();
-                bookmarkService.toggleBookmark(
-                  Bookmark.hadith(
-                    collectionId: widget.collectionId,
-                    bookFile: widget.bookFile,
-                    bookTitle: book.title.isNotEmpty
-                        ? book.title
-                        : widget.title,
-                    hadithIndex: index,
-                    snippet: hadith.english,
-                  ),
-                );
-              },
-            ),
-          ],
+        return RepaintBoundary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (chapter != null) _HadithChapterDivider(chapter: chapter),
+              _HadithCard(
+                hadith: hadith,
+                displayIndex: index + 1,
+                colorScheme: colorScheme,
+                arabicZoom: settings.arabicZoom,
+                englishZoom: settings.englishZoom,
+                isBookmarked: isBookmarked,
+                onBookmarkToggle: () {
+                  AppHaptics.lightImpact();
+                  bookmarkService.toggleBookmark(
+                    Bookmark.hadith(
+                      collectionId: widget.collectionId,
+                      bookFile: widget.bookFile,
+                      bookTitle: book.title.isNotEmpty
+                          ? book.title
+                          : widget.title,
+                      hadithIndex: index,
+                      snippet: hadith.english,
+                    ),
+                  );
+                },
+                bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+                showTranslation: settings.showTranslation,
+              ),
+            ],
+          ),
         );
       },
     );
@@ -477,6 +541,8 @@ class _HadithCard extends StatelessWidget {
   final double englishZoom;
   final bool isBookmarked;
   final VoidCallback onBookmarkToggle;
+  final String bookTitle;
+  final bool showTranslation;
 
   const _HadithCard({
     required this.hadith,
@@ -486,98 +552,111 @@ class _HadithCard extends StatelessWidget {
     required this.englishZoom,
     required this.isBookmarked,
     required this.onBookmarkToggle,
+    required this.bookTitle,
+    required this.showTranslation,
   });
+
+  String get _reference => '$bookTitle, Hadith $displayIndex';
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header: hadith number badge + bookmark icon
-            Row(
-              children: [
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () => showPassageActionsSheet(
+          context,
+          reference: _reference,
+          arabic: hadith.arabic,
+          english: hadith.english,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Hadith $displayIndex'
+                      '${hadith.idInBook != null ? ' \u2022 #${hadith.idInBook}' : ''}',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  PassageActionsButton(
+                    reference: _reference,
+                    arabic: hadith.arabic,
+                    english: hadith.english,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isBookmarked
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_outline_rounded,
+                      color: isBookmarked
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.3),
+                      size: 22,
+                    ),
+                    onPressed: onBookmarkToggle,
+                    tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (hadith.narrator?.isNotEmpty == true) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 4,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    color: colorScheme.secondaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Hadith $displayIndex'
-                    '${hadith.idInBook != null ? ' \u2022 #${hadith.idInBook}' : ''}',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
+                    hadith.narrator!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(
-                    isBookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_outline_rounded,
-                    color: isBookmarked
-                        ? colorScheme.primary
-                        : colorScheme.onSurface.withValues(alpha: 0.3),
-                    size: 22,
-                  ),
-                  onPressed: onBookmarkToggle,
-                  tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
-                ),
+                const SizedBox(height: 10),
               ],
-            ),
-            const SizedBox(height: 10),
-
-            // Narrator (isnad) label
-            if (hadith.narrator?.isNotEmpty == true) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+              if (hadith.arabic?.isNotEmpty == true)
+                ArabicText(
+                  hadith.arabic!,
+                  fontSize: 34 * arabicZoom,
+                  weight: FontWeight.w800,
+                  tajweed: false,
                 ),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  hadith.narrator!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+              if (hadith.arabic?.isNotEmpty == true) const SizedBox(height: 14),
+              if (showTranslation && hadith.english?.isNotEmpty == true)
+                Text(
+                  hadith.english!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 15 * englishZoom,
+                    height: 1.5,
+                    color: colorScheme.onSurface.withValues(alpha: 0.85),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
             ],
-
-            // Arabic text (no tajweed for hadith)
-            if (hadith.arabic?.isNotEmpty == true)
-              ArabicText(
-                hadith.arabic!,
-                fontSize: 34 * arabicZoom,
-                weight: FontWeight.w800,
-                tajweed: false,
-              ),
-            if (hadith.arabic?.isNotEmpty == true) const SizedBox(height: 14),
-
-            // English translation
-            if (hadith.english?.isNotEmpty == true)
-              Text(
-                hadith.english!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 15 * englishZoom,
-                  height: 1.5,
-                  color: colorScheme.onSurface.withValues(alpha: 0.85),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

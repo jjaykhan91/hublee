@@ -13,6 +13,7 @@ import '../../services/settings_scope.dart';
 import '../../services/app_scope.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
+import 'appearance_chips.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -38,8 +39,8 @@ class _ReaderSettingsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = SettingsScope.of(context);
+    final appearance = AppScope.of(context).appearance;
 
     return Container(
       decoration: BoxDecoration(
@@ -106,24 +107,38 @@ class _ReaderSettingsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // Theme toggle
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Theme',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 8),
+          AppearanceChips(
+            value: appearance,
+            onChanged: (value) => AppScope.of(context).setAppearance(value),
+          ),
+          const SizedBox(height: 8),
           _SettingRow(
-            icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-            label: isDark ? 'Moon Mode' : 'Sun Mode',
+            icon: Icons.translate_rounded,
+            label: 'Show translation',
             trailing: Semantics(
-              label: isDark ? 'Moon Mode' : 'Sun Mode',
-              toggled: isDark,
+              label: 'Show translation',
+              toggled: settings.showTranslation,
               child: Switch(
-                value: isDark,
-                onChanged: (_) {
+                value: settings.showTranslation,
+                onChanged: (value) {
                   AppHaptics.selection();
-                  AppScope.of(context).toggleTheme();
+                  settings.showTranslation = value;
                 },
               ),
             ),
             onTap: () {
               AppHaptics.selection();
-              AppScope.of(context).toggleTheme();
+              settings.showTranslation = !settings.showTranslation;
             },
             colorScheme: colorScheme,
           ),

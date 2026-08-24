@@ -45,16 +45,42 @@ void main() {
       HadithRepository.resetCache();
     });
 
-    testWidgets('lists collection headers and Nawawi 40', (tester) async {
+    testWidgets('lists collections, search, and Start here', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HadithPage()));
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 100));
         if (find.text('Forties').evaluate().isNotEmpty) break;
       }
 
-      expect(find.text('Forties'), findsOneWidget);
+      expect(find.text('Forties'), findsWidgets);
       expect(find.text('The Forty Hadith of Imam Nawawi'), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Start here'), findsOneWidget);
+      expect(find.text('Nawawi'), findsOneWidget);
+      expect(find.byType(SearchBar), findsOneWidget);
+      expect(find.byType(ListView), findsWidgets);
+
+      await tester.enterText(find.byType(SearchBar), 'Bukhari');
+      await tester.pump();
+      expect(find.text('Sahih al-Bukhari'), findsOneWidget);
+      expect(find.text('The Forty Hadith of Imam Nawawi'), findsNothing);
+      expect(find.text('Start here'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('collection chip filters the catalog', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HadithPage()));
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.text('Forties').evaluate().isNotEmpty) break;
+      }
+
+      await tester.tap(find.widgetWithText(FilterChip, 'The Nine Books'));
+      await tester.pump();
+      expect(find.text('Sahih al-Bukhari'), findsOneWidget);
+      expect(find.text('The Forty Hadith of Imam Nawawi'), findsNothing);
+      expect(find.text('Start here'), findsNothing);
 
       await tester.pump(const Duration(seconds: 2));
     });

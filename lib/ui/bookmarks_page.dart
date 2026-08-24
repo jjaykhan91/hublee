@@ -130,6 +130,8 @@ class BookmarksPage extends StatelessWidget {
   ) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: bookmarks.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
@@ -240,6 +242,8 @@ class BookmarksPage extends StatelessWidget {
     final entries = vocab.entries;
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
       itemCount: entries.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {

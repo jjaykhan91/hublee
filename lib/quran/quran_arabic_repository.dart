@@ -65,6 +65,28 @@ class QuranArabicRepository {
     return ayahMap;
   }
 
+  /// Walks the mushaf once and returns Imla'i text for every surah.
+  ///
+  /// Search used to call [loadArabicSurah] 114 times, each of which
+  /// scanned all 6,236 rows. One pass fills [_emlaeyCache] so later
+  /// per-surah loads hit memory.
+  Future<Map<int, Map<String, String>>> loadAllEmlaey() async {
+    if (_emlaeyCache.length >= 114) {
+      return _emlaeyCache;
+    }
+    final rows = await _loadMushafRows();
+    for (final row in rows) {
+      if (row is! Map) continue;
+      final surahId = _asInt(row['sura_no']);
+      final ayahNumber = _asInt(row['aya_no']);
+      if (surahId == null || ayahNumber == null) continue;
+      final text = (row['aya_text_emlaey'] as String?)?.trim();
+      if (text == null || text.isEmpty) continue;
+      (_emlaeyCache[surahId] ??= <String, String>{})['$ayahNumber'] = text;
+    }
+    return _emlaeyCache;
+  }
+
   /// Loads standard Uthmanic Arabic text (full tashkeel, standard
   /// Unicode) from the per-surah JSON files in `assets/quran/ar/`.
   ///
@@ -113,4 +135,10 @@ class QuranArabicRepository {
     _emlaeyCache.clear();
     _uthmaniCache.clear();
   }
+}
+
+int? _asInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return null;
 }

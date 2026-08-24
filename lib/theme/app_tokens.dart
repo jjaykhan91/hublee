@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 // ── Fonts ────────────────────────────────────────────────────────
 
@@ -86,6 +87,14 @@ abstract final class AppSpacing {
 
   /// Small gap between related items.
   static const double itemGap = 12.0;
+
+  /// Extra pixels of list to build off-screen for smoother flings.
+  static const double cacheExtent = 480;
+
+  /// [ListView.scrollCacheExtent] for catalog, search, and dictionary lists.
+  static const ScrollCacheExtent listCache = ScrollCacheExtent.pixels(
+    cacheExtent,
+  );
 
   /// Minimum tappable size (Material accessibility guideline).
   static const double minTouchTarget = 48.0;

@@ -277,3 +277,50 @@ ThemeData buildDarkTheme() {
     extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
   );
 }
+
+/// Warm paper/sepia [ThemeData] for long reading sessions.
+ThemeData buildPaperTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF8B5E34),
+    brightness: Brightness.light,
+    surface: const Color(0xFFFBF6EC),
+  );
+  final base = ThemeData.light(useMaterial3: true);
+  final textTheme = _addArabicFontFallback(
+    _applyReadingLineHeightToTextTheme(base.textTheme),
+  );
+
+  return base.copyWith(
+    colorScheme: scheme,
+    textTheme: textTheme,
+    scaffoldBackgroundColor: const Color(0xFFF3E6C9),
+    cardTheme: CardThemeData(
+      color: const Color(0xFFFBF6EC),
+      surfaceTintColor: Colors.transparent,
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: const Color(0xFFF3E6C9),
+      foregroundColor: scheme.onSurface,
+      elevation: 0,
+      scrolledUnderElevation: 1,
+      centerTitle: true,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: scheme.onSurface,
+      ),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(
+      elevation: 8,
+      backgroundColor: Color(0xFFF3E6C9),
+      height: 68,
+    ),
+    pageTransitionsTheme: _pageTransitionsTheme,
+    extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
+  );
+}

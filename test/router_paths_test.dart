@@ -16,6 +16,7 @@ void main() {
       expect(AppRoute.bookmarks, '/bookmarks');
       expect(AppRoute.settings, '/settings');
       expect(AppRoute.search, '/search');
+      expect(AppRoute.onboarding, '/onboarding');
       expect(AppRoute.tajweedGuide, '/tajweed-guide');
       expect(AppRoute.diagnostics, '/diagnostics');
       expect(AppRoute.dictionary, '/dictionary');

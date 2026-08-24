@@ -18,12 +18,18 @@ import 'package:hublee/services/search_models.dart';
 
 class _EmptyQuranSearch extends QuranSearchService {
   @override
+  Future<void> warmIndex() async {}
+
+  @override
   Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
     return const [];
   }
 }
 
 class _EmptyHadithSearch extends HadithSearchService {
+  @override
+  Future<void> warmIndex() async {}
+
   @override
   Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
     return const [];
