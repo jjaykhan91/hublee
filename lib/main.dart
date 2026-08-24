@@ -19,6 +19,8 @@ import 'services/vocab_service.dart';
 import 'services/vocab_scope.dart';
 import 'services/srs_service.dart';
 import 'services/srs_scope.dart';
+import 'services/recitation_service.dart';
+import 'services/recitation_scope.dart';
 import 'services/app_metrics.dart';
 import 'services/launch_preload.dart';
 import 'router.dart';
@@ -46,6 +48,7 @@ class _HubleeAppState extends State<HubleeApp> {
   final _bookmarkService = BookmarkService();
   final _vocabService = VocabService();
   final _srsService = SrsService();
+  final _recitationService = RecitationService();
 
   AppAppearance _appearance = AppAppearance.system;
   bool _overlayEnabled = false;
@@ -87,6 +90,7 @@ class _HubleeAppState extends State<HubleeApp> {
     _settingsController.dispose();
     _vocabService.dispose();
     _srsService.dispose();
+    _recitationService.dispose();
     super.dispose();
   }
 
@@ -107,33 +111,36 @@ class _HubleeAppState extends State<HubleeApp> {
           service: _vocabService,
           child: SrsScope(
             service: _srsService,
-            child: AppScope(
-              appearance: _appearance,
-              setAppearance: _setAppearance,
-              child: MaterialApp.router(
-                title: 'Hublee',
-                debugShowCheckedModeBanner: false,
-                showPerformanceOverlay: _overlayEnabled,
-                theme: _appearance == AppAppearance.paper
-                    ? buildPaperTheme()
-                    : buildLightTheme(),
-                darkTheme: buildDarkTheme(),
-                themeMode: _appearance.themeMode,
-                routerConfig: appRouter,
-                builder: (context, child) {
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      child ?? const SizedBox.shrink(),
-                      if (!kReleaseMode)
-                        const Positioned(
-                          left: 8,
-                          bottom: 88,
-                          child: MetricsHud(),
-                        ),
-                    ],
-                  );
-                },
+            child: RecitationScope(
+              service: _recitationService,
+              child: AppScope(
+                appearance: _appearance,
+                setAppearance: _setAppearance,
+                child: MaterialApp.router(
+                  title: 'Hublee',
+                  debugShowCheckedModeBanner: false,
+                  showPerformanceOverlay: _overlayEnabled,
+                  theme: _appearance == AppAppearance.paper
+                      ? buildPaperTheme()
+                      : buildLightTheme(),
+                  darkTheme: buildDarkTheme(),
+                  themeMode: _appearance.themeMode,
+                  routerConfig: appRouter,
+                  builder: (context, child) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        child ?? const SizedBox.shrink(),
+                        if (!kReleaseMode)
+                          const Positioned(
+                            left: 8,
+                            bottom: 88,
+                            child: MetricsHud(),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),

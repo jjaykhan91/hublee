@@ -21,8 +21,8 @@ class _EmptyQuranSearch extends QuranSearchService {
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<QuranSearchHit>> search(String query, {int limit = 150}) async {
-    return const [];
+  Future<QuranSearchResult> search(String query, {int limit = 150}) async {
+    return const QuranSearchResult();
   }
 }
 
@@ -31,8 +31,8 @@ class _EmptyHadithSearch extends HadithSearchService {
   Future<void> warmIndex() async {}
 
   @override
-  Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
-    return const [];
+  Future<HadithSearchResult> search(String query, {int limit = 100}) async {
+    return const HadithSearchResult();
   }
 }
 

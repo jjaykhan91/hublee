@@ -383,7 +383,9 @@ class SettingsPage extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         'Verse translation: ClearQuran. Arabic script: KFGQPC '
-                        'Hafs and Uthmani text.',
+                        'Hafs and Uthmani text. Recitation: Mishary Rashid '
+                        'Alafasy via Quran.com (streams when a connection is '
+                        'available; audio is not stored on this device).',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.65),
                           height: 1.5,

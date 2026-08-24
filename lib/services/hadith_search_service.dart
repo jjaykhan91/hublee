@@ -18,7 +18,7 @@ class HadithSearchService {
   Future<void> warmIndex() => _repo.warmSearchIndex();
 
   /// Searches all hadith collections for [query]. Returns up to [limit] hits.
-  Future<List<HadithSearchHit>> search(String query, {int limit = 100}) async {
+  Future<HadithSearchResult> search(String query, {int limit = 100}) async {
     return _repo.searchHadith(query, limit: limit);
   }
 }

@@ -182,7 +182,7 @@ class BookmarksPage extends StatelessWidget {
                   title: Text(
                     isQuran
                         ? '${bookmark.surahName} - Ayah ${bookmark.ayah}'
-                        : '${bookmark.bookTitle}',
+                        : _hadithTitle(bookmark),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -328,6 +328,15 @@ class BookmarksPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _hadithTitle(Bookmark bookmark) {
+    final book = bookmark.bookTitle ?? 'Hadith';
+    if (bookmark.idInBook != null) return '$book · #${bookmark.idInBook}';
+    if (bookmark.hadithIndex != null) {
+      return '$book · Hadith ${bookmark.hadithIndex! + 1}';
+    }
+    return book;
   }
 
   /// Routes the user to the bookmarked ayah or hadith.

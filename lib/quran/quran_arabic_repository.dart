@@ -65,6 +65,34 @@ class QuranArabicRepository {
     return ayahMap;
   }
 
+  /// Number of ayah rows in the bundled mushaf (6,236).
+  Future<int> mushafAyahCount() async => (await _loadMushafRows()).length;
+
+  /// Glyph text and identifiers for mushaf row [index].
+  ///
+  /// Daily verse uses this so Home shares the same decode as search warmup.
+  Future<MushafAyah> loadMushafAyahAt(int index) async {
+    final rows = await _loadMushafRows();
+    if (index < 0 || index >= rows.length) {
+      throw RangeError.index(index, rows, 'mushaf');
+    }
+    final row = rows[index];
+    if (row is! Map) {
+      throw const FormatException('Mushaf row must be a Map');
+    }
+    final surahId = _asInt(row['sura_no']);
+    final ayah = _asInt(row['aya_no']);
+    if (surahId == null || ayah == null) {
+      throw const FormatException('Mushaf row is missing sura_no or aya_no');
+    }
+    return MushafAyah(
+      surahId: surahId,
+      ayah: ayah,
+      surahName: (row['sura_name_en'] as String? ?? '').trim(),
+      glyphText: (row['aya_text'] as String?) ?? '',
+    );
+  }
+
   /// Walks the mushaf once and returns Imla'i text for every surah.
   ///
   /// Search used to call [loadArabicSurah] 114 times, each of which
@@ -141,4 +169,19 @@ int? _asInt(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return null;
+}
+
+/// One ayah from the bundled mushaf, used by daily verse.
+class MushafAyah {
+  const MushafAyah({
+    required this.surahId,
+    required this.ayah,
+    required this.surahName,
+    required this.glyphText,
+  });
+
+  final int surahId;
+  final int ayah;
+  final String surahName;
+  final String glyphText;
 }

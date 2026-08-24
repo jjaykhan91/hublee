@@ -16,7 +16,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/asset_paths.dart';
+import '../quran/arabic_fold.dart';
 import '../services/app_metrics.dart';
+import '../services/search_match.dart';
 import '../services/search_models.dart';
 
 // ────────────────────────────────────────────────────────────────
@@ -271,37 +273,52 @@ extension HadithSearchExtension on HadithRepository {
 
   /// Searches all hadith text (English and Arabic) for [query].
   ///
-  /// Returns up to [limit] matching [HadithSearchHit] results.
-  /// The search is case-insensitive for English text and exact
-  /// for Arabic text. The first call builds a session index.
-  Future<List<HadithSearchHit>> searchHadith(
+  /// Returns up to [limit] matching [HadithSearchHit] results, ranked so
+  /// an exact English word beats a substring. The first call builds a
+  /// session index.
+  Future<HadithSearchResult> searchHadith(
     String query, {
     int limit = 100,
   }) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return [];
+    if (trimmed.isEmpty) return const HadithSearchResult();
     final queryLower = trimmed.toLowerCase();
+    final foldedQuery = foldArabicForSearch(trimmed);
 
     final index = await _ensureSearchIndex();
-    final hits = <HadithSearchHit>[];
+    final pending = <({_HadithIndexRow row, int score})>[];
 
     for (final row in index) {
-      final isMatch =
-          row.englishLower.contains(queryLower) || row.arabic.contains(trimmed);
-      if (!isMatch) continue;
-
-      hits.add(
-        HadithSearchHit(
-          collectionId: row.collectionId,
-          bookFile: row.bookFile,
-          bookTitle: row.bookTitle,
-          hadithIndex: row.hadithIndex,
-          snippet: _hadithSnippet(row.english, row.englishLower, queryLower),
-        ),
-      );
-      if (hits.length >= limit) return hits;
+      final arabicMatch =
+          foldedQuery.isNotEmpty && row.arabicFold.contains(foldedQuery);
+      final englishMatch = row.englishLower.contains(queryLower);
+      if (!arabicMatch && !englishMatch) continue;
+      final score = englishExactWordMatch(row.englishLower, queryLower) ? 1 : 2;
+      pending.add((row: row, score: score));
     }
-    return hits;
+
+    pending.sort((a, b) {
+      final byScore = a.score.compareTo(b.score);
+      if (byScore != 0) return byScore;
+      return a.row.hadithIndex.compareTo(b.row.hadithIndex);
+    });
+
+    final hits = [
+      for (final item in pending.take(limit))
+        HadithSearchHit(
+          collectionId: item.row.collectionId,
+          bookFile: item.row.bookFile,
+          bookTitle: item.row.bookTitle,
+          hadithIndex: item.row.hadithIndex,
+          idInBook: item.row.idInBook,
+          snippet: _hadithSnippet(
+            item.row.english,
+            item.row.englishLower,
+            queryLower,
+          ),
+        ),
+    ];
+    return HadithSearchResult(hits: hits, totalCount: pending.length);
   }
 
   Future<List<_HadithIndexRow>> _ensureSearchIndex() {
@@ -352,7 +369,9 @@ extension HadithSearchExtension on HadithRepository {
                 bookFile: bookMeta.file,
                 bookTitle: bookTitle,
                 hadithIndex: index,
+                idInBook: hadith.idInBook,
                 arabic: hadith.arabic ?? '',
+                arabicFold: foldArabicForSearch(hadith.arabic ?? ''),
                 english: english,
                 englishLower: english.toLowerCase(),
               ),
@@ -385,7 +404,9 @@ class _HadithIndexRow {
     required this.bookFile,
     required this.bookTitle,
     required this.hadithIndex,
+    this.idInBook,
     required this.arabic,
+    required this.arabicFold,
     required this.english,
     required this.englishLower,
   });
@@ -394,7 +415,9 @@ class _HadithIndexRow {
   final String bookFile;
   final String bookTitle;
   final int hadithIndex;
+  final int? idInBook;
   final String arabic;
+  final String arabicFold;
   final String english;
   final String englishLower;
 }

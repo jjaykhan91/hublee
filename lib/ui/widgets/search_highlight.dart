@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../quran/arabic_fold.dart';
+
 /// Letters, numbers, and combining marks (tashkeel) count as part of a word
 /// so a match is not split from its diacritics.
 final _wordChar = RegExp(r'[\p{L}\p{N}\p{M}]', unicode: true);
@@ -26,21 +28,21 @@ List<HighlightSegment> splitQueryHighlights(String text, String query) {
         : [(text: text, match: false)];
   }
 
-  final folded = _foldWithMap(text);
+  final folded = foldArabicWithMap(text);
   if (folded.text.isEmpty) return [(text: text, match: false)];
 
   final ranges = <({int start, int end})>[];
   for (final term in terms) {
-    final needle = _foldWithMap(term).text;
+    final needle = foldArabicWithMap(term).text;
     if (needle.isEmpty) continue;
     var from = 0;
     while (from < folded.text.length) {
       final index = folded.text.indexOf(needle, from);
       if (index < 0) break;
-      var start = folded.orig[index];
+      var start = folded.sourceOffsets[index];
       final lastFolded = index + needle.length - 1;
-      var end = lastFolded + 1 < folded.orig.length
-          ? folded.orig[lastFolded + 1]
+      var end = lastFolded + 1 < folded.sourceOffsets.length
+          ? folded.sourceOffsets[lastFolded + 1]
           : text.length;
       while (start > 0 && _isWordCharAt(text, start - 1)) {
         start--;
@@ -82,53 +84,6 @@ List<HighlightSegment> splitQueryHighlights(String text, String query) {
     parts.add((text: text.substring(cursor), match: false));
   }
   return parts;
-}
-
-class _Folded {
-  const _Folded(this.text, this.orig);
-
-  final String text;
-
-  /// `orig[i]` is the start offset in the source of folded character [i].
-  final List<int> orig;
-}
-
-/// Lowercases, drops tashkeel/tatweel, and folds alef variants so
-/// `ٱللَّهِ` matches `الله`. [orig] maps each folded character back.
-_Folded _foldWithMap(String input) {
-  final buffer = StringBuffer();
-  final orig = <int>[];
-  var offset = 0;
-  for (final rune in input.runes) {
-    final raw = String.fromCharCode(rune);
-    final length = raw.length;
-    if (_skipForMatch(rune)) {
-      offset += length;
-      continue;
-    }
-    final mapped = _foldAlef(rune);
-    final lower = String.fromCharCode(mapped).toLowerCase();
-    for (var i = 0; i < lower.length; i++) {
-      buffer.write(lower[i]);
-      orig.add(offset);
-    }
-    offset += length;
-  }
-  return _Folded(buffer.toString(), orig);
-}
-
-bool _skipForMatch(int rune) {
-  if (rune >= 0x064B && rune <= 0x065F) return true;
-  if (rune == 0x0670 || rune == 0x0640) return true;
-  if (rune >= 0x06D6 && rune <= 0x06ED) return true;
-  return false;
-}
-
-int _foldAlef(int rune) {
-  if (rune == 0x0622 || rune == 0x0623 || rune == 0x0625 || rune == 0x0671) {
-    return 0x0627;
-  }
-  return rune;
 }
 
 bool _isWordCharAt(String text, int index) {

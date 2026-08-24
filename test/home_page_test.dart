@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hublee/hadith/hadith_repository.dart';
+import 'package:hublee/quran/quran_arabic_repository.dart';
 import 'package:hublee/quran/quran_translation_repository.dart';
 import 'package:hublee/services/bookmark_scope.dart';
 import 'package:hublee/services/bookmark_service.dart';
@@ -21,6 +22,7 @@ void main() {
     DailyContentService.resetCache();
     HadithRepository.resetCache();
     QuranTranslationRepository.resetCache();
+    QuranArabicRepository.resetCache();
     rootBundle.clear();
   });
 
