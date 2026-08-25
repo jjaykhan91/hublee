@@ -4,4 +4,13 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <application>
+        <!-- Impeller + OpenGLES on Windows Android emulators can crash the emulator or drop the
+             debug connection ("Lost connection to device"). Skia backend is stable here. See:
+             https://github.com/flutter/flutter/issues/183362
+             Release / Play builds keep Impeller (this overlay applies to debug only). -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+    </application>
 </manifest>

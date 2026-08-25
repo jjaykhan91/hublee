@@ -24,6 +24,7 @@ import 'ui/splash_page.dart';
 import 'ui/onboarding_page.dart';
 import 'ui/route_error_page.dart';
 import 'ui/diagnostics_page.dart';
+import 'ui/privacy_policy_page.dart';
 import 'ui/dictionary_page.dart';
 import 'ui/learn_page.dart';
 import 'ui/learn_hub_page.dart';
@@ -197,6 +198,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoute.diagnostics,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const DiagnosticsPage(),
+    ),
+    GoRoute(
+      path: AppRoute.privacy,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const PrivacyPolicyPage(),
     ),
     GoRoute(
       path: AppRoute.dictionary,

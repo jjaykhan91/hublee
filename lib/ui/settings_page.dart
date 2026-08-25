@@ -393,6 +393,17 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          Icons.privacy_tip_outlined,
+                          color: colorScheme.primary,
+                        ),
+                        title: const Text('Privacy policy'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push(AppRoute.privacy),
+                      ),
+                      const SizedBox(height: 12),
                       const _AppVersionLabel(),
                     ],
                   ),

@@ -55,6 +55,7 @@ dart format lib test     # format code
 | Doc | Contents |
 |-----|----------|
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Open project, load deps, run, test, troubleshoot |
+| [docs/PLAY_STORE.md](docs/PLAY_STORE.md) | Google Play listing, signing, Data safety |
 | [docs/GITHUB.md](docs/GITHUB.md) | Git identity, SSH, `gh` CLI, push/PR workflow |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, navigation, adding pages & hadith collections |
 | [.cursor/rules/](.cursor/rules/) | Quran/Hadith UI rules, theming, coding standards |
