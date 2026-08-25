@@ -21,6 +21,8 @@ import 'services/srs_service.dart';
 import 'services/srs_scope.dart';
 import 'services/recitation_service.dart';
 import 'services/recitation_scope.dart';
+import 'services/recitation_cache.dart';
+import 'services/recitation_cache_factory.dart';
 import 'services/app_metrics.dart';
 import 'services/launch_preload.dart';
 import 'router.dart';
@@ -48,7 +50,9 @@ class _HubleeAppState extends State<HubleeApp> {
   final _bookmarkService = BookmarkService();
   final _vocabService = VocabService();
   final _srsService = SrsService();
-  final _recitationService = RecitationService();
+  final _recitationService = RecitationService(
+    cache: kIsWeb ? const NoopRecitationCache() : createRecitationCache(),
+  );
 
   AppAppearance _appearance = AppAppearance.system;
   bool _overlayEnabled = false;
@@ -63,6 +67,7 @@ class _HubleeAppState extends State<HubleeApp> {
     _bookmarkService.load();
     _vocabService.load();
     _srsService.load();
+    _recitationService.load();
     AppMetrics.instance.attachFrameTiming();
     AppMetrics.instance.addListener(_onOverlay);
     appRouter.routerDelegate.addListener(_onRoute);

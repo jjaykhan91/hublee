@@ -187,7 +187,7 @@ class _ReaderSettingsSheet extends StatelessWidget {
               },
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             _SettingRow(
               icon: Icons.info_outline_rounded,
               label: 'Tajweed Guide',

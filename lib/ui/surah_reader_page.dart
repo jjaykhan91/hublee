@@ -12,6 +12,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -45,6 +46,7 @@ import 'widgets/word_by_word_arabic_text.dart';
 import 'widgets/word_gloss_card.dart';
 import 'widgets/passage_actions.dart';
 import 'widgets/reading_width.dart';
+import 'widgets/ayah_recitation_bar.dart';
 
 /// PUA glyph column is only for plain KFGQPC reading. Tajweed and
 /// word-by-word need standard Uthmani, so the 4.3 MB mushaf decode
@@ -97,6 +99,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   String? _surahName;
   bool _hasBismillah = false;
   int? _visibleAyah;
+  String? _lastReciterId;
 
   // ── In-surah search state ──────────────────────────────────
   bool _isSearching = false;
@@ -124,8 +127,28 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _recitation = RecitationScope.maybeOf(context);
+    final next = RecitationScope.maybeOf(context);
+    if (!identical(next, _recitation)) {
+      _recitation?.removeListener(_onRecitation);
+      _recitation = next;
+      _recitation?.addListener(_onRecitation);
+    }
     unawaited(_ensureData());
+  }
+
+  void _onRecitation() {
+    if (!mounted) return;
+    final reciterId = _recitation?.reciter.id;
+    final chapter = _data?.chapter;
+    if (reciterId != _lastReciterId && chapter != null && _recitation != null) {
+      _lastReciterId = reciterId;
+      unawaited(
+        _recitation!.refreshDownloadState(
+          surahId: widget.surahId,
+          verseCount: chapter.versesCount,
+        ),
+      );
+    }
   }
 
   /// Loads chapters, translation, and Uthmani always. Glyph, emlaey,
@@ -191,6 +214,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       if (!mounted || generation != _loadGeneration) return;
 
       final chapter = chapters.firstWhere((item) => item.id == widget.surahId);
+      unawaited(
+        _recitation?.refreshDownloadState(
+          surahId: widget.surahId,
+          verseCount: chapter.versesCount,
+        ),
+      );
       setState(() {
         _data = _SurahReaderData(
           chapter: chapter,
@@ -267,6 +296,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   void dispose() {
     _positionsListener.itemPositions.removeListener(_onScrollPositions);
     _lastReadTimer?.cancel();
+    _recitation?.removeListener(_onRecitation);
     unawaited(_recitation?.stop());
     final name = _surahName;
     final ayah = _visibleAyah ?? widget.scrollToAyah ?? 1;
@@ -550,11 +580,30 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     ChapterMeta? chapterMeta,
   ) {
     final theme = Theme.of(context);
+    final recitation = _recitation;
 
     return AppBar(
       toolbarHeight: 72,
       titleSpacing: 16,
       leadingWidth: 48,
+      bottom: recitation == null
+          ? null
+          : PreferredSize(
+              preferredSize: const Size.fromHeight(3),
+              child: ListenableBuilder(
+                listenable: recitation,
+                builder: (context, _) {
+                  final progress = recitation.downloadProgress;
+                  if (progress == null) {
+                    return const SizedBox(height: 3);
+                  }
+                  return LinearProgressIndicator(
+                    value: progress.fraction,
+                    minHeight: 3,
+                  );
+                },
+              ),
+            ),
       title: chapterMeta == null
           ? Text(
               'Surah',
@@ -589,6 +638,17 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           tooltip: 'Quran reading & Tajweed guide',
           onPressed: () => showQuranReadingGuideSheet(context),
         ),
+        if (chapterMeta != null && recitation != null && !kIsWeb)
+          ListenableBuilder(
+            listenable: recitation,
+            builder: (context, _) {
+              return _SurahDownloadButton(
+                surahId: widget.surahId,
+                chapter: chapterMeta,
+                recitation: recitation,
+              );
+            },
+          ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           tooltip: 'Search in this surah',
@@ -752,6 +812,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   },
                   surahId: widget.surahId,
                   surahName: chapterMeta.nameSimple,
+                  verseCount: chapterMeta.versesCount,
                   showTranslation: settings.showTranslation,
                   isSajdah:
                       isSajdahAyah(widget.surahId, ayahNumber) ||
@@ -884,6 +945,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             },
             surahId: widget.surahId,
             surahName: chapterMeta.nameSimple,
+            verseCount: chapterMeta.versesCount,
             showTranslation: settings.showTranslation,
             isSajdah:
                 isSajdahAyah(widget.surahId, ayahNumber) ||
@@ -971,6 +1033,7 @@ class _AyahCard extends StatelessWidget {
   final VoidCallback onBookmarkToggle;
   final int surahId;
   final String surahName;
+  final int verseCount;
   final bool showTranslation;
   final bool isSajdah;
 
@@ -993,6 +1056,7 @@ class _AyahCard extends StatelessWidget {
     required this.onBookmarkToggle,
     required this.surahId,
     required this.surahName,
+    required this.verseCount,
     required this.showTranslation,
     required this.isSajdah,
     required this.onWordSelected,
@@ -1067,7 +1131,12 @@ class _AyahCard extends StatelessWidget {
                   ],
                   const Spacer(),
                   if (RecitationScope.maybeOf(context) != null)
-                    _AyahPlayButton(surahId: surahId, ayahNumber: ayahNumber),
+                    AyahRecitationBar(
+                      surahId: surahId,
+                      ayah: ayahNumber,
+                      surahName: surahName,
+                      verseCount: verseCount,
+                    ),
                   PassageActionsButton(
                     reference: _reference,
                     arabic: arabic,
@@ -1139,40 +1208,111 @@ class _AyahCard extends StatelessWidget {
   }
 }
 
-class _AyahPlayButton extends StatelessWidget {
-  const _AyahPlayButton({required this.surahId, required this.ayahNumber});
+class _SurahDownloadButton extends StatelessWidget {
+  const _SurahDownloadButton({
+    required this.surahId,
+    required this.chapter,
+    required this.recitation,
+  });
 
   final int surahId;
-  final int ayahNumber;
+  final ChapterMeta chapter;
+  final RecitationService recitation;
 
   @override
   Widget build(BuildContext context) {
-    final recitation = RecitationScope.maybeOf(context);
-    if (recitation == null) return const SizedBox.shrink();
+    final progress = recitation.downloadProgress;
+    final downloading = progress != null;
+    final downloaded = recitation.isSurahDownloaded(
+      surahId,
+      chapter.versesCount,
+    );
 
-    return ListenableBuilder(
-      listenable: recitation,
-      builder: (context, _) {
-        final playing = recitation.isPlayingPassage(surahId, ayahNumber);
-        return IconButton(
-          tooltip: playing ? 'Pause recitation' : 'Play recitation',
-          icon: Icon(
-            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            size: 22,
+    if (downloading) {
+      return IconButton(
+        tooltip: 'Cancel download',
+        onPressed: recitation.cancelDownload,
+        icon: const Icon(Icons.close_rounded),
+      );
+    }
+
+    return IconButton(
+      tooltip: downloaded
+          ? 'Remove downloaded audio'
+          : 'Download this surah for offline playback',
+      icon: Icon(
+        downloaded ? Icons.download_done_rounded : Icons.download_rounded,
+      ),
+      onPressed: () => _onPressed(context, downloaded: downloaded),
+    );
+  }
+
+  Future<void> _onPressed(
+    BuildContext context, {
+    required bool downloaded,
+  }) async {
+    if (downloaded) {
+      final remove = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Remove download?'),
+            content: Text(
+              'Delete saved audio for ${chapter.nameSimple} '
+              '(${recitation.reciter.label})?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Keep'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Remove'),
+              ),
+            ],
+          );
+        },
+      );
+      if (remove == true) {
+        await recitation.deleteSurah(
+          surahId: surahId,
+          verseCount: chapter.versesCount,
+        );
+      }
+      return;
+    }
+
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Download this surah?'),
+          content: Text(
+            'Save all ${chapter.versesCount} ayahs of '
+            '${chapter.nameSimple} by ${recitation.reciter.label} '
+            'so playback works without a connection.',
           ),
-          onPressed: () async {
-            final error = await recitation.toggle(
-              surahId: surahId,
-              ayah: ayahNumber,
-            );
-            if (error == null || !context.mounted) return;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(error)));
-          },
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Download'),
+            ),
+          ],
         );
       },
     );
+    if (go != true) return;
+    final error = await recitation.downloadSurah(
+      surahId: surahId,
+      verseCount: chapter.versesCount,
+    );
+    if (error == null || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
   }
 }
 
