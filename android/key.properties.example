@@ -1,0 +1,9 @@
+# Copy to android/key.properties (gitignored) and fill in real values.
+# Generate the keystore once — losing it means you cannot update the Play listing.
+#
+#   keytool -genkeypair -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+storePassword=<secret>
+keyPassword=<secret>
+keyAlias=upload
+storeFile=upload-keystore.jks

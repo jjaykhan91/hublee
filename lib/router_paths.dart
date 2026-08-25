@@ -22,6 +22,7 @@ abstract final class AppRoute {
   static const String onboarding = '/onboarding';
   static const String tajweedGuide = '/tajweed-guide';
   static const String diagnostics = '/diagnostics';
+  static const String privacy = '/privacy';
   static const String dictionary = '/dictionary';
   static const String learnQuranic = '/learn/quranic';
   static const String quranReview = '/learn/review';

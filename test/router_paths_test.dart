@@ -19,6 +19,7 @@ void main() {
       expect(AppRoute.onboarding, '/onboarding');
       expect(AppRoute.tajweedGuide, '/tajweed-guide');
       expect(AppRoute.diagnostics, '/diagnostics');
+      expect(AppRoute.privacy, '/privacy');
       expect(AppRoute.dictionary, '/dictionary');
       expect(AppRoute.learnQuranic, '/learn/quranic');
       expect(AppRoute.quranReview, '/learn/review');
