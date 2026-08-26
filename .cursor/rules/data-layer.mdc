@@ -32,6 +32,7 @@ All data is bundled as JSON files in `assets/`. There are no runtime API calls.
 - `QuranSearchHit` / `HadithSearchHit`: search result types in `lib/services/search_models.dart`
 - `DailyVerse` / `DailyHadith` / `DailyQuranWord` / `DailyArabicWord`: daily content models in `lib/services/daily_content_service.dart`
 - `EverydayDhikr`: short anytime remembrances in `lib/guidance/everyday_dhikr.dart`
+- `SalahPrayer` / `SalahRecitation` / `SalahStep`: salah outline in `lib/guidance/salah_guide.dart` (const Dart, not JSON)
 
 ## Quran Arabic JSON Fields
 

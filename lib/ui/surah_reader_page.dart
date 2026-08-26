@@ -47,6 +47,7 @@ import 'widgets/ayah_recitation_bar.dart';
 import 'widgets/now_playing_bar.dart';
 import 'widgets/reciter_picker.dart';
 import 'widgets/sajdah_guide.dart';
+import 'widgets/surah_app_bar_title.dart';
 import 'widgets/surah_details_header.dart';
 
 /// PUA glyph column is only for plain KFGQPC reading. Tajweed and
@@ -692,7 +693,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 fontWeight: FontWeight.w600,
               ),
             )
-          : _SurahAppBarTitle(chapter: chapterMeta, compact: compact),
+          : SurahAppBarTitle(chapter: chapterMeta, compact: compact),
       actions: [
         if (chapterMeta != null && recitation != null && !kIsWeb)
           ListenableBuilder(
@@ -1591,39 +1592,4 @@ Widget _buildInfoSection(BuildContext context, String heading, String body) {
       ],
     ),
   );
-}
-
-/// Compact app-bar title: calligraphic name in Meccan/Medinan colour.
-class _SurahAppBarTitle extends StatelessWidget {
-  const _SurahAppBarTitle({required this.chapter, this.compact = false});
-
-  final ChapterMeta chapter;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accent = chapter.isMeccan
-        ? AppColors.meccanAccent
-        : AppColors.medinanAccent;
-    final ligature = 'surah${chapter.id.toString().padLeft(3, '0')}';
-    return Semantics(
-      label: 'Surah ${chapter.id}, ${chapter.nameSimple}',
-      child: ExcludeSemantics(
-        child: Text(
-          ligature,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontFamily: AppFonts.surahName,
-            fontWeight: FontWeight.w600,
-            fontSize: compact ? 20 : 24,
-            color: accent,
-            height: 1.3,
-          ),
-          textDirection: TextDirection.rtl,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
 }

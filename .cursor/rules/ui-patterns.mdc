@@ -7,7 +7,7 @@ alwaysApply: true
 
 | File | Class | Purpose |
 |------|-------|---------|
-| `home_page.dart` | `HomePage` | Home tab with Hublee meaning, Allah / Prophet / Dua cards, Ayah/Hadith/Dhikr of the Day |
+| `home_page.dart` | `HomePage` | Home tab with Hublee meaning, Allah / Prophet / Dhikr / Salah / Dua cards, Ayah/Hadith/Dhikr of the Day |
 | `quran_page.dart` | `QuranPage` | Quran tab: surah list with Surah/Juz/Makki-Madani/Revelation tabs |
 | `surah_reader_page.dart` | `SurahReaderPage` | Full-screen surah reading with scrubber + settings sheet |
 | `hadith_page.dart` | `HadithPage` | Hadith tab: all books from all collections |
@@ -19,6 +19,8 @@ alwaysApply: true
 | `allah_page.dart` | `AllahPage` | Who Allah is, tawhid, 99 names, key ayahs |
 | `prophet_page.dart` | `ProphetPage` | Seerah hub: life, family, names, character, timeline |
 | `dua_pages.dart` | `DuaHubPage` / `DuaCategoryPage` | Quranic and Hisn al-Muslim du'as by category |
+| `dhikr_page.dart` | `DhikrPage` | Full list of everyday dhikrs; tap opens wording, source, and copy |
+| `salah_page.dart` | `SalahPage` | Salah hub: fard, sunnah/rawatib, nawafil, how to pray, what to recite |
 | `home_widgets_page.dart` | `HomeWidgetsPage` | Android home-screen widgets: look chips and pin (Settings → Home screen widgets) |
 | `app_shell.dart` | `AppShell` | Bottom nav shell (6 tabs). Home/Quran/Hadith/Learn use `HubleeNavIcon` (dome-home, mushaf, Madinah mosque, library); Saved/Settings stay Material. |
 
@@ -59,7 +61,7 @@ Both reader pages share these features:
 - **Auto-save**: Last-read position saved on open and as you scroll (`notify: false`)
 
 ### Surah Reader specifics
-- **App bar:** Calligraphic surah name in Meccan (amber) / Medinan (green) colour, download (opens reciter list), in-page search, settings. The Quran Reading & Tajweed guide lives on the Quran tab, not here.
+- **App bar:** Calligraphic surah name in Meccan (amber) / Medinan (green) colour. Tapping it cycles Arabic → English name → meaning → revelation city (Mecca/Medina). Download (opens reciter list), in-page search, settings. The Quran Reading & Tajweed guide lives on the Quran tab, not here.
 - Surah details card above the first ayah (Listen, Info, Meccan/Medinan chip, translation chip)
 - Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
 - Ayah chrome: `surah:ayah`, play, bookmark, and pin on the left. Pin is one resume marker per surah (opening the surah jumps there). Sajdah ayahs show a tappable Sajdah chip. Long-press copies or shares. Reciter, repeat, and continue-to-next live on the sticky player bar, which follows the playing ayah unless the reader is scrolling.
@@ -98,9 +100,9 @@ Each surah card: left = number badge + English name (and translation on some tab
 ## Home Page
 
 - Hublee wordmark in the app bar (eight-point star + name)
-- Hublee meaning card with rope motif, star lattice, and Quran / Hadith emblems (tap opens 3:103)
+- Hublee meaning card with rope motif and star lattice (tap opens 3:103). No Quran/Hadith emblem buttons — they looked tappable but only opened that ayah.
 - Search shortcut
-- Allah, Prophet Muhammad ﷺ, and Duas cards (full-screen guides above the shell)
+- Allah, Prophet Muhammad ﷺ, Dhikr, Salah, and Duas cards (full-screen guides above the shell)
 - Verse of the Day card (deep indigo gradient, star lattice wash)
 - Hadith of the Day card (emerald gradient, star lattice wash)
 - Dhikr of the Day card (violet gradient, star lattice wash; tap opens wording, source, and copy)
@@ -119,6 +121,7 @@ Each surah card: left = number badge + English name (and translation on some tab
 - `showQuranOverviewSheet()` / `showHadithOverviewSheet()` -- Tab orientation sheets from each app-bar info icon
 - `HomeScreenWidgetPreview` -- In-app preview of an Android launcher widget look
 - `DhikrOfTheDayCard` -- Home daily dhikr card and wording sheet (`dhikr_of_the_day_card.dart`)
+- `SurahAppBarTitle` -- Tappable reader title that cycles Arabic / English / meaning / city (`surah_app_bar_title.dart`)
 - `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`
 
 ## Animations
