@@ -38,12 +38,16 @@ class HadithReaderPage extends StatefulWidget {
   /// If provided, the list auto-scrolls to this zero-based index.
   final int? scrollToIndex;
 
+  /// When set, only this chapter's hadiths are shown.
+  final int? chapterId;
+
   const HadithReaderPage({
     super.key,
     required this.collectionId,
     required this.bookFile,
     required this.title,
     this.scrollToIndex,
+    this.chapterId,
   });
 
   @override
@@ -67,6 +71,11 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   BookmarkService? _bookmarks;
   String? _bookTitle;
   int? _visibleIndex;
+  HadithBook? _loadedBook;
+
+  /// When the book has multiple chapters, only this chapter's
+  /// hadiths are in the list. `null` means the full book.
+  int? _chapterId;
 
   // ── In-book search state ───────────────────────────────────
   bool _isSearching = false;
@@ -77,10 +86,21 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   @override
   void initState() {
     super.initState();
-    _bookFuture = const HadithRepository().loadBook(
-      widget.collectionId,
-      widget.bookFile,
-    );
+    _bookFuture = const HadithRepository()
+        .loadBook(widget.collectionId, widget.bookFile)
+        .then((book) {
+          if (widget.chapterId != null) {
+            _chapterId = widget.chapterId;
+          } else if (book.chapters.length > 1 && book.hadiths.isNotEmpty) {
+            final target = (widget.scrollToIndex ?? 0).clamp(
+              0,
+              book.hadiths.length - 1,
+            );
+            _chapterId =
+                book.hadiths[target].chapterId ?? book.chapters.first.id;
+          }
+          return book;
+        });
     _positionsListener.itemPositions.addListener(_onScrollPositions);
   }
 
@@ -96,8 +116,13 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     final top = visible.reduce(
       (a, b) => a.itemLeadingEdge < b.itemLeadingEdge ? a : b,
     );
-    if (_visibleIndex == top.index) return;
-    _visibleIndex = top.index;
+    if (_visibleIndex == top.index && _chapterId == null) return;
+    final book = _loadedBook;
+    final bookIndex = book == null
+        ? top.index
+        : _bookIndexForLocal(book, top.index);
+    if (_visibleIndex == bookIndex) return;
+    _visibleIndex = bookIndex;
     _lastReadTimer?.cancel();
     _lastReadTimer = Timer(const Duration(milliseconds: 400), () {
       final index = _visibleIndex;
@@ -151,20 +176,48 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     });
   }
 
+  List<int> _indicesFor(HadithBook book) {
+    if (book.chapters.length <= 1) {
+      return [for (var i = 0; i < book.hadiths.length; i++) i];
+    }
+    return hadithIndicesForChapter(book.hadiths, _chapterId);
+  }
+
+  int _bookIndexForLocal(HadithBook book, int local) {
+    final indices = _indicesFor(book);
+    if (local < 0 || local >= indices.length) return local;
+    return indices[local];
+  }
+
+  void _selectChapter(HadithBook book, int? chapterId, {int? bookIndex}) {
+    setState(() => _chapterId = chapterId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.isAttached) return;
+      final indices = _indicesFor(book);
+      var local = 0;
+      if (bookIndex != null) {
+        final found = indices.indexOf(bookIndex);
+        if (found >= 0) local = found;
+      }
+      _scrollController.jumpTo(index: local);
+    });
+  }
+
+  void _shiftChapter(HadithBook book, int delta) {
+    if (book.chapters.isEmpty) return;
+    final current = book.chapters.indexWhere((c) => c.id == _chapterId);
+    final next = (current < 0 ? 0 : current) + delta;
+    if (next < 0 || next >= book.chapters.length) return;
+    _selectChapter(book, book.chapters[next].id);
+  }
+
   void _showChapters(HadithBook book) {
     showHadithChapterSheet(
       context: context,
       chapters: book.chapters,
       hadiths: book.hadiths,
-      onJump: (index) {
-        if (!_scrollController.isAttached) return;
-        _scrollController.scrollTo(
-          index: index,
-          duration: const Duration(milliseconds: 280),
-          alignment: 0.08,
-          curve: Curves.easeInOut,
-        );
-      },
+      onJump: (index) =>
+          _selectChapter(book, book.hadiths[index].chapterId, bookIndex: index),
     );
   }
 
@@ -178,6 +231,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             ? snapshot.error.toString()
             : null;
         final book = snapshot.data;
+        if (book != null) _loadedBook = book;
 
         return Scaffold(
           appBar: _isSearching
@@ -200,13 +254,19 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
               }
 
               final loadedBook = book!;
+              final indices = _indicesFor(loadedBook);
               return Stack(
                 children: [
-                  _buildHadithList(context, loadedBook),
+                  _buildHadithList(context, loadedBook, indices),
                   ScrollScrubber(
-                    itemCount: loadedBook.hadiths.length,
-                    labelBuilder: (index) =>
-                        'Hadith ${index + 1} of ${loadedBook.hadiths.length}',
+                    itemCount: indices.length,
+                    labelBuilder: (index) {
+                      if (indices.isEmpty) return '';
+                      final bookIndex =
+                          indices[index.clamp(0, indices.length - 1)];
+                      return 'Hadith ${bookIndex + 1} of '
+                          '${loadedBook.hadiths.length}';
+                    },
                     scrollController: _scrollController,
                     positionsListener: _positionsListener,
                   ),
@@ -224,14 +284,76 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     BuildContext context,
     HadithBook? book,
   ) {
+    final chapters = book?.chapters ?? const <HadithChapter>[];
+    final showChapters = chapters.length > 1;
+    final compact = ReadingLayout.compactChrome(MediaQuery.sizeOf(context));
+    final chapter = showChapters ? chapterById(chapters, _chapterId) : null;
+    final chapterLabel = () {
+      final english = chapter?.english?.trim();
+      if (english != null && english.isNotEmpty) return english;
+      final arabic = chapter?.arabic?.trim();
+      if (arabic != null && arabic.isNotEmpty) return arabic;
+      return 'Chapter';
+    }();
+    final chapterIndex = showChapters
+        ? chapters.indexWhere((c) => c.id == _chapterId)
+        : -1;
+
     return AppBar(
       title: Text(
         book?.title ?? widget.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
+      bottom: !showChapters || book == null
+          ? null
+          : PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Previous chapter',
+                      onPressed: chapterIndex > 0
+                          ? () => _shiftChapter(book, -1)
+                          : null,
+                      icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _showChapters(book),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 4,
+                          ),
+                          child: Text(
+                            chapterLabel,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Next chapter',
+                      onPressed:
+                          chapterIndex >= 0 &&
+                              chapterIndex < chapters.length - 1
+                          ? () => _shiftChapter(book, 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ),
       actions: [
-        if (book != null && book.chapters.length > 1)
+        if (book != null && book.chapters.length > 1 && !compact)
           IconButton(
             icon: const Icon(Icons.list_alt_rounded),
             tooltip: 'Chapters',
@@ -393,7 +515,11 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
   }
 
   /// Builds the scrollable hadith list with auto-scroll support.
-  Widget _buildHadithList(BuildContext context, HadithBook book) {
+  Widget _buildHadithList(
+    BuildContext context,
+    HadithBook book,
+    List<int> indices,
+  ) {
     final hadiths = book.hadiths;
     _bookTitle = book.title.isNotEmpty ? book.title : widget.title;
     _visibleIndex ??= widget.scrollToIndex ?? 0;
@@ -413,12 +539,13 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       });
     }
 
-    // Auto-scroll to the requested index only once.
     if (!_hasScrolledToIndex && widget.scrollToIndex != null) {
       _hasScrolledToIndex = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final targetIndex = widget.scrollToIndex!.clamp(0, hadiths.length - 1);
-        if (_scrollController.isAttached) {
+        final bookIndex = widget.scrollToIndex!.clamp(0, hadiths.length - 1);
+        final local = indices.indexOf(bookIndex);
+        final targetIndex = local >= 0 ? local : 0;
+        if (_scrollController.isAttached && indices.isNotEmpty) {
           _scrollController.jumpTo(index: targetIndex);
           _scrollController.scrollTo(
             index: targetIndex,
@@ -439,15 +566,16 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
       minCacheExtent: AppSpacing.cacheExtent,
-      itemCount: hadiths.length,
+      itemCount: indices.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final hadith = hadiths[index];
+        final bookIndex = indices[index];
+        final hadith = hadiths[bookIndex];
         final bookmarkId =
-            'hadith:${widget.collectionId}:${widget.bookFile}:$index';
+            'hadith:${widget.collectionId}:${widget.bookFile}:$bookIndex';
         final isBookmarked = bookmarkService.isBookmarked(bookmarkId);
         final colorScheme = Theme.of(context).colorScheme;
-        final chapter = isChapterStart(hadiths, index)
+        final chapter = index == 0
             ? chapterById(book.chapters, hadith.chapterId)
             : null;
 
@@ -458,7 +586,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
               if (chapter != null) _HadithChapterDivider(chapter: chapter),
               _HadithCard(
                 hadith: hadith,
-                displayIndex: index + 1,
+                displayIndex: bookIndex + 1,
                 colorScheme: colorScheme,
                 arabicZoom: settings.arabicZoom,
                 englishZoom: settings.englishZoom,
@@ -472,7 +600,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                       bookTitle: book.title.isNotEmpty
                           ? book.title
                           : widget.title,
-                      hadithIndex: index,
+                      hadithIndex: bookIndex,
                       idInBook: hadith.idInBook,
                       snippet: hadith.english,
                     ),

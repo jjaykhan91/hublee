@@ -47,6 +47,7 @@ import 'widgets/word_gloss_card.dart';
 import 'widgets/passage_actions.dart';
 import 'widgets/reading_width.dart';
 import 'widgets/ayah_recitation_bar.dart';
+import 'widgets/now_playing_bar.dart';
 
 /// PUA glyph column is only for plain KFGQPC reading. Tajweed and
 /// word-by-word need standard Uthmani, so the 4.3 MB mushaf decode
@@ -292,6 +293,17 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     });
   }
 
+  void _jumpToPlayingAyah(int ayah) {
+    if (!_scrollController.isAttached) return;
+    final index = (_hasBismillah ? 1 : 0) + (ayah - 1);
+    _scrollController.scrollTo(
+      index: index < 0 ? 0 : index,
+      duration: const Duration(milliseconds: 280),
+      alignment: 0.08,
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   void dispose() {
     _positionsListener.itemPositions.removeListener(_onScrollPositions);
@@ -522,48 +534,58 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 bottom: 16,
                 child: SafeArea(
                   top: false,
-                  child: WordGlossCard(
-                    selection: _wordSelection,
-                    reference: _wordSelectionAyah == null
-                        ? null
-                        : '${chapterMeta.nameSimple} '
-                              '${widget.surahId}:$_wordSelectionAyah',
-                    isFavorite:
-                        _wordSelection != null &&
-                        VocabScope.of(context).isSavedWord(
-                          _wordSelection!.arabic,
-                          _wordSelection!.gloss,
-                        ),
-                    onToggleFavorite:
-                        _wordSelection == null || _wordSelectionAyah == null
-                        ? null
-                        : () {
-                            final selection = _wordSelection!;
-                            final ayah = _wordSelectionAyah!;
-                            VocabScope.of(context).toggle(
-                              VocabEntry.fromReader(
-                                arabic: selection.arabic,
-                                gloss: selection.gloss,
-                                surahId: widget.surahId,
-                                ayah: ayah,
-                                surahName: chapterMeta.nameSimple,
-                              ),
-                            );
-                            SrsScope.of(context).ensure(
-                              SrsCard(
-                                id: SrsCard.cardId(
-                                  deck: 'quran',
-                                  arabic: selection.arabic,
-                                  english: selection.gloss,
-                                ),
-                                deck: 'quran',
-                                arabic: selection.arabic,
-                                english: selection.gloss,
-                                due: DateTime.now(),
-                              ),
-                            );
-                          },
-                    onDismiss: _clearWordSelection,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      WordGlossCard(
+                        selection: _wordSelection,
+                        reference: _wordSelectionAyah == null
+                            ? null
+                            : '${chapterMeta.nameSimple} '
+                                  '${widget.surahId}:$_wordSelectionAyah',
+                        isFavorite:
+                            _wordSelection != null &&
+                            VocabScope.of(context).isSavedWord(
+                              _wordSelection!.arabic,
+                              _wordSelection!.gloss,
+                            ),
+                        onToggleFavorite:
+                            _wordSelection == null || _wordSelectionAyah == null
+                            ? null
+                            : () {
+                                final selection = _wordSelection!;
+                                final ayah = _wordSelectionAyah!;
+                                VocabScope.of(context).toggle(
+                                  VocabEntry.fromReader(
+                                    arabic: selection.arabic,
+                                    gloss: selection.gloss,
+                                    surahId: widget.surahId,
+                                    ayah: ayah,
+                                    surahName: chapterMeta.nameSimple,
+                                  ),
+                                );
+                                SrsScope.of(context).ensure(
+                                  SrsCard(
+                                    id: SrsCard.cardId(
+                                      deck: 'quran',
+                                      arabic: selection.arabic,
+                                      english: selection.gloss,
+                                    ),
+                                    deck: 'quran',
+                                    arabic: selection.arabic,
+                                    english: selection.gloss,
+                                    due: DateTime.now(),
+                                  ),
+                                );
+                              },
+                        onDismiss: _clearWordSelection,
+                      ),
+                      NowPlayingBar(
+                        surahId: widget.surahId,
+                        surahName: chapterMeta.nameSimple,
+                        onJumpToAyah: _jumpToPlayingAyah,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -581,11 +603,16 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   ) {
     final theme = Theme.of(context);
     final recitation = _recitation;
+    final compact = ReadingLayout.compactChrome(MediaQuery.sizeOf(context));
 
     return AppBar(
-      toolbarHeight: 72,
-      titleSpacing: 16,
-      leadingWidth: 48,
+      toolbarHeight: compact ? 56 : 72,
+      titleSpacing: compact ? 4 : 16,
+      leadingWidth: compact ? 40 : 48,
+      actionsPadding: compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.only(right: 4),
+      actionsIconTheme: compact ? const IconThemeData(size: 22) : null,
       bottom: recitation == null
           ? null
           : PreferredSize(
@@ -614,6 +641,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           : _CyclingSurahTitle(
               chapter: chapterMeta,
               cycleIndex: _titleCycleIndex,
+              compact: compact,
               onTap: () {
                 setState(() {
                   _titleCycleIndex = (_titleCycleIndex + 1) % 4;
@@ -621,7 +649,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               },
             ),
       actions: [
-        if (chapterMeta != null)
+        if (!compact && chapterMeta != null)
           Builder(
             builder: (ctx) {
               final chapter = chapterMeta;
@@ -632,16 +660,21 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
               );
             },
           ),
-        const SizedBox(width: 4),
-        IconButton(
-          icon: const Icon(Icons.menu_book_rounded),
-          tooltip: 'Quran reading & Tajweed guide',
-          onPressed: () => showQuranReadingGuideSheet(context),
-        ),
+        if (!compact)
+          IconButton(
+            icon: const Icon(Icons.menu_book_rounded),
+            tooltip: 'Quran reading & Tajweed guide',
+            onPressed: () => showQuranReadingGuideSheet(context),
+          ),
         if (chapterMeta != null && recitation != null && !kIsWeb)
           ListenableBuilder(
             listenable: recitation,
             builder: (context, _) {
+              // Cover screens only keep the cancel affordance in the
+              // bar; download / remove live in the overflow menu.
+              if (compact && recitation.downloadProgress == null) {
+                return const SizedBox.shrink();
+              }
               return _SurahDownloadButton(
                 surahId: widget.surahId,
                 chapter: chapterMeta,
@@ -660,7 +693,56 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           onPressed: () =>
               showReaderSettingsSheet(context, showTajweedToggle: true),
         ),
-        const SizedBox(width: 8),
+        if (compact)
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (value) {
+              if (value == 'info' && chapterMeta != null) {
+                _showSurahInfo(context, chapterMeta);
+              } else if (value == 'guide') {
+                showQuranReadingGuideSheet(context);
+              } else if (value == 'download' &&
+                  chapterMeta != null &&
+                  recitation != null) {
+                unawaited(
+                  _SurahDownloadButton.prompt(
+                    context,
+                    surahId: widget.surahId,
+                    chapter: chapterMeta,
+                    recitation: recitation,
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) {
+              final downloaded =
+                  recitation != null &&
+                  chapterMeta != null &&
+                  recitation.isSurahDownloaded(
+                    widget.surahId,
+                    chapterMeta.versesCount,
+                  );
+              return [
+                if (chapterMeta != null)
+                  const PopupMenuItem(value: 'info', child: Text('Surah info')),
+                const PopupMenuItem(
+                  value: 'guide',
+                  child: Text('Reading & Tajweed guide'),
+                ),
+                if (chapterMeta != null &&
+                    recitation != null &&
+                    !kIsWeb &&
+                    recitation.downloadProgress == null)
+                  PopupMenuItem(
+                    value: 'download',
+                    child: Text(
+                      downloaded ? 'Remove download' : 'Download surah',
+                    ),
+                  ),
+              ];
+            },
+          ),
+        const SizedBox(width: 4),
       ],
     );
   }
@@ -1243,14 +1325,26 @@ class _SurahDownloadButton extends StatelessWidget {
       icon: Icon(
         downloaded ? Icons.download_done_rounded : Icons.download_rounded,
       ),
-      onPressed: () => _onPressed(context, downloaded: downloaded),
+      onPressed: () => prompt(
+        context,
+        surahId: surahId,
+        chapter: chapter,
+        recitation: recitation,
+      ),
     );
   }
 
-  Future<void> _onPressed(
+  /// Confirms download or removal, then runs the matching action.
+  static Future<void> prompt(
     BuildContext context, {
-    required bool downloaded,
+    required int surahId,
+    required ChapterMeta chapter,
+    required RecitationService recitation,
   }) async {
+    final downloaded = recitation.isSurahDownloaded(
+      surahId,
+      chapter.versesCount,
+    );
     if (downloaded) {
       final remove = await showDialog<bool>(
         context: context,
@@ -1547,11 +1641,13 @@ class _CyclingSurahTitle extends StatelessWidget {
     required this.chapter,
     required this.cycleIndex,
     required this.onTap,
+    this.compact = false,
   });
 
   final ChapterMeta chapter;
   final int cycleIndex;
   final VoidCallback onTap;
+  final bool compact;
 
   static const _makkiAccent = Color(0xFFD4A054);
   static const _madaniAccent = Color(0xFF4CAF7D);
@@ -1566,6 +1662,20 @@ class _CyclingSurahTitle extends StatelessWidget {
 
     final content = _buildContent(context, theme, accent);
 
+    if (compact) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: content,
+          ),
+        ),
+      );
+    }
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
@@ -1574,7 +1684,10 @@ class _CyclingSurahTitle extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 12 : 24,
+              vertical: compact ? 6 : 14,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: outline, width: 1.2),
@@ -1600,7 +1713,7 @@ class _CyclingSurahTitle extends StatelessWidget {
               style: theme.textTheme.titleLarge?.copyWith(
                 fontFamily: AppFonts.surahName,
                 fontWeight: FontWeight.w600,
-                fontSize: 24,
+                fontSize: compact ? 20 : 24,
                 color: accent,
                 height: 1.3,
               ),
@@ -1615,7 +1728,7 @@ class _CyclingSurahTitle extends StatelessWidget {
           chapter.nameSimple,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            fontSize: 20,
+            fontSize: compact ? 16 : 20,
             color: accent,
             letterSpacing: 0.3,
           ),
@@ -1628,7 +1741,7 @@ class _CyclingSurahTitle extends StatelessWidget {
           meaning,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w500,
-            fontSize: 18,
+            fontSize: compact ? 15 : 18,
             color: accent.withValues(alpha: 0.95),
             fontStyle: FontStyle.italic,
           ),
@@ -1641,7 +1754,7 @@ class _CyclingSurahTitle extends StatelessWidget {
           place,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            fontSize: 18,
+            fontSize: compact ? 15 : 18,
             color: accent,
             letterSpacing: 0.5,
           ),

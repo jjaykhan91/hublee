@@ -14,6 +14,7 @@ import 'package:hublee/services/settings_scope.dart';
 import 'package:hublee/theme/app_appearance.dart';
 import 'package:hublee/ui/onboarding_page.dart';
 import 'package:hublee/ui/splash_page.dart';
+import 'package:hublee/ui/widgets/arabic_font_list.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -128,6 +129,10 @@ void main() {
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     expect(find.text('Arabic typeface'), findsOneWidget);
+    expect(find.byType(ArabicFontList), findsOneWidget);
+    await tester.tap(find.text('Noto Naskh'));
+    await tester.pump();
+    expect(settings.arabicFont, ArabicFontOption.notoNaskh);
 
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();

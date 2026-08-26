@@ -78,4 +78,33 @@ void main() {
     expect(last!['surahId'], 1);
     expect(last['ayah'], greaterThan(1));
   });
+
+  testWidgets('compact phone width does not overflow the app bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(410, 956);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: BookmarkScope(
+          service: BookmarkService(),
+          child: VocabScope(
+            service: VocabService(),
+            child: SrsScope(
+              service: SrsService(),
+              child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _pumpUntilReaderLoaded(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byTooltip('More'), findsOneWidget);
+    expect(find.byTooltip('Surah info'), findsNothing);
+  });
 }

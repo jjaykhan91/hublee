@@ -9,6 +9,7 @@ import 'package:hublee/hadith/hadith_chapters.dart';
 import 'package:hublee/hadith/hadith_repository.dart';
 import 'package:hublee/services/settings_controller.dart';
 import 'package:hublee/services/settings_scope.dart';
+import 'package:hublee/ui/hadith_chapters_page.dart';
 import 'package:hublee/ui/widgets/hadith_chapter_sheet.dart';
 
 Hadith _h({required int chapterId}) => Hadith(chapterId: chapterId);
@@ -40,6 +41,12 @@ void main() {
     expect(hadithCountForChapter(hadiths, 2), 1);
   });
 
+  test('hadithIndicesForChapter lists book indices in order', () {
+    expect(hadithIndicesForChapter(hadiths, 1), [0, 1]);
+    expect(hadithIndicesForChapter(hadiths, 2), [2]);
+    expect(hadithIndicesForChapter(hadiths, null), [0, 1, 2]);
+  });
+
   testWidgets('chapter sheet lists titles and reports the jump index', (
     tester,
   ) async {
@@ -68,5 +75,34 @@ void main() {
     await tester.tap(find.text('Belief'));
     await tester.pump();
     expect(jumped, 2);
+  });
+
+  testWidgets('chapter grid lists titles and reports the tap', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    HadithChapter? selected;
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: HadithChapterGrid(
+              chapters: chapters,
+              hadiths: hadiths,
+              onSelect: (chapter) => selected = chapter,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('hadith-chapter-grid')), findsOneWidget);
+    expect(find.text('Revelation'), findsOneWidget);
+    expect(find.text('2 hadiths'), findsOneWidget);
+    expect(find.text('Belief'), findsOneWidget);
+    expect(find.text('1 hadith'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('hadith-chapter-2')));
+    await tester.pump();
+    expect(selected?.id, 2);
   });
 }

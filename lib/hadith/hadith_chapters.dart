@@ -3,6 +3,20 @@ library;
 
 import 'hadith_repository.dart';
 
+/// Book indices of every hadith in [chapterId], in list order.
+///
+/// When [chapterId] is `null`, returns every index (the full book).
+List<int> hadithIndicesForChapter(List<Hadith> hadiths, int? chapterId) {
+  if (chapterId == null) {
+    return [for (var i = 0; i < hadiths.length; i++) i];
+  }
+  final indices = <int>[];
+  for (var i = 0; i < hadiths.length; i++) {
+    if (hadiths[i].chapterId == chapterId) indices.add(i);
+  }
+  return indices;
+}
+
 /// Index of the first hadith in [hadiths] whose [Hadith.chapterId]
 /// matches [chapterId], or `null` if none.
 int? firstHadithIndexForChapter(List<Hadith> hadiths, int? chapterId) {

@@ -7,11 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../router_paths.dart';
 import '../services/app_scope.dart';
 import '../services/onboarding_service.dart';
-import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/appearance_chips.dart';
+import 'widgets/arabic_font_list.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/tajweed.dart';
 
@@ -150,7 +150,6 @@ class _FontPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = SettingsScope.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
 
     return _IntroFrame(
       title: 'Arabic typeface',
@@ -172,21 +171,9 @@ class _FontPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final font in ArabicFontOption.values)
-                ChoiceChip(
-                  label: Text(font.label),
-                  selected: font == settings.arabicFont,
-                  onSelected: (_) {
-                    AppHaptics.selection();
-                    settings.arabicFont = font;
-                  },
-                  selectedColor: colorScheme.primary.withValues(alpha: 0.15),
-                ),
-            ],
+          ArabicFontList(
+            selected: settings.arabicFont,
+            onChanged: (font) => settings.arabicFont = font,
           ),
         ],
       ),

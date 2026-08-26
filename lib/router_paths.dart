@@ -52,15 +52,28 @@ abstract final class AppRoute {
     return id;
   }
 
-  /// Path to hadith book reader, optionally with hadith index.
+  /// Path to hadith book reader, optionally with hadith index
+  /// and/or chapter id.
   static String hadithBook({
     required String collectionId,
     required String bookFile,
     required String bookTitle,
     int? index,
+    int? chapterId,
   }) {
     final base =
         '/hadith/$collectionId/$bookFile?title=${Uri.encodeComponent(bookTitle)}';
-    return index == null ? base : '$base&index=$index';
+    final withIndex = index == null ? base : '$base&index=$index';
+    return chapterId == null ? withIndex : '$withIndex&chapter=$chapterId';
+  }
+
+  /// Path to the chapter tile grid for a hadith book.
+  static String hadithChapters({
+    required String collectionId,
+    required String bookFile,
+    required String bookTitle,
+  }) {
+    return '/hadith/$collectionId/$bookFile/chapters'
+        '?title=${Uri.encodeComponent(bookTitle)}';
   }
 }

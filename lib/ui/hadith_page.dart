@@ -57,12 +57,22 @@ void _openBook(
   required HadithBookMeta book,
   int? index,
 }) {
+  if (index != null) {
+    context.push(
+      AppRoute.hadithBook(
+        collectionId: collectionId,
+        bookFile: book.file,
+        bookTitle: book.title,
+        index: index,
+      ),
+    );
+    return;
+  }
   context.push(
-    AppRoute.hadithBook(
+    AppRoute.hadithChapters(
       collectionId: collectionId,
       bookFile: book.file,
       bookTitle: book.title,
-      index: index,
     ),
   );
 }
@@ -735,12 +745,8 @@ class _BookTile extends StatelessWidget {
         label: semantics,
         child: HubleeCard(
           padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-          onTap: () => _openBook(
-            context,
-            collectionId: collectionId,
-            book: book,
-            index: resumeIndex,
-          ),
+          onTap: () =>
+              _openBook(context, collectionId: collectionId, book: book),
           onLongPress: summary == null
               ? null
               : () => _showBookAbout(
@@ -897,19 +903,25 @@ void _showBookAbout(
               FilledButton(
                 onPressed: () {
                   Navigator.pop(sheetContext);
-                  _openBook(
-                    context,
-                    collectionId: collectionId,
-                    book: book,
-                    index: resumeIndex,
-                  );
+                  _openBook(context, collectionId: collectionId, book: book);
                 },
-                child: Text(
-                  resumeIndex == null
-                      ? 'Open book'
-                      : 'Continue at hadith ${resumeIndex + 1}',
-                ),
+                child: const Text('Open book'),
               ),
+              if (resumeIndex != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    _openBook(
+                      context,
+                      collectionId: collectionId,
+                      book: book,
+                      index: resumeIndex,
+                    );
+                  },
+                  child: Text('Continue at hadith ${resumeIndex + 1}'),
+                ),
+              ],
             ],
           ),
         ),
