@@ -244,6 +244,29 @@ class SettingsPage extends StatelessWidget {
               .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 360.ms),
           const SizedBox(height: 12),
           Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Icon(
+                    Icons.widgets_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: const Text('Home screen widgets'),
+                  subtitle: Text(
+                    'Ayah, hadith, and daily words on Android',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(AppRoute.homeWidgets),
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 390.ms)
+              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 390.ms),
+          const SizedBox(height: 12),
+          Card(
             child: SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -343,6 +366,47 @@ class SettingsPage extends StatelessWidget {
                         'plus a Hublee newspaper-Arabic core list. Grammar '
                         'lessons are original Hublee notes; verb forms follow '
                         'the classical I–X paradigm.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Allah\'s names: the widely taught list associated '
+                        'with Jami\' at-Tirmidhi (3507). The count of '
+                        'ninety-nine is in Sahih al-Bukhari 6410 and 7392 '
+                        'and Sahih Muslim 2677; that does not mean He has '
+                        'only ninety-nine names. English glosses from '
+                        'Aladhan\'s Asma al-Husna data, with spelling '
+                        'corrections. Seerah chronology follows Ibn Ishaq '
+                        'as transmitted by Ibn Hisham, with Quran citations '
+                        'where the text speaks.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Du\'as: Quranic prayers use this app\'s Uthmani '
+                        'Arabic and ClearQuran English. Sunnah du\'as are '
+                        'from Hisn al-Muslim (Fortress of the Muslim) by '
+                        'Sa\'id ibn Ali ibn Wahf al-Qahtani; each entry '
+                        'keeps its book citation. Hublee does not add a '
+                        'hadith grade.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Dhikr of the Day: short phrases from the Quran, '
+                        'Sahih al-Bukhari, and Sahih Muslim. A few are from '
+                        'Jami at-Tirmidhi or Hisn al-Muslim; those are '
+                        'labelled on the card and are not presented as '
+                        'sahih. Hublee does not add a hadith grade.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.65),
                           height: 1.5,

@@ -1,14 +1,14 @@
 /// Modal bottom sheet for Quran reading rules and Tajweed reference.
 ///
 /// Covers: Sajdah (prostration), Waqf (stop) signs, and Tajweed colour rules.
-/// Shown from the surah reader app bar (Tajweed/guide icon), same style as
-/// the surah info sheet.
+/// Shown from the Quran tab app bar (book icon).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hublee/router_paths.dart';
+import 'package:hublee/ui/widgets/sajdah_guide.dart';
 import 'package:hublee/ui/widgets/tajweed.dart';
 
 /// Shows a draggable modal bottom sheet with Quran reading rules
@@ -65,72 +65,10 @@ class _QuranReadingGuideContent extends StatelessWidget {
           arabic: '\u0633\u062C\u0648\u062F',
         ),
         const SizedBox(height: 8),
-        Card(
+        const Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'There are 15 verses in the Quran where prostration (sajdah) '
-                  'is recommended when reciting or listening. They are marked '
-                  'with the symbol \u06E9 (sajdah marker).',
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'What to do',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Make one prostration (suj\u016Bd): place forehead, nose, '
-                  'hands, knees and toes on the ground, facing the qibla.',
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'What to recite (in prostration)',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Arabic: \u0633\u062C\u062F\u064E \u0648\u062C\u0647\u0650\u064A '
-                  '\u0644\u0650\u0644\u0651\u064E\u0630\u0650\u064A '
-                  '\u062E\u064E\u0644\u064E\u0642\u064E\u0647\u064F \u0648\u0634\u064E\u0642\u0651\u064E\u0642\u064E '
-                  '\u0633\u064E\u0645\u0652\u0639\u064E\u0647\u064F \u0648\u0628\u064E\u0635\u064E\u0631\u064E\u0647\u064F '
-                  '\u0628\u0650\u062D\u064E\u0648\u0652\u0644\u0650\u0647\u0650 '
-                  '\u0648\u0642\u064F\u0648\u0652\u062A\u0650\u0647\u0650.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    height: 1.6,
-                    fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                  ),
-                  textDirection: TextDirection.rtl,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Transliteration: Sajada wajh\u012B lilladh\u012B khalaqahu '
-                  'wa-shaqqa sam\u2019ahu wa-ba\u1e63arahu bi-\u1e25awlih\u012B '
-                  'wa-quwwatih\u012B.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Meaning: My face prostrated to the One who created it, '
-                  'gave it hearing and sight by His might and power.',
-                  style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.all(16),
+            child: SajdahGuideBody(showCountIntro: true),
           ),
         ),
         const SizedBox(height: 24),

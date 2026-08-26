@@ -48,5 +48,6 @@ alwaysApply: true
 
 - Access via `BookmarkScope.of(context)` -- provides `BookmarkService`
 - Bookmark IDs: `quran:{surahId}:{ayah}` or `hadith:{collection}:{book}:{index}`
-- Use `service.toggleBookmark(...)` to add/remove
+- Use `service.toggleBookmark(...)` to add/remove favorites
 - Use `service.isBookmarked(id)` to check state
+- **Pin** (one per surah): `toggleQuranPin` / `pinFor(surahId)` / `isAyahPinned`. Resume marker, not a favorite. Last-read is automatic scroll and is separate.

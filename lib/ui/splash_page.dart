@@ -13,6 +13,8 @@ import 'package:go_router/go_router.dart';
 import '../services/launch_preload.dart';
 import '../services/app_metrics.dart';
 import '../services/onboarding_service.dart';
+import '../services/widget_routes.dart';
+import '../router_paths.dart';
 
 /// Splash screen: background image, preload, then Home or first-run intro.
 class SplashPage extends StatefulWidget {
@@ -87,6 +89,12 @@ class _SplashPageState extends State<SplashPage> {
     final next = await (widget.resolveNext ?? OnboardingService.nextRoute)();
     if (!mounted) return;
     context.go(next);
+    final widgetPath = WidgetLaunch.takePath();
+    if (widgetPath != null && next == AppRoute.home) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.push(widgetPath);
+      });
+    }
   }
 
   @override

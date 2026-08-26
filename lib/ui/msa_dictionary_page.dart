@@ -4,11 +4,8 @@ library;
 import 'package:flutter/material.dart';
 
 import '../services/msa_dictionary_service.dart';
-import '../services/srs_scope.dart';
-import '../services/srs_service.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
-import 'widgets/app_haptics.dart';
 
 class MsaDictionaryPage extends StatefulWidget {
   const MsaDictionaryPage({
@@ -90,7 +87,7 @@ class _MsaDictionaryPageState extends State<MsaDictionaryPage> {
             child: Text(
               'Modern Standard Arabic (newspaper style). Not the Quran '
               'glossary. Meanings come from Wiktionary (CC BY-SA) plus a '
-              'Hublee core list. Star a word to review it with SM-2.',
+              'Hublee core list.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -217,71 +214,32 @@ class _MsaSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final srs = SrsScope.of(context);
-    return ListenableBuilder(
-      listenable: srs,
-      builder: (context, _) {
-        final id = SrsCard.cardId(
-          deck: 'msa',
-          arabic: entry.arabic,
-          english: entry.english,
-        );
-        final saved = srs.contains(id);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ArabicText(
-                entry.arabic,
-                tajweed: false,
-                fontSize: 36,
-                weight: FontWeight.bold,
-                align: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                entry.english,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              if (entry.root != null) ...[
-                const SizedBox(height: 6),
-                Text('Root ${entry.root} · ${entry.pos}'),
-              ],
-              const SizedBox(height: 16),
-              FilledButton.tonalIcon(
-                onPressed: () {
-                  AppHaptics.selection();
-                  if (saved) {
-                    srs.remove(id);
-                  } else {
-                    srs.ensure(
-                      SrsCard(
-                        id: id,
-                        deck: 'msa',
-                        arabic: entry.arabic,
-                        english: entry.english,
-                        root: entry.root,
-                        pos: entry.pos,
-                        due: DateTime.now(),
-                      ),
-                    );
-                  }
-                },
-                icon: Icon(
-                  saved ? Icons.star_rounded : Icons.star_outline_rounded,
-                ),
-                label: Text(
-                  saved ? 'In your review deck' : 'Add to spaced review',
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArabicText(
+            entry.arabic,
+            tajweed: false,
+            fontSize: 36,
+            weight: FontWeight.bold,
+            align: TextAlign.center,
           ),
-        );
-      },
+          const SizedBox(height: 8),
+          Text(
+            entry.english,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (entry.root != null) ...[
+            const SizedBox(height: 6),
+            Text('Root ${entry.root} · ${entry.pos}'),
+          ],
+        ],
+      ),
     );
   }
 }

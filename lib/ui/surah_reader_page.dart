@@ -31,8 +31,6 @@ import '../services/bookmark_scope.dart';
 import '../services/bookmark_service.dart';
 import '../services/vocab_scope.dart';
 import '../services/vocab_service.dart';
-import '../services/srs_scope.dart';
-import '../services/srs_service.dart';
 import '../services/recitation_scope.dart';
 import '../services/recitation_service.dart';
 import '../theme/app_tokens.dart';
@@ -41,13 +39,15 @@ import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
-import 'widgets/quran_reading_guide_sheet.dart';
 import 'widgets/word_by_word_arabic_text.dart';
 import 'widgets/word_gloss_card.dart';
 import 'widgets/passage_actions.dart';
 import 'widgets/reading_width.dart';
 import 'widgets/ayah_recitation_bar.dart';
 import 'widgets/now_playing_bar.dart';
+import 'widgets/reciter_picker.dart';
+import 'widgets/sajdah_guide.dart';
+import 'widgets/surah_details_header.dart';
 
 /// PUA glyph column is only for plain KFGQPC reading. Tajweed and
 /// word-by-word need standard Uthmani, so the 4.3 MB mushaf decode
@@ -98,18 +98,16 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   BookmarkService? _bookmarks;
   RecitationService? _recitation;
   String? _surahName;
-  bool _hasBismillah = false;
   int? _visibleAyah;
   String? _lastReciterId;
+  bool _followPlayback = true;
+  int? _followedAyah;
 
   // ── In-surah search state ──────────────────────────────────
   bool _isSearching = false;
   String _searchQuery = '';
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
-
-  /// Cycle index for header title: 0=Arabic, 1=English, 2=Meaning, 3=Revelation.
-  int _titleCycleIndex = 0;
 
   // ── Word-by-word state ─────────────────────────────────────
   /// The revealed word, or null when nothing is selected. Only one word is
@@ -131,8 +129,10 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     final next = RecitationScope.maybeOf(context);
     if (!identical(next, _recitation)) {
       _recitation?.removeListener(_onRecitation);
+      _recitation?.playbackListenable.removeListener(_onPlaybackFollow);
       _recitation = next;
       _recitation?.addListener(_onRecitation);
+      _recitation?.playbackListenable.addListener(_onPlaybackFollow);
     }
     unawaited(_ensureData());
   }
@@ -150,6 +150,33 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
         ),
       );
     }
+  }
+
+  bool get _showsBismillah => widget.surahId != 1 && widget.surahId != 9;
+
+  int get _prefixCount => 1 + (_showsBismillah ? 1 : 0);
+
+  void _onPlaybackFollow() {
+    _maybeFollowPlayback();
+  }
+
+  void _maybeFollowPlayback() {
+    if (!_followPlayback) return;
+    final recitation = _recitation;
+    if (recitation == null || !recitation.isPlaying) return;
+    final current = recitation.current;
+    if (current == null || current.surahId != widget.surahId) return;
+    if (_followedAyah == current.ayah) return;
+    _followedAyah = current.ayah;
+    _scrollToAyah(current.ayah);
+  }
+
+  bool _onUserScroll(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null) {
+      _followPlayback = false;
+    }
+    return false;
   }
 
   /// Loads chapters, translation, and Uthmani always. Glyph, emlaey,
@@ -251,12 +278,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1,
     );
     if (visible.isEmpty) return;
-    final top = visible.reduce(
+    final ayahPositions = visible.where(
+      (position) => position.index >= _prefixCount,
+    );
+    if (ayahPositions.isEmpty) return;
+    final inView = ayahPositions.where(
+      (position) => position.itemLeadingEdge >= -0.02,
+    );
+    final candidates = inView.isEmpty ? ayahPositions : inView;
+    final top = candidates.reduce(
       (a, b) => a.itemLeadingEdge < b.itemLeadingEdge ? a : b,
     );
-    var ayahIndex = top.index - (_hasBismillah ? 1 : 0);
-    if (ayahIndex < 0) ayahIndex = 0;
-    final ayah = ayahIndex + 1;
+    final ayah = top.index - _prefixCount + 1;
     if (_visibleAyah == ayah) return;
     _visibleAyah = ayah;
     _scheduleLastRead();
@@ -293,9 +326,9 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     });
   }
 
-  void _jumpToPlayingAyah(int ayah) {
+  void _scrollToAyah(int ayah) {
     if (!_scrollController.isAttached) return;
-    final index = (_hasBismillah ? 1 : 0) + (ayah - 1);
+    final index = _prefixCount + (ayah - 1);
     _scrollController.scrollTo(
       index: index < 0 ? 0 : index,
       duration: const Duration(milliseconds: 280),
@@ -304,11 +337,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     );
   }
 
+  void _jumpToPlayingAyah(int ayah) {
+    _followPlayback = true;
+    _followedAyah = ayah;
+    _scrollToAyah(ayah);
+  }
+
   @override
   void dispose() {
     _positionsListener.itemPositions.removeListener(_onScrollPositions);
     _lastReadTimer?.cancel();
     _recitation?.removeListener(_onRecitation);
+    _recitation?.playbackListenable.removeListener(_onPlaybackFollow);
     unawaited(_recitation?.stop());
     final name = _surahName;
     final ayah = _visibleAyah ?? widget.scrollToAyah ?? 1;
@@ -344,6 +384,30 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _searchQuery = '';
       _searchController.clear();
     });
+  }
+
+  Future<void> _togglePin({
+    required int ayah,
+    required String surahName,
+  }) async {
+    final bookmarks = _bookmarks;
+    if (bookmarks == null) return;
+    AppHaptics.lightImpact();
+    final change = await bookmarks.toggleQuranPin(
+      surahId: widget.surahId,
+      ayah: ayah,
+      surahName: surahName,
+    );
+    if (!mounted) return;
+    final label = '${widget.surahId}:$ayah';
+    final text = switch (change) {
+      QuranPinChange.pinned => 'Pinned $label',
+      QuranPinChange.moved => 'Pin moved to $label',
+      QuranPinChange.cleared => 'Pin removed',
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
+    );
   }
 
   /// Shows a modal bottom sheet with surah background information.
@@ -503,26 +567,27 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           }
 
           final totalAyahs = chapterMeta!.versesCount;
-          final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
-          final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
+          final itemCount = _prefixCount + totalAyahs;
 
           return Stack(
             children: [
-              _buildAyahList(
-                context,
-                chapterMeta,
-                arabicGlyphAyahs,
-                englishAyahs,
-                arabicStandardAyahs,
-                wordGlosses,
+              NotificationListener<ScrollNotification>(
+                onNotification: _onUserScroll,
+                child: _buildAyahList(
+                  context,
+                  chapterMeta,
+                  arabicGlyphAyahs,
+                  englishAyahs,
+                  arabicStandardAyahs,
+                  wordGlosses,
+                ),
               ),
               ScrollScrubber(
                 itemCount: itemCount,
                 labelBuilder: (index) {
-                  if (hasBismillah && index == 0) {
-                    return 'Bismillah';
-                  }
-                  final ayahIndex = index - (hasBismillah ? 1 : 0);
+                  if (index == 0) return chapterMeta.nameSimple;
+                  if (_showsBismillah && index == 1) return 'Bismillah';
+                  final ayahIndex = index - _prefixCount;
                   return 'Ayah ${ayahIndex + 1} of $totalAyahs';
                 },
                 scrollController: _scrollController,
@@ -564,25 +629,13 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                                     surahName: chapterMeta.nameSimple,
                                   ),
                                 );
-                                SrsScope.of(context).ensure(
-                                  SrsCard(
-                                    id: SrsCard.cardId(
-                                      deck: 'quran',
-                                      arabic: selection.arabic,
-                                      english: selection.gloss,
-                                    ),
-                                    deck: 'quran',
-                                    arabic: selection.arabic,
-                                    english: selection.gloss,
-                                    due: DateTime.now(),
-                                  ),
-                                );
                               },
                         onDismiss: _clearWordSelection,
                       ),
                       NowPlayingBar(
                         surahId: widget.surahId,
                         surahName: chapterMeta.nameSimple,
+                        verseCount: chapterMeta.versesCount,
                         onJumpToAyah: _jumpToPlayingAyah,
                       ),
                     ],
@@ -596,7 +649,8 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     );
   }
 
-  /// Normal app bar: single clickable title that cycles Arabic → English → Meaning → Revelation.
+  /// App bar: ligature title in Meccan/Medinan colour. Identity and
+  /// Info live on [SurahDetailsHeader], not here.
   PreferredSizeWidget _buildNormalAppBar(
     BuildContext context,
     ChapterMeta? chapterMeta,
@@ -638,43 +692,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 fontWeight: FontWeight.w600,
               ),
             )
-          : _CyclingSurahTitle(
-              chapter: chapterMeta,
-              cycleIndex: _titleCycleIndex,
-              compact: compact,
-              onTap: () {
-                setState(() {
-                  _titleCycleIndex = (_titleCycleIndex + 1) % 4;
-                });
-              },
-            ),
+          : _SurahAppBarTitle(chapter: chapterMeta, compact: compact),
       actions: [
-        if (!compact && chapterMeta != null)
-          Builder(
-            builder: (ctx) {
-              final chapter = chapterMeta;
-              return IconButton(
-                icon: const Icon(Icons.info_outline_rounded),
-                tooltip: 'Surah info',
-                onPressed: () => _showSurahInfo(ctx, chapter),
-              );
-            },
-          ),
-        if (!compact)
-          IconButton(
-            icon: const Icon(Icons.menu_book_rounded),
-            tooltip: 'Quran reading & Tajweed guide',
-            onPressed: () => showQuranReadingGuideSheet(context),
-          ),
         if (chapterMeta != null && recitation != null && !kIsWeb)
           ListenableBuilder(
             listenable: recitation,
             builder: (context, _) {
-              // Cover screens only keep the cancel affordance in the
-              // bar; download / remove live in the overflow menu.
-              if (compact && recitation.downloadProgress == null) {
-                return const SizedBox.shrink();
-              }
               return _SurahDownloadButton(
                 surahId: widget.surahId,
                 chapter: chapterMeta,
@@ -693,55 +716,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
           onPressed: () =>
               showReaderSettingsSheet(context, showTajweedToggle: true),
         ),
-        if (compact)
-          PopupMenuButton<String>(
-            tooltip: 'More',
-            onSelected: (value) {
-              if (value == 'info' && chapterMeta != null) {
-                _showSurahInfo(context, chapterMeta);
-              } else if (value == 'guide') {
-                showQuranReadingGuideSheet(context);
-              } else if (value == 'download' &&
-                  chapterMeta != null &&
-                  recitation != null) {
-                unawaited(
-                  _SurahDownloadButton.prompt(
-                    context,
-                    surahId: widget.surahId,
-                    chapter: chapterMeta,
-                    recitation: recitation,
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) {
-              final downloaded =
-                  recitation != null &&
-                  chapterMeta != null &&
-                  recitation.isSurahDownloaded(
-                    widget.surahId,
-                    chapterMeta.versesCount,
-                  );
-              return [
-                if (chapterMeta != null)
-                  const PopupMenuItem(value: 'info', child: Text('Surah info')),
-                const PopupMenuItem(
-                  value: 'guide',
-                  child: Text('Reading & Tajweed guide'),
-                ),
-                if (chapterMeta != null &&
-                    recitation != null &&
-                    !kIsWeb &&
-                    recitation.downloadProgress == null)
-                  PopupMenuItem(
-                    value: 'download',
-                    child: Text(
-                      downloaded ? 'Remove download' : 'Download surah',
-                    ),
-                  ),
-              ];
-            },
-          ),
         const SizedBox(width: 4),
       ],
     );
@@ -876,6 +850,10 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   arabicZoom: settings.arabicZoom,
                   englishZoom: settings.englishZoom,
                   isBookmarked: isBookmarked,
+                  isPinned: bookmarkService.isAyahPinned(
+                    widget.surahId,
+                    ayahNumber,
+                  ),
                   tajweedEnabled: settings.tajweedEnabled,
                   // Search results stay plain: the gloss card belongs to the
                   // reading view, and tapping words while filtering competes
@@ -892,6 +870,12 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                       ),
                     );
                   },
+                  onPinToggle: () => unawaited(
+                    _togglePin(
+                      ayah: ayahNumber,
+                      surahName: chapterMeta.nameSimple,
+                    ),
+                  ),
                   surahId: widget.surahId,
                   surahName: chapterMeta.nameSimple,
                   verseCount: chapterMeta.versesCount,
@@ -922,11 +906,14 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
     // Bismillah is shown for all surahs except Al-Fatiha (1)
     // and At-Tawba (9).
-    final hasBismillah = widget.surahId != 1 && widget.surahId != 9;
-    _hasBismillah = hasBismillah;
+    final hasBismillah = _showsBismillah;
     _surahName = chapterMeta.nameSimple;
-    _visibleAyah ??= widget.scrollToAyah ?? 1;
     _bookmarks = BookmarkScope.of(context);
+    final resumeAyah = quranOpenAyah(
+      requestedAyah: widget.scrollToAyah,
+      pinnedAyah: _bookmarks?.pinFor(widget.surahId)?.ayah,
+    );
+    _visibleAyah ??= resumeAyah ?? 1;
 
     if (!_hasPersistedLastRead) {
       _hasPersistedLastRead = true;
@@ -941,12 +928,13 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       });
     }
 
-    // Auto-scroll to the requested ayah only once.
-    if (!_hasScrolledToAyah && widget.scrollToAyah != null) {
+    // Auto-scroll to the requested ayah or this surah's pin, once.
+    if (!_hasScrolledToAyah && resumeAyah != null) {
       _hasScrolledToAyah = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final offset = hasBismillah ? 1 : 0;
-        final targetIndex = (widget.scrollToAyah! - 1 + offset).clamp(
+        final offset = _prefixCount;
+        final targetAyah = resumeAyah.clamp(1, totalAyahs);
+        final targetIndex = (targetAyah - 1 + offset).clamp(
           0,
           totalAyahs - 1 + offset,
         );
@@ -964,26 +952,57 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
 
     final settings = SettingsScope.of(context);
     final bookmarkService = BookmarkScope.of(context);
+    final recitation = RecitationScope.maybeOf(context);
 
-    // Total items: optional bismillah + ayahs.
-    final itemCount = (hasBismillah ? 1 : 0) + totalAyahs;
+    // Header + optional bismillah + ayahs.
+    final itemCount = _prefixCount + totalAyahs;
+    final playerOpen =
+        recitation?.current?.surahId == widget.surahId &&
+        recitation?.current != null;
 
     return ScrollablePositionedList.separated(
       itemScrollController: _scrollController,
       itemPositionsListener: _positionsListener,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, ScrollScrubber.gutter, 24),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        ScrollScrubber.gutter,
+        playerOpen ? 120 : 24,
+      ),
       minCacheExtent: AppSpacing.cacheExtent,
       itemCount: itemCount,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        // First item: Bismillah header (if applicable).
-        if (hasBismillah && index == 0) {
+        if (index == 0) {
+          return SurahDetailsHeader(
+            chapter: chapterMeta,
+            onInfo: () => unawaited(_showSurahInfo(context, chapterMeta)),
+            onListen: recitation == null
+                ? null
+                : () {
+                    _followPlayback = true;
+                    _followedAyah = null;
+                    unawaited(
+                      recitation.play(
+                        surahId: widget.surahId,
+                        ayah: 1,
+                        verseCount: chapterMeta.versesCount,
+                      ),
+                    );
+                    _jumpToPlayingAyah(1);
+                  },
+            onTranslation: () =>
+                showReaderSettingsSheet(context, showTajweedToggle: true),
+          );
+        }
+
+        if (hasBismillah && index == 1) {
           return _BismillahHeader(arabicZoom: settings.arabicZoom);
         }
 
         // Normal ayah card.
-        final ayahIndex = index - (hasBismillah ? 1 : 0);
+        final ayahIndex = index - _prefixCount;
         final ayahNumber = ayahIndex + 1;
         // Word-by-word glosses are aligned to the standard Uthmanic text, and
         // tajweed needs parseable Arabic, so either feature rules out the PUA
@@ -1010,6 +1029,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             arabicZoom: settings.arabicZoom,
             englishZoom: settings.englishZoom,
             isBookmarked: isBookmarked,
+            isPinned: bookmarkService.isAyahPinned(widget.surahId, ayahNumber),
             tajweedEnabled: settings.tajweedEnabled,
             glosses: wordByWord ? wordGlosses[ayahNumber] : null,
             selection: _wordSelectionAyah == ayahNumber ? _wordSelection : null,
@@ -1024,6 +1044,13 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   snippet: englishText,
                 ),
               );
+            },
+            onPinToggle: () => unawaited(
+              _togglePin(ayah: ayahNumber, surahName: chapterMeta.nameSimple),
+            ),
+            onPlay: () {
+              _followPlayback = true;
+              _followedAyah = null;
             },
             surahId: widget.surahId,
             surahName: chapterMeta.nameSimple,
@@ -1111,8 +1138,11 @@ class _AyahCard extends StatelessWidget {
   final double arabicZoom;
   final double englishZoom;
   final bool isBookmarked;
+  final bool isPinned;
   final bool tajweedEnabled;
   final VoidCallback onBookmarkToggle;
+  final VoidCallback? onPlay;
+  final VoidCallback onPinToggle;
   final int surahId;
   final String surahName;
   final int verseCount;
@@ -1134,8 +1164,11 @@ class _AyahCard extends StatelessWidget {
     required this.arabicZoom,
     required this.englishZoom,
     required this.isBookmarked,
+    required this.isPinned,
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
+    required this.onPinToggle,
+    this.onPlay,
     required this.surahId,
     required this.surahName,
     required this.verseCount,
@@ -1151,11 +1184,14 @@ class _AyahCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final recitation = RecitationScope.maybeOf(context);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: colorScheme.surface,
+      color: isPinned
+          ? colorScheme.primary.withValues(alpha: 0.06)
+          : colorScheme.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onLongPress: () => showPassageActionsSheet(
@@ -1171,59 +1207,20 @@ class _AyahCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$ayahNumber',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Text(
+                    '$surahId:$ayahNumber',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (isSajdah) ...[
-                    const SizedBox(width: 8),
-                    Tooltip(
-                      message: 'Prostration is recommended',
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.tertiary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Sajdah \u06E9',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: colorScheme.tertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  if (RecitationScope.maybeOf(context) != null)
+                  if (recitation != null)
                     AyahRecitationBar(
                       surahId: surahId,
                       ayah: ayahNumber,
-                      surahName: surahName,
                       verseCount: verseCount,
+                      onPlay: onPlay,
                     ),
-                  PassageActionsButton(
-                    reference: _reference,
-                    arabic: arabic,
-                    english: english,
-                  ),
                   IconButton(
                     icon: Icon(
                       isBookmarked
@@ -1236,7 +1233,39 @@ class _AyahCard extends StatelessWidget {
                     ),
                     onPressed: onBookmarkToggle,
                     tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
                   ),
+                  IconButton(
+                    key: Key('ayah-pin-$surahId-$ayahNumber'),
+                    icon: Icon(
+                      isPinned
+                          ? Icons.push_pin_rounded
+                          : Icons.push_pin_outlined,
+                      color: isPinned
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.3),
+                      size: 22,
+                    ),
+                    onPressed: onPinToggle,
+                    tooltip: isPinned
+                        ? 'Remove pin'
+                        : 'Pin this ayah to resume here',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
+                  ),
+                  if (isSajdah) ...[
+                    const SizedBox(width: 4),
+                    const SajdahChip(),
+                  ],
                 ],
               ),
               const SizedBox(height: 10),
@@ -1320,93 +1349,22 @@ class _SurahDownloadButton extends StatelessWidget {
 
     return IconButton(
       tooltip: downloaded
-          ? 'Remove downloaded audio'
-          : 'Download this surah for offline playback',
+          ? 'Manage downloaded reciters'
+          : 'Download this surah for a reciter',
       icon: Icon(
         downloaded ? Icons.download_done_rounded : Icons.download_rounded,
       ),
-      onPressed: () => prompt(
-        context,
-        surahId: surahId,
-        chapter: chapter,
-        recitation: recitation,
-      ),
-    );
-  }
-
-  /// Confirms download or removal, then runs the matching action.
-  static Future<void> prompt(
-    BuildContext context, {
-    required int surahId,
-    required ChapterMeta chapter,
-    required RecitationService recitation,
-  }) async {
-    final downloaded = recitation.isSurahDownloaded(
-      surahId,
-      chapter.versesCount,
-    );
-    if (downloaded) {
-      final remove = await showDialog<bool>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Remove download?'),
-            content: Text(
-              'Delete saved audio for ${chapter.nameSimple} '
-              '(${recitation.reciter.label})?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Keep'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Remove'),
-              ),
-            ],
-          );
-        },
-      );
-      if (remove == true) {
-        await recitation.deleteSurah(
+      onPressed: () {
+        AppHaptics.selection();
+        showReciterPickerSheet(
+          context,
           surahId: surahId,
+          surahName: chapter.nameSimple,
           verseCount: chapter.versesCount,
-        );
-      }
-      return;
-    }
-
-    final go = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Download this surah?'),
-          content: Text(
-            'Save all ${chapter.versesCount} ayahs of '
-            '${chapter.nameSimple} by ${recitation.reciter.label} '
-            'so playback works without a connection.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Download'),
-            ),
-          ],
+          title: 'Download recitation',
         );
       },
     );
-    if (go != true) return;
-    final error = await recitation.downloadSurah(
-      surahId: surahId,
-      verseCount: chapter.versesCount,
-    );
-    if (error == null || !context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
   }
 }
 
@@ -1635,134 +1593,37 @@ Widget _buildInfoSection(BuildContext context, String heading, String body) {
   );
 }
 
-/// Single tappable title in the app bar. Cycles: Arabic → English → Meaning → Revelation.
-class _CyclingSurahTitle extends StatelessWidget {
-  const _CyclingSurahTitle({
-    required this.chapter,
-    required this.cycleIndex,
-    required this.onTap,
-    this.compact = false,
-  });
+/// Compact app-bar title: calligraphic name in Meccan/Medinan colour.
+class _SurahAppBarTitle extends StatelessWidget {
+  const _SurahAppBarTitle({required this.chapter, this.compact = false});
 
   final ChapterMeta chapter;
-  final int cycleIndex;
-  final VoidCallback onTap;
   final bool compact;
-
-  static const _makkiAccent = Color(0xFFD4A054);
-  static const _madaniAccent = Color(0xFF4CAF7D);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMeccan = chapter.isMeccan;
-    final accent = isMeccan ? _makkiAccent : _madaniAccent;
-    final outline = accent.withValues(alpha: 0.4);
-    final fill = accent.withValues(alpha: 0.08);
-
-    final content = _buildContent(context, theme, accent);
-
-    if (compact) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: content,
+    final accent = chapter.isMeccan
+        ? AppColors.meccanAccent
+        : AppColors.medinanAccent;
+    final ligature = 'surah${chapter.id.toString().padLeft(3, '0')}';
+    return Semantics(
+      label: 'Surah ${chapter.id}, ${chapter.nameSimple}',
+      child: ExcludeSemantics(
+        child: Text(
+          ligature,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: AppFonts.surahName,
+            fontWeight: FontWeight.w600,
+            fontSize: compact ? 20 : 24,
+            color: accent,
+            height: 1.3,
           ),
-        ),
-      );
-    }
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 12 : 24,
-              vertical: compact ? 6 : 14,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: outline, width: 1.2),
-              color: fill,
-            ),
-            child: content,
-          ),
+          textDirection: TextDirection.rtl,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
-  }
-
-  Widget _buildContent(BuildContext context, ThemeData theme, Color accent) {
-    switch (cycleIndex % 4) {
-      case 0:
-        // Tarteel QUL surah-name-v4 font: ligatures surah001–surah114 render calligraphic Arabic names.
-        final ligature = 'surah${chapter.id.toString().padLeft(3, '0')}';
-        return Semantics(
-          label: 'Surah ${chapter.id}, ${chapter.nameSimple}',
-          child: ExcludeSemantics(
-            child: Text(
-              ligature,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontFamily: AppFonts.surahName,
-                fontWeight: FontWeight.w600,
-                fontSize: compact ? 20 : 24,
-                color: accent,
-                height: 1.3,
-              ),
-              textDirection: TextDirection.rtl,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        );
-      case 1:
-        return Text(
-          chapter.nameSimple,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: compact ? 16 : 20,
-            color: accent,
-            letterSpacing: 0.3,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
-      case 2:
-        final meaning = chapter.nameTranslated ?? '—';
-        return Text(
-          meaning,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: compact ? 15 : 18,
-            color: accent.withValues(alpha: 0.95),
-            fontStyle: FontStyle.italic,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
-      case 3:
-        final place = chapter.isMeccan ? 'Meccan' : 'Medinan';
-        return Text(
-          place,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: compact ? 15 : 18,
-            color: accent,
-            letterSpacing: 0.5,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
-      default:
-        return const SizedBox.shrink();
-    }
   }
 }

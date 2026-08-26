@@ -1,11 +1,10 @@
-/// Hub for Modern Standard Arabic: dictionary, grammar, reviews.
+/// Hub for Modern Standard Arabic: dictionary and grammar.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
-import '../services/srs_scope.dart';
 import '../theme/app_tokens.dart';
 
 class ArabicHubPage extends StatelessWidget {
@@ -14,7 +13,6 @@ class ArabicHubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final due = SrsScope.of(context).dueCount(deck: 'msa');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Modern Arabic')),
@@ -23,8 +21,7 @@ class ArabicHubPage extends StatelessWidget {
         children: [
           Text(
             'Newspaper Arabic (Modern Standard), separate from the Quran '
-            'glossary. Dictionary, grammar with roots and verb forms, '
-            'and spaced-repetition reviews.',
+            'glossary. Dictionary and grammar with roots and verb forms.',
             style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
           ),
           const SizedBox(height: 16),
@@ -49,20 +46,6 @@ class ArabicHubPage extends StatelessWidget {
               ),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => context.push(AppRoute.grammar),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.school_rounded),
-              title: const Text('Spaced repetition'),
-              subtitle: Text(
-                due == 0
-                    ? 'Star words in the MSA dictionary, then review here'
-                    : '$due card${due == 1 ? '' : 's'} due',
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => context.push(AppRoute.arabicReview),
             ),
           ),
         ],

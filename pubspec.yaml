@@ -1,7 +1,7 @@
 name: hublee
 description: "Quran and Hadith reader app"
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.4+6
 
 environment:
   # Floor is set by the strictest dependency (go_router requires ^3.10.0).
@@ -30,6 +30,8 @@ dependencies:
   audioplayers: ^6.8.1
   http: ^1.5.0
   path_provider: ^2.1.5
+  home_widget: ^0.9.3
+  workmanager: ^0.9.0
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +65,7 @@ flutter:
     - assets/images/masjid_nabawi_madani.png
     - assets/images/HubleeAppLogo.png
     - assets/images/HubleeBackground.png
+    - assets/guidance/
 
   fonts:
     # PUA-glyph mushaf font. Renders `aya_text` only — it has no glyphs for

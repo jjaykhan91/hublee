@@ -8,11 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hublee/router_paths.dart';
+import 'package:hublee/services/widget_routes.dart';
 import 'package:hublee/ui/splash_page.dart';
 
 void main() {
   late GoRouter router;
 
+  setUp(WidgetLaunch.reset);
   tearDown(() => router.dispose());
 
   GoRouter buildRouter({

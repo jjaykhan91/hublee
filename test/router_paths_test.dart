@@ -22,12 +22,18 @@ void main() {
       expect(AppRoute.privacy, '/privacy');
       expect(AppRoute.dictionary, '/dictionary');
       expect(AppRoute.learnQuranic, '/learn/quranic');
-      expect(AppRoute.quranReview, '/learn/review');
       expect(AppRoute.arabicHub, '/arabic');
       expect(AppRoute.msaDictionary, '/arabic/dictionary');
       expect(AppRoute.grammar, '/arabic/grammar');
-      expect(AppRoute.arabicReview, '/arabic/review');
       expect(AppRoute.grammarLesson('roots'), '/arabic/grammar/roots');
+      expect(AppRoute.aboutAllah, '/about/allah');
+      expect(AppRoute.aboutAllahNames, '/about/allah/names');
+      expect(AppRoute.aboutAllahSection('who'), '/about/allah/who');
+      expect(AppRoute.aboutProphet, '/about/prophet');
+      expect(AppRoute.aboutProphetSection('life'), '/about/prophet/life');
+      expect(AppRoute.duas, '/duas');
+      expect(AppRoute.duaCategory('quran'), '/duas/quran');
+      expect(AppRoute.homeWidgets, '/settings/widgets');
     });
 
     test('surah builds path without ayah', () {

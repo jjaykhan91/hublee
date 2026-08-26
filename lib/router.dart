@@ -32,7 +32,10 @@ import 'ui/learn_hub_page.dart';
 import 'ui/arabic_hub_page.dart';
 import 'ui/msa_dictionary_page.dart';
 import 'ui/grammar_page.dart';
-import 'ui/srs_review_page.dart';
+import 'ui/allah_page.dart';
+import 'ui/prophet_page.dart';
+import 'ui/dua_pages.dart';
+import 'ui/home_widgets_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
 /// Used by detail pages that should push above the shell.
@@ -170,12 +173,6 @@ final GoRouter appRouter = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) => const LearnPage(),
                 ),
-                GoRoute(
-                  path: 'review',
-                  parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) =>
-                      const SrsReviewPage(deck: 'quran'),
-                ),
               ],
             ),
           ],
@@ -197,6 +194,13 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/settings',
               builder: (context, state) => const SettingsPage(),
+              routes: [
+                GoRoute(
+                  path: 'widgets',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => const HomeWidgetsPage(),
+                ),
+              ],
             ),
           ],
         ),
@@ -253,9 +257,37 @@ final GoRouter appRouter = GoRouter(
           GrammarLessonPage(lessonId: state.pathParameters['lessonId'] ?? ''),
     ),
     GoRoute(
-      path: AppRoute.arabicReview,
+      path: AppRoute.aboutAllah,
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SrsReviewPage(deck: 'msa'),
+      builder: (context, state) => const AllahPage(),
+    ),
+    GoRoute(
+      path: '${AppRoute.aboutAllah}/:sectionId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          AllahPage(sectionId: state.pathParameters['sectionId']),
+    ),
+    GoRoute(
+      path: AppRoute.aboutProphet,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const ProphetPage(),
+    ),
+    GoRoute(
+      path: '${AppRoute.aboutProphet}/:sectionId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          ProphetPage(sectionId: state.pathParameters['sectionId']),
+    ),
+    GoRoute(
+      path: AppRoute.duas,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const DuaHubPage(),
+    ),
+    GoRoute(
+      path: '${AppRoute.duas}/:categoryId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          DuaCategoryPage(categoryId: state.pathParameters['categoryId'] ?? ''),
     ),
   ],
 );

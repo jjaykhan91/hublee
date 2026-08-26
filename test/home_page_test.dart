@@ -37,6 +37,21 @@ void main() {
     expect(find.byKey(const Key('verse-of-the-day-skeleton')), findsOneWidget);
     expect(find.byKey(const Key('hadith-of-the-day-skeleton')), findsOneWidget);
     expect(find.text('Ayah of the Day'), findsNothing);
+    expect(find.byKey(const Key('hublee-wordmark')), findsOneWidget);
+    expect(find.byKey(const Key('hublee-meaning-card')), findsOneWidget);
+    expect(find.textContaining('my rope'), findsWidgets);
+    expect(find.textContaining('Quran and the Sunnah'), findsOneWidget);
+    expect(find.text('Quran'), findsOneWidget);
+    expect(find.text('Hadith'), findsOneWidget);
+    expect(find.text('Continue Quran'), findsNothing);
+    expect(find.text('Continue Hadith'), findsNothing);
+    expect(find.byKey(const Key('home-card-allah')), findsOneWidget);
+    expect(find.byKey(const Key('home-card-prophet')), findsOneWidget);
+    expect(find.byKey(const Key('home-card-duas')), findsOneWidget);
+    expect(find.text('Allah'), findsOneWidget);
+    expect(find.textContaining('Duas from the Quran'), findsOneWidget);
+    expect(find.text('Dhikr of the Day'), findsOneWidget);
+    expect(find.byKey(const Key('dhikr-of-the-day-card')), findsOneWidget);
 
     // Daily cards animate on first paint; flush those timers so the
     // test binding does not fail on dispose.

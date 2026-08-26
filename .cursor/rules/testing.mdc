@@ -28,12 +28,18 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/router_paths_test.dart` | `AppRoute` path building |
 | `test/arabic_rendering_test.dart` | Arabic layout, overflow guards, span integrity, goldens |
 | `test/quran_page_test.dart` | Quran tab keep-alive (scroll survives tab switch) |
-| `test/home_page_test.dart` | Daily-card skeletons hold layout while content loads |
+| `test/home_page_test.dart` | Daily-card skeletons hold layout while content loads; dhikr card is sync |
 | `test/bookmarks_page_test.dart` | Empty-state copy and swipe-to-delete undo |
 | `test/hadith_page_test.dart` | Book summaries and lazy Hadith tab list |
 | `test/splash_page_test.dart` | Splash preloads then advances; tap and maxWait skip a hung load |
+| `test/widget_look_test.dart` | Widget look encode/decode and `clipAtWord` |
+| `test/widget_routes_test.dart` | `hublee://` tap mapping and `WidgetLaunch` |
+| `test/home_widgets_page_test.dart` | Settings page lists the four launcher widgets |
 | `test/scroll_scrubber_test.dart` | Scrubber pins to the right edge; list gutter matches overlay |
 | `test/hadith_chapters_test.dart` | Chapter start indices and the hadith chapter jump sheet |
+| `test/guidance_repository_test.dart` | Allah names, seerah sections, and dua catalog |
+| `test/everyday_dhikr_test.dart` | Everyday dhikr catalog, daily pick, and wording sheet |
+| `test/reader_settings_sheet_test.dart` | Reader settings opens halfway and scrolls to Tajweed Guide |
 | `test/tajweed_colors_test.dart` | Rule colours pinned to the documented Madani hex |
 | `test/quran_chapters_repository_test.dart` | 114 chapters load with valid metadata |
 

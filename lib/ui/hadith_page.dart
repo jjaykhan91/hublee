@@ -12,6 +12,7 @@ import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
+import 'widgets/hadith_overview_sheet.dart';
 import 'widgets/hublee_card.dart';
 
 Color _accentFor(ColorScheme colors, String collectionId) {
@@ -182,7 +183,16 @@ class _HadithPageState extends State<HadithPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Hadith')),
+      appBar: AppBar(
+        title: const Text('Hadith'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'About Hadith',
+            onPressed: () => showHadithOverviewSheet(context),
+          ),
+        ],
+      ),
       body: FutureBuilder<List<_HadithRow>>(
         future: _dataFuture,
         builder: (context, snapshot) {

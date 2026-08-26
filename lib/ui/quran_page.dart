@@ -12,7 +12,11 @@ import 'package:go_router/go_router.dart';
 import '../quran/quran_chapters_repository.dart';
 import '../quran/models.dart';
 import '../router_paths.dart';
+import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/hublee_card.dart';
+import 'widgets/quran_overview_sheet.dart';
+import 'widgets/quran_reading_guide_sheet.dart';
 
 /// Juz names (commonly used Arabic names for the 30 parts).
 const _juzNames = <int, String>{
@@ -79,10 +83,26 @@ class _QuranPageState extends State<QuranPage>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final lastRead = BookmarkScope.maybeOf(context)?.lastReadQuran;
+    final continueSurah = lastRead?['surahId'];
+    final continueAyah = lastRead?['ayah'];
+    final showContinue = continueSurah is int && continueAyah is int;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quran'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'About the Quran',
+            onPressed: () => showQuranOverviewSheet(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu_book_rounded),
+            tooltip: 'Quran reading & Tajweed guide',
+            onPressed: () => showQuranReadingGuideSheet(context),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -91,34 +111,51 @@ class _QuranPageState extends State<QuranPage>
           tabs: _tabs.map((label) => Tab(text: label)).toList(),
         ),
       ),
-      body: FutureBuilder<List<ChapterMeta>>(
-        future: _chaptersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Error: ${snapshot.error}'),
-            );
-          }
+      body: Column(
+        children: [
+          if (showContinue)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: _QuranContinueBanner(lastRead: lastRead!),
+            ),
+          Expanded(
+            child: FutureBuilder<List<ChapterMeta>>(
+              future: _chaptersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                }
 
-          final chapters = snapshot.data ?? const <ChapterMeta>[];
+                final chapters = snapshot.data ?? const <ChapterMeta>[];
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _SurahListView(chapters: chapters, colorScheme: colorScheme),
-              _JuzGroupView(chapters: chapters, colorScheme: colorScheme),
-              _MakkiMadaniView(chapters: chapters, colorScheme: colorScheme),
-              _RevelationOrderView(
-                chapters: chapters,
-                colorScheme: colorScheme,
-              ),
-            ],
-          );
-        },
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _SurahListView(
+                      chapters: chapters,
+                      colorScheme: colorScheme,
+                    ),
+                    _JuzGroupView(chapters: chapters, colorScheme: colorScheme),
+                    _MakkiMadaniView(
+                      chapters: chapters,
+                      colorScheme: colorScheme,
+                    ),
+                    _RevelationOrderView(
+                      chapters: chapters,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -586,12 +623,14 @@ class _SurahCard extends StatelessWidget {
         : 'assets/images/masjid_nabawi_madani.png';
     const textColor = AppColors.surahCardOnImage;
 
+    final pin = BookmarkScope.maybeOf(context)?.pinFor(chapter.id);
     final semanticsLabel = [
       'Surah ${chapter.id}',
       chapter.nameSimple,
       if (chapter.nameTranslated != null) chapter.nameTranslated!,
       '${chapter.versesCount} ayahs',
       if (isMeccan) 'Meccan' else 'Medinan',
+      if (pin != null) 'pinned at ayah ${pin.ayah}',
     ].join(', ');
 
     return Semantics(
@@ -607,7 +646,8 @@ class _SurahCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => context.push(AppRoute.surah(chapter.id)),
+              onTap: () =>
+                  context.push(AppRoute.surah(chapter.id, ayah: pin?.ayah)),
               child: ExcludeSemantics(
                 child: Container(
                   height: showRevelationOrder
@@ -641,29 +681,46 @@ class _SurahCard extends StatelessWidget {
                         child: Row(
                           children: [
                             // Surah number in modern circular badge (3D shadow).
-                            Container(
-                              width: AppSpacing.minTouchTarget,
-                              height: AppSpacing.minTouchTarget,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: accentColor,
-                                  width: 1.5,
-                                ),
-                                color: accentColor.withValues(alpha: 0.15),
-                                boxShadow: AppShadows.badge,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                showRevelationOrder
-                                    ? '${chapter.revelationOrder}'
-                                    : '${chapter.id}',
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: AppSpacing.minTouchTarget,
+                                  height: AppSpacing.minTouchTarget,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
                                       color: accentColor,
-                                      fontWeight: FontWeight.w800,
+                                      width: 1.5,
                                     ),
-                              ),
+                                    color: accentColor.withValues(alpha: 0.15),
+                                    boxShadow: AppShadows.badge,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    showRevelationOrder
+                                        ? '${chapter.revelationOrder}'
+                                        : '${chapter.id}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          color: accentColor,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                  ),
+                                ),
+                                if (pin != null)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: Icon(
+                                      Icons.push_pin_rounded,
+                                      size: 14,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(width: 14),
                             // English name + translation + ayah count (Quran.com style).
@@ -734,13 +791,41 @@ class _SurahCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // Ayah count to the right.
-                            Text(
-                              '${chapter.versesCount} Ayahs',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: textColor.withValues(alpha: 0.6),
+                            // Ayah count, and pin ayah when one is set.
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (pin != null)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.push_pin_rounded,
+                                        size: 12,
+                                        color: accentColor,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${pin.ayah}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: accentColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
                                   ),
+                                Text(
+                                  '${chapter.versesCount} Ayahs',
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: textColor.withValues(alpha: 0.6),
+                                      ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -752,6 +837,61 @@ class _SurahCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Last-read resume strip on the Quran tab (automatic scroll position).
+class _QuranContinueBanner extends StatelessWidget {
+  const _QuranContinueBanner({required this.lastRead});
+
+  final Map<String, dynamic> lastRead;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final surahId = lastRead['surahId'] as int;
+    final ayah = lastRead['ayah'] as int;
+    final name = lastRead['surahName'] as String? ?? 'Surah $surahId';
+
+    return HubleeCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      onTap: () => context.push(AppRoute.surah(surahId, ayah: ayah)),
+      child: Row(
+        children: [
+          Container(
+            width: AppSpacing.minTouchTarget,
+            height: AppSpacing.minTouchTarget,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.14),
+              borderRadius: AppRadius.chip,
+            ),
+            child: Icon(Icons.menu_book_rounded, color: colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Continue where you left off',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '$name · $surahId:$ayah',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_rounded, color: colorScheme.primary),
+        ],
       ),
     );
   }

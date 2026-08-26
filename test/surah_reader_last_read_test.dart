@@ -14,8 +14,6 @@ import 'package:hublee/services/bookmark_scope.dart';
 import 'package:hublee/services/bookmark_service.dart';
 import 'package:hublee/services/settings_controller.dart';
 import 'package:hublee/services/settings_scope.dart';
-import 'package:hublee/services/srs_scope.dart';
-import 'package:hublee/services/srs_service.dart';
 import 'package:hublee/services/vocab_scope.dart';
 import 'package:hublee/services/vocab_service.dart';
 import 'package:hublee/ui/surah_reader_page.dart';
@@ -57,10 +55,7 @@ void main() {
           service: bookmarks,
           child: VocabScope(
             service: VocabService(),
-            child: SrsScope(
-              service: SrsService(),
-              child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
-            ),
+            child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
           ),
         ),
       ),
@@ -69,7 +64,10 @@ void main() {
 
     expect(find.text('ClearQuran'), findsWidgets);
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -800));
+    await tester.drag(
+      find.byKey(const Key('surah-details-header')),
+      const Offset(0, -1200),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -93,18 +91,49 @@ void main() {
           service: BookmarkService(),
           child: VocabScope(
             service: VocabService(),
-            child: SrsScope(
-              service: SrsService(),
-              child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
-            ),
+            child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
           ),
         ),
       ),
     );
     await _pumpUntilReaderLoaded(tester);
 
-    expect(tester.takeException(), isNull);
-    expect(find.byTooltip('More'), findsOneWidget);
     expect(find.byTooltip('Surah info'), findsNothing);
+    expect(find.byKey(const Key('surah-header-info')), findsOneWidget);
+    expect(find.byTooltip('More'), findsNothing);
+    expect(find.byTooltip('Quran reading & Tajweed guide'), findsNothing);
+    expect(find.byKey(const Key('surah-details-header')), findsOneWidget);
+    expect(find.textContaining('Surah Al-Fatihah'), findsWidgets);
+    expect(find.text('Meccan'), findsOneWidget);
+  });
+
+  testWidgets('pinning an ayah stores a per-surah resume marker', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final bookmarks = BookmarkService();
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: BookmarkScope(
+          service: bookmarks,
+          child: VocabScope(
+            service: VocabService(),
+            child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
+          ),
+        ),
+      ),
+    );
+    await _pumpUntilReaderLoaded(tester);
+
+    final pinFinder = find.byKey(const Key('ayah-pin-1-1'));
+    await tester.ensureVisible(pinFinder);
+    await tester.tap(pinFinder);
+    await tester.pump();
+    expect(find.text('Pinned 1:1'), findsOneWidget);
+    expect(bookmarks.isAyahPinned(1, 1), isTrue);
   });
 }

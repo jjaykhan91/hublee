@@ -33,7 +33,7 @@ Offline Quran and Hadith reader. Tajweed, word-by-word, optional recitation.
 ```
 Hublee is an offline Quran and Hadith reader. The Arabic text, English translation (ClearQuran), and Hadith collections are bundled in the app. There is no account, no ads, and no tracking SDK.
 
-Read with tajweed colouring and optional word-by-word English. Search Quran and Hadith on the device. Bookmark ayahs and hadiths. A Learn tab includes a Quranic glossary and Modern Arabic study cards.
+Read with tajweed colouring and optional word-by-word English. Search Quran and Hadith on the device. Bookmark ayahs and hadiths. A Learn tab includes a Quranic glossary and Modern Arabic study cards. On Android you can pin ayah of the day, hadith of the day, a Quranic word, or an Arabic word to the home screen.
 
 Recitation is optional and not bundled. Choose a Hafs reciter from the play control on any ayah. Stream over the network, or download a surah (or the full Quran for that reciter) to this device for offline playback.
 
@@ -73,7 +73,7 @@ Hublee has **no backend**. Declare only what the APK actually does.
 | Encryption in transit | Recitation uses **HTTPS** |
 | Users can request deletion | N/A — we never receive an account or cloud copy |
 | Data shared with third parties | Recitation hosts receive a normal HTTPS request for an MP3 when the user plays or downloads. We do not sell data. |
-| Permissions | `INTERNET` (recitation). No microphone, camera, contacts, or SMS. |
+| Permissions | `INTERNET` (recitation). Home-screen widgets add `RECEIVE_BOOT_COMPLETED` so today’s ayah/hadith can refresh when the app is closed. Foreground-service permissions from Workmanager are stripped; Hublee does not run a foreground service. No microphone, camera, contacts, or SMS. |
 
 If Play’s form forces a “collected” row for files: **App functionality**, **ephemeral / on-device**, not sold, not optional-account.
 
@@ -83,6 +83,35 @@ If Play’s form forces a “collected” row for files: **App functionality**, 
 2. When that build is healthy, **Promote** to Production (or create a Production release with the same AAB).
 
 First production review is often a few days. Fix any policy email before resubmitting.
+
+A **closed testing** release must contain **one** version code for a given device config. If Console says a bundle is “completely shadowed”, you uploaded two AABs (for example `1.0.0+1` and `1.0.1+2`) into the same release. Remove the lower version from **New app bundles** and keep only the newest. The same AAB can sit on Internal testing and Closed testing; you do not need both files in one release.
+
+## Upload from the repo (Play API)
+
+Play has no email/password API login. **Setup → API access** was removed from Play Console. Auth is a Google Cloud **service account** JSON that you invite under **Users and permissions**.
+
+You must be the Play developer **account owner** (or have Admin) to invite users. Do this from the **account** home, not inside the Hublee app — click **All apps** first if the left nav only shows Test and release.
+
+1. [Create a Google Cloud project](https://console.cloud.google.com/projectcreate) (name it e.g. `hublee-play`).
+2. [Enable Google Play Android Developer API](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com) on that project → **Enable**.
+3. [Create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts): **Create service account** → name `hublee-play` → **Create and continue** → skip Cloud roles → **Done**. Open it → **Keys** → **Add key** → **Create new key** → **JSON**. Save as `android/play-service-account.json` (gitignored). Copy `client_email` from the JSON (`…@….iam.gserviceaccount.com`).
+4. [Play Console → Users and permissions](https://play.google.com/console/users-and-permissions) → **Invite new users**. Paste that email (not your Gmail). **App permissions** → **Add app** → Hublee. Enable **View app information (read-only)**, **Release apps to testing tracks**, and **Manage testing tracks and edit tester lists**. **Invite user**. Status becomes Active immediately (no email to accept).
+5. Wait a few minutes, then run the upload command below.
+
+Official walkthrough: [Getting started with the Google Play Developer API](https://developers.google.com/android-publisher/getting_started).
+
+Then:
+
+```powershell
+flutter build appbundle --release
+dart pub get -C tools/play_release
+Set-Location tools/play_release
+dart run bin/upload.dart --tracks internal,closed --notes "Your what's new text"
+```
+
+`closed` is the default closed-testing track (`alpha`). Use `--skip-upload --version-code 2` to attach a bundle that is already on Play. `--dry-run` prints the plan without calling the API. `--help` reprints the setup steps.
+
+Do not commit the JSON. Losing it is fine (mint a new key); leaking it lets anyone ship as Hublee.
 
 ## After each update
 

@@ -4,6 +4,8 @@
 /// EveryAyah, and can download every ayah of a surah for later play.
 library;
 
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +35,9 @@ const kRecitationReciterPrefKey = 'recitation.reciterId';
 
 /// Prefs key for looping the current ayah (memorization).
 const kRecitationRepeatPrefKey = 'recitation.repeatAyah';
+
+/// Prefs key for playing the next ayah when the current one ends.
+const kRecitationContinuePrefKey = 'recitation.continueToNext';
 
 /// Reciter streamed for the ayah play button when none is saved.
 const kRecitationReciterName = 'Mishary Rashid Alafasy';
@@ -108,15 +113,26 @@ abstract class RecitationPlayback {
   /// When true, the current ayah restarts when it ends.
   Future<void> setLooping(bool looping);
 
+  /// Called when the current file finishes (not used while looping).
+  VoidCallback? onComplete;
+
   void dispose();
 }
 
 /// Default playback via [AudioPlayer].
 class AudioplayersRecitationPlayback implements RecitationPlayback {
   AudioplayersRecitationPlayback({AudioPlayer? player})
-    : _player = player ?? AudioPlayer();
+    : _player = player ?? AudioPlayer() {
+    _completeSub = _player.onPlayerComplete.listen((_) {
+      onComplete?.call();
+    });
+  }
 
   final AudioPlayer _player;
+  StreamSubscription<void>? _completeSub;
+
+  @override
+  VoidCallback? onComplete;
 
   @override
   Future<void> playUrl(String url) async {
@@ -142,6 +158,7 @@ class AudioplayersRecitationPlayback implements RecitationPlayback {
 
   @override
   void dispose() {
+    unawaited(_completeSub?.cancel());
     _player.dispose();
   }
 }
@@ -156,7 +173,9 @@ class RecitationService extends ChangeNotifier {
   }) : _playback = playback ?? AudioplayersRecitationPlayback(),
        _cache = cache ?? const NoopRecitationCache(),
        _fetcher = fetcher ?? HttpRecitationFetcher(),
-       _reciter = reciter ?? reciterById(kDefaultReciterId);
+       _reciter = reciter ?? reciterById(kDefaultReciterId) {
+    _playback.onComplete = () => unawaited(_onPlaybackComplete());
+  }
 
   final RecitationPlayback _playback;
   final RecitationCache _cache;
@@ -169,6 +188,9 @@ class RecitationService extends ChangeNotifier {
   RecitationPassage? _current;
   bool _playing = false;
   bool _repeatAyah = false;
+  bool _continueToNext = true;
+  int? _verseCount;
+  bool _advancing = false;
   String? _lastError;
   RecitationDownloadProgress? _downloadProgress;
   bool _downloadCancelled = false;
@@ -185,6 +207,9 @@ class RecitationService extends ChangeNotifier {
   /// Whether the current ayah should loop for memorization.
   bool get repeatAyah => _repeatAyah;
 
+  /// Whether playback should continue into the next ayah.
+  bool get continueToNext => _continueToNext;
+
   String? get lastError => _lastError;
   RecitationDownloadProgress? get downloadProgress => _downloadProgress;
 
@@ -197,6 +222,7 @@ class RecitationService extends ChangeNotifier {
     final id = prefs.getString(kRecitationReciterPrefKey);
     _reciter = reciterById(id);
     _repeatAyah = prefs.getBool(kRecitationRepeatPrefKey) ?? false;
+    _continueToNext = prefs.getBool(kRecitationContinuePrefKey) ?? true;
     await _trySetLooping(_repeatAyah);
     notifyListeners();
     playbackListenable.emit();
@@ -265,6 +291,16 @@ class RecitationService extends ChangeNotifier {
     await prefs.setBool(kRecitationRepeatPrefKey, value);
   }
 
+  /// Turns auto-advance on or off and persists the choice.
+  Future<void> setContinueToNext(bool value) async {
+    if (_continueToNext == value) return;
+    _continueToNext = value;
+    notifyListeners();
+    playbackListenable.emit();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(kRecitationContinuePrefKey, value);
+  }
+
   /// Loops [surahId]:[ayah] for memorization, or turns looping off.
   ///
   /// Starts playback when that ayah is not already playing.
@@ -328,17 +364,30 @@ class RecitationService extends ChangeNotifier {
   /// Plays [surahId]:[ayah], or stops if that ayah is already playing.
   ///
   /// Returns an error message when the stream cannot start.
-  Future<String?> toggle({required int surahId, required int ayah}) async {
+  Future<String?> toggle({
+    required int surahId,
+    required int ayah,
+    int? verseCount,
+  }) async {
     if (isPlayingPassage(surahId, ayah)) {
       await stop();
       return null;
     }
-    return play(surahId: surahId, ayah: ayah);
+    return play(surahId: surahId, ayah: ayah, verseCount: verseCount);
   }
 
   /// Starts [surahId]:[ayah]. Stops any previous ayah first.
-  Future<String?> play({required int surahId, required int ayah}) async {
+  Future<String?> play({
+    required int surahId,
+    required int ayah,
+    int? verseCount,
+  }) async {
     _lastError = null;
+    if (verseCount != null) {
+      _verseCount = verseCount;
+    } else if (_current?.surahId != surahId) {
+      _verseCount = null;
+    }
     _current = RecitationPassage(surahId: surahId, ayah: ayah);
     _playing = false;
     _emitPlayback();
@@ -621,6 +670,31 @@ class RecitationService extends ChangeNotifier {
   void _emitPlayback() {
     notifyListeners();
     playbackListenable.emit();
+  }
+
+  Future<void> _onPlaybackComplete() async {
+    if (_advancing || !_playing) return;
+    if (_repeatAyah) return;
+    final current = _current;
+    final verseCount = _verseCount;
+    if (current != null &&
+        _continueToNext &&
+        verseCount != null &&
+        current.ayah < verseCount) {
+      _advancing = true;
+      try {
+        await play(
+          surahId: current.surahId,
+          ayah: current.ayah + 1,
+          verseCount: verseCount,
+        );
+      } finally {
+        _advancing = false;
+      }
+      return;
+    }
+    _playing = false;
+    _emitPlayback();
   }
 
   Future<void> _trySetLooping(bool looping) async {

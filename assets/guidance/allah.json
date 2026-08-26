@@ -1,0 +1,745 @@
+{
+  "arabicName": "الله",
+  "englishName": "Allah",
+  "intro": "Allah is the name of God in the Quran. He is One, the Creator of the heavens and the earth, unlike anything He created. What we know of Him is what He taught in the Quran and in the authentic Sunnah of Prophet Muhammad (peace be upon him) — not guesswork, and not comparison with creation.",
+  "namesNote": "The Prophet (peace be upon him) said that Allah has ninety-nine names, one hundred minus one, and that whoever enumerates them will enter Paradise (Sahih al-Bukhari 6410 and 7392; Sahih Muslim 2677). That hadith states a number; it does not mean Allah has only ninety-nine names. The list of ninety-nine taught in many books is the well-known enumeration associated with Jami' at-Tirmidhi (3507). Scholars have also gathered names from the Quran itself, so printed lists can differ slightly. Hublee shows the widely taught list, with English glosses from Aladhan's Asma al-Husna data (obvious typos corrected). Where a name appears plainly in the Quran, that ayah is linked.",
+  "sections": [
+    {
+      "id": "who",
+      "title": "Who He is",
+      "subtitle": "From the Quran, not from guesswork",
+      "paragraphs": [
+        "Allah is a proper name, not a title humans invented. Arabic-speaking Jews and Christians also used this name for God. In the Quran it is the name of the One who created everything, who sends revelation, and who alone is worthy of worship.",
+        "He was not born, and He does not give birth. He has no partner, no equal, and no son. Surah Al-Ikhlas (112) is the shortest complete statement of this: He is One; He is the Eternal Refuge; He neither begets nor is born; and there is none comparable to Him.",
+        "He is not like His creation. The Quran says, \"There is nothing like Him, for He is the All-Hearing, All-Seeing\" (42:11). We affirm what He affirmed about Himself — that He sees, hears, knows, creates, and shows mercy — without turning those words into a picture of a body, and without emptying them of meaning.",
+        "He created the heavens and the earth, night and day, and human beings to worship Him (51:56). He is near to those who call on Him: \"When My servants ask you about Me: I am truly near. I respond to one's prayer when they call upon Me\" (2:186)."
+      ]
+    },
+    {
+      "id": "tawhid",
+      "title": "Oneness (tawhid)",
+      "subtitle": "He alone is worshipped",
+      "paragraphs": [
+        "Tawhid is to single Allah out. The first half of the testimony of faith is that nothing is worthy of worship except Allah. The Quran repeats this from beginning to end: \"Your God is only one God. There is no god except Him — the Most Compassionate, Most Merciful\" (2:163).",
+        "Worship includes prayer, du'a, vows, fear, hope, and trust. Directing any of that to other than Allah — to an idol, a grave, a star, or a person — is the opposite of tawhid. The prophets were sent with this message, from Nuh to Muhammad (peace be upon them).",
+        "Allah's names and attributes are part of tawhid. He named Himself the Most Merciful, the All-Knowing, the All-Hearing. We call on Him by those names, as He taught: \"And to Allah belong the most beautiful names, so call upon Him by them\" (7:180).",
+        "He is the First and the Last, the Most High and Most Near (57:3). Nothing happens outside His knowledge and His will, and nothing in the heavens or the earth is hidden from Him."
+      ]
+    },
+    {
+      "id": "worship",
+      "title": "Worship and nearness",
+      "subtitle": "How the Quran teaches us to turn to Him",
+      "paragraphs": [
+        "The opening of the Quran teaches the pattern: we praise Him, we seek His help, and we ask to be guided (1:1–7). Du'a is worship. The Prophet (peace be upon him) taught many supplications; the Quran itself is full of them.",
+        "He is closer to the believer than they may feel in hardship. Yunus (peace be upon him) called from the darkness: \"There is no god except You. Glory be to You! I have certainly done wrong\" (21:87). Ayyub (peace be upon him) called: \"I have been touched with adversity, and You are the Most Merciful of the merciful\" (21:83).",
+        "Forgiveness is with Him. He named Himself Al-Ghafur, At-Tawwab, Al-Afuww. No sin is too great for the one who turns back, and no one is independent of His mercy.",
+        "This page is orientation, not a theology debate. For His words, open the Quran. For the ninety-nine names as commonly taught, open the names list. For calling on Him in the words He and His Messenger (peace be upon him) taught, open Duas."
+      ]
+    }
+  ],
+  "ayahs": [
+    {
+      "title": "Al-Ikhlas",
+      "surahId": 112,
+      "ayah": 1,
+      "ayahEnd": 4,
+      "why": "The Quran's shortest statement of who Allah is: One, Eternal, unlike creation."
+    },
+    {
+      "title": "Ayat al-Kursi",
+      "surahId": 2,
+      "ayah": 255,
+      "why": "He is the Ever-Living, the Self-Sustaining. Nothing escapes His knowledge."
+    },
+    {
+      "title": "The last verses of Al-Hashr",
+      "surahId": 59,
+      "ayah": 22,
+      "ayahEnd": 24,
+      "why": "A cluster of His names: the King, the Holy, the Source of Peace, the Creator."
+    },
+    {
+      "title": "He is near",
+      "surahId": 2,
+      "ayah": 186,
+      "why": "\"I am truly near. I respond to one's prayer when they call upon Me.\""
+    },
+    {
+      "title": "The First and the Last",
+      "surahId": 57,
+      "ayah": 3,
+      "why": "He is the First and the Last, the Most High and Most Near; He has knowledge of all things."
+    },
+    {
+      "title": "Created to worship Him",
+      "surahId": 51,
+      "ayah": 56,
+      "why": "\"I did not create jinn and humans except to worship Me.\""
+    },
+    {
+      "title": "Call on Him by His names",
+      "surahId": 7,
+      "ayah": 180,
+      "why": "\"To Allah belong the most beautiful names, so call upon Him by them.\""
+    },
+    {
+      "title": "Nothing is like Him",
+      "surahId": 42,
+      "ayah": 11,
+      "why": "\"There is nothing like Him, for He is the All-Hearing, All-Seeing.\""
+    }
+  ],
+  "names": [
+    {
+      "number": 1,
+      "arabic": "الرَّحْمَنُ",
+      "transliteration": "Ar Rahmaan",
+      "meaning": "The Beneficent",
+      "surahId": 55,
+      "ayah": 1
+    },
+    {
+      "number": 2,
+      "arabic": "الرَّحِيمُ",
+      "transliteration": "Ar Raheem",
+      "meaning": "The Merciful",
+      "surahId": 1,
+      "ayah": 3
+    },
+    {
+      "number": 3,
+      "arabic": "الْمَلِكُ",
+      "transliteration": "Al Malik",
+      "meaning": "The King / Eternal Lord",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 4,
+      "arabic": "الْقُدُّوسُ",
+      "transliteration": "Al Quddus",
+      "meaning": "The Purest",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 5,
+      "arabic": "السَّلاَمُ",
+      "transliteration": "As Salaam",
+      "meaning": "The Source of Peace",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 6,
+      "arabic": "الْمُؤْمِنُ",
+      "transliteration": "Al Mu'min",
+      "meaning": "The Inspirer of Faith",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 7,
+      "arabic": "الْمُهَيْمِنُ",
+      "transliteration": "Al Muhaymin",
+      "meaning": "The Guardian",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 8,
+      "arabic": "الْعَزِيزُ",
+      "transliteration": "Al Azeez",
+      "meaning": "The Precious / The Most Mighty",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 9,
+      "arabic": "الْجَبَّارُ",
+      "transliteration": "Al Jabbaar",
+      "meaning": "The Compeller",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 10,
+      "arabic": "الْمُتَكَبِّرُ",
+      "transliteration": "Al Mutakabbir",
+      "meaning": "The Greatest",
+      "surahId": 59,
+      "ayah": 23
+    },
+    {
+      "number": 11,
+      "arabic": "الْخَالِقُ",
+      "transliteration": "Al Khaaliq",
+      "meaning": "The Creator",
+      "surahId": 59,
+      "ayah": 24
+    },
+    {
+      "number": 12,
+      "arabic": "الْبَارِئُ",
+      "transliteration": "Al Baari",
+      "meaning": "The Maker of Order",
+      "surahId": 59,
+      "ayah": 24
+    },
+    {
+      "number": 13,
+      "arabic": "الْمُصَوِّرُ",
+      "transliteration": "Al Musawwir",
+      "meaning": "The Shaper of Beauty",
+      "surahId": 59,
+      "ayah": 24
+    },
+    {
+      "number": 14,
+      "arabic": "الْغَفَّارُ",
+      "transliteration": "Al Ghaffaar",
+      "meaning": "The Forgiving"
+    },
+    {
+      "number": 15,
+      "arabic": "الْقَهَّارُ",
+      "transliteration": "Al Qahhaar",
+      "meaning": "The Subduer"
+    },
+    {
+      "number": 16,
+      "arabic": "الْوَهَّابُ",
+      "transliteration": "Al Wahhaab",
+      "meaning": "The Giver of All"
+    },
+    {
+      "number": 17,
+      "arabic": "الرَّزَّاقُ",
+      "transliteration": "Ar Razzaaq",
+      "meaning": "The Sustainer"
+    },
+    {
+      "number": 18,
+      "arabic": "الْفَتَّاحُ",
+      "transliteration": "Al Fattaah",
+      "meaning": "The Opener"
+    },
+    {
+      "number": 19,
+      "arabic": "اَلْعَلِيْمُ",
+      "transliteration": "Al 'Aleem",
+      "meaning": "The Knower of all"
+    },
+    {
+      "number": 20,
+      "arabic": "الْقَابِضُ",
+      "transliteration": "Al Qaabid",
+      "meaning": "The Constrictor"
+    },
+    {
+      "number": 21,
+      "arabic": "الْبَاسِطُ",
+      "transliteration": "Al Baasit",
+      "meaning": "The Reliever"
+    },
+    {
+      "number": 22,
+      "arabic": "الْخَافِضُ",
+      "transliteration": "Al Khaafid",
+      "meaning": "The Abaser"
+    },
+    {
+      "number": 23,
+      "arabic": "الرَّافِعُ",
+      "transliteration": "Ar Raafi'",
+      "meaning": "The Exalter"
+    },
+    {
+      "number": 24,
+      "arabic": "الْمُعِزُّ",
+      "transliteration": "Al Mu'iz",
+      "meaning": "The Bestower of Honour"
+    },
+    {
+      "number": 25,
+      "arabic": "المُذِلُّ",
+      "transliteration": "Al Mudhil",
+      "meaning": "The Humiliator"
+    },
+    {
+      "number": 26,
+      "arabic": "السَّمِيعُ",
+      "transliteration": "As Samee'",
+      "meaning": "The Hearer of all",
+      "surahId": 2,
+      "ayah": 127
+    },
+    {
+      "number": 27,
+      "arabic": "الْبَصِيرُ",
+      "transliteration": "Al Baseer",
+      "meaning": "The Seer of all",
+      "surahId": 4,
+      "ayah": 58
+    },
+    {
+      "number": 28,
+      "arabic": "الْحَكَمُ",
+      "transliteration": "Al Hakam",
+      "meaning": "The Judge"
+    },
+    {
+      "number": 29,
+      "arabic": "الْعَدْلُ",
+      "transliteration": "Al 'Adl",
+      "meaning": "The Just"
+    },
+    {
+      "number": 30,
+      "arabic": "اللَّطِيفُ",
+      "transliteration": "Al Lateef",
+      "meaning": "The Subtle One"
+    },
+    {
+      "number": 31,
+      "arabic": "الْخَبِيرُ",
+      "transliteration": "Al Khabeer",
+      "meaning": "The All Aware"
+    },
+    {
+      "number": 32,
+      "arabic": "الْحَلِيمُ",
+      "transliteration": "Al Haleem",
+      "meaning": "The Forbearing"
+    },
+    {
+      "number": 33,
+      "arabic": "الْعَظِيمُ",
+      "transliteration": "Al 'Azeem",
+      "meaning": "The Magnificent",
+      "surahId": 2,
+      "ayah": 255
+    },
+    {
+      "number": 34,
+      "arabic": "الْغَفُورُ",
+      "transliteration": "Al Ghafoor",
+      "meaning": "The Great Forgiver",
+      "surahId": 2,
+      "ayah": 173
+    },
+    {
+      "number": 35,
+      "arabic": "الشَّكُورُ",
+      "transliteration": "Ash Shakoor",
+      "meaning": "The Rewarder of Thankfulness"
+    },
+    {
+      "number": 36,
+      "arabic": "الْعَلِيُّ",
+      "transliteration": "Al 'Aliyy",
+      "meaning": "The Highest",
+      "surahId": 2,
+      "ayah": 255
+    },
+    {
+      "number": 37,
+      "arabic": "الْكَبِيرُ",
+      "transliteration": "Al Kabeer",
+      "meaning": "The Greatest"
+    },
+    {
+      "number": 38,
+      "arabic": "الْحَفِيظُ",
+      "transliteration": "Al Hafeez",
+      "meaning": "The Preserver"
+    },
+    {
+      "number": 39,
+      "arabic": "المُقيِت",
+      "transliteration": "Al Muqeet",
+      "meaning": "The Nourisher"
+    },
+    {
+      "number": 40,
+      "arabic": "الْحسِيبُ",
+      "transliteration": "Al Haseeb",
+      "meaning": "The Reckoner"
+    },
+    {
+      "number": 41,
+      "arabic": "الْجَلِيلُ",
+      "transliteration": "Al Jaleel",
+      "meaning": "The Majestic"
+    },
+    {
+      "number": 42,
+      "arabic": "الْكَرِيمُ",
+      "transliteration": "Al Kareem",
+      "meaning": "The Generous"
+    },
+    {
+      "number": 43,
+      "arabic": "الرَّقِيبُ",
+      "transliteration": "Ar Raqeeb",
+      "meaning": "The Watchful One"
+    },
+    {
+      "number": 44,
+      "arabic": "الْمُجِيبُ",
+      "transliteration": "Al Mujeeb",
+      "meaning": "The Responder to Prayer"
+    },
+    {
+      "number": 45,
+      "arabic": "الْوَاسِعُ",
+      "transliteration": "Al Waasi'",
+      "meaning": "The All Comprehending"
+    },
+    {
+      "number": 46,
+      "arabic": "الْحَكِيمُ",
+      "transliteration": "Al Hakeem",
+      "meaning": "The Perfectly Wise"
+    },
+    {
+      "number": 47,
+      "arabic": "الْوَدُودُ",
+      "transliteration": "Al Wudood",
+      "meaning": "The Loving One"
+    },
+    {
+      "number": 48,
+      "arabic": "الْمَجِيدُ",
+      "transliteration": "Al Majeed",
+      "meaning": "The Most Glorious One"
+    },
+    {
+      "number": 49,
+      "arabic": "الْبَاعِثُ",
+      "transliteration": "Al Baa'ith",
+      "meaning": "The Resurrector"
+    },
+    {
+      "number": 50,
+      "arabic": "الشَّهِيدُ",
+      "transliteration": "Ash Shaheed",
+      "meaning": "The Witness"
+    },
+    {
+      "number": 51,
+      "arabic": "الْحَقُّ",
+      "transliteration": "Al Haqq",
+      "meaning": "The Truth",
+      "surahId": 22,
+      "ayah": 6
+    },
+    {
+      "number": 52,
+      "arabic": "الْوَكِيلُ",
+      "transliteration": "Al Wakeel",
+      "meaning": "The Trustee"
+    },
+    {
+      "number": 53,
+      "arabic": "الْقَوِيُّ",
+      "transliteration": "Al Qawiyy",
+      "meaning": "The Possessor of all strength"
+    },
+    {
+      "number": 54,
+      "arabic": "الْمَتِينُ",
+      "transliteration": "Al Mateen",
+      "meaning": "The Forceful"
+    },
+    {
+      "number": 55,
+      "arabic": "الْوَلِيُّ",
+      "transliteration": "Al Waliyy",
+      "meaning": "The Protector"
+    },
+    {
+      "number": 56,
+      "arabic": "الْحَمِيدُ",
+      "transliteration": "Al Hameed",
+      "meaning": "The Praised"
+    },
+    {
+      "number": 57,
+      "arabic": "الْمُحْصِي",
+      "transliteration": "Al Muhsi",
+      "meaning": "The Appraiser"
+    },
+    {
+      "number": 58,
+      "arabic": "الْمُبْدِئُ",
+      "transliteration": "Al Mubdi",
+      "meaning": "The Originator"
+    },
+    {
+      "number": 59,
+      "arabic": "الْمُعِيدُ",
+      "transliteration": "Al Mu'eed",
+      "meaning": "The Restorer"
+    },
+    {
+      "number": 60,
+      "arabic": "الْمُحْيِي",
+      "transliteration": "Al Muhiy",
+      "meaning": "The Giver of life"
+    },
+    {
+      "number": 61,
+      "arabic": "اَلْمُمِيتُ",
+      "transliteration": "Al Mumeet",
+      "meaning": "The Taker of life"
+    },
+    {
+      "number": 62,
+      "arabic": "الْحَيُّ",
+      "transliteration": "Al Haiyy",
+      "meaning": "The Ever Living",
+      "surahId": 2,
+      "ayah": 255
+    },
+    {
+      "number": 63,
+      "arabic": "الْقَيُّومُ",
+      "transliteration": "Al Qayyoom",
+      "meaning": "The Self Existing",
+      "surahId": 2,
+      "ayah": 255
+    },
+    {
+      "number": 64,
+      "arabic": "الْوَاجِدُ",
+      "transliteration": "Al Waajid",
+      "meaning": "The Finder"
+    },
+    {
+      "number": 65,
+      "arabic": "الْمَاجِدُ",
+      "transliteration": "Al Maajid",
+      "meaning": "The Glorious"
+    },
+    {
+      "number": 66,
+      "arabic": "الْواحِدُ",
+      "transliteration": "Al Waahid",
+      "meaning": "The Only One"
+    },
+    {
+      "number": 67,
+      "arabic": "اَلاَحَدُ",
+      "transliteration": "Al Ahad",
+      "meaning": "The One",
+      "surahId": 112,
+      "ayah": 1
+    },
+    {
+      "number": 68,
+      "arabic": "الصَّمَدُ",
+      "transliteration": "As Samad",
+      "meaning": "The Supreme Provider",
+      "surahId": 112,
+      "ayah": 2
+    },
+    {
+      "number": 69,
+      "arabic": "الْقَادِرُ",
+      "transliteration": "Al Qaadir",
+      "meaning": "The Powerful"
+    },
+    {
+      "number": 70,
+      "arabic": "الْمُقْتَدِرُ",
+      "transliteration": "Al Muqtadir",
+      "meaning": "The Creator of all power"
+    },
+    {
+      "number": 71,
+      "arabic": "الْمُقَدِّمُ",
+      "transliteration": "Al Muqaddim",
+      "meaning": "The Expediter"
+    },
+    {
+      "number": 72,
+      "arabic": "الْمُؤَخِّرُ",
+      "transliteration": "Al Mu’akhir",
+      "meaning": "The Delayer"
+    },
+    {
+      "number": 73,
+      "arabic": "الأوَّلُ",
+      "transliteration": "Al Awwal",
+      "meaning": "The First",
+      "surahId": 57,
+      "ayah": 3
+    },
+    {
+      "number": 74,
+      "arabic": "الآخِرُ",
+      "transliteration": "Al Aakhir",
+      "meaning": "The Last",
+      "surahId": 57,
+      "ayah": 3
+    },
+    {
+      "number": 75,
+      "arabic": "الظَّاهِرُ",
+      "transliteration": "Az Zaahir",
+      "meaning": "The Manifest",
+      "surahId": 57,
+      "ayah": 3
+    },
+    {
+      "number": 76,
+      "arabic": "الْبَاطِنُ",
+      "transliteration": "Al Baatin",
+      "meaning": "The Hidden",
+      "surahId": 57,
+      "ayah": 3
+    },
+    {
+      "number": 77,
+      "arabic": "الْوَالِي",
+      "transliteration": "Al Waali",
+      "meaning": "The Governor"
+    },
+    {
+      "number": 78,
+      "arabic": "الْمُتَعَالِي",
+      "transliteration": "Al Muta’ali",
+      "meaning": "The Supreme One"
+    },
+    {
+      "number": 79,
+      "arabic": "الْبَرُّ",
+      "transliteration": "Al Barr",
+      "meaning": "The Doer of Good"
+    },
+    {
+      "number": 80,
+      "arabic": "التَّوَابُ",
+      "transliteration": "At Tawwaab",
+      "meaning": "The Guide to Repentance"
+    },
+    {
+      "number": 81,
+      "arabic": "الْمُنْتَقِمُ",
+      "transliteration": "Al Muntaqim",
+      "meaning": "The Avenger"
+    },
+    {
+      "number": 82,
+      "arabic": "العَفُوُّ",
+      "transliteration": "Al Afuww",
+      "meaning": "The Forgiver"
+    },
+    {
+      "number": 83,
+      "arabic": "الرَّؤُوفُ",
+      "transliteration": "Ar Ra’oof",
+      "meaning": "The Clement"
+    },
+    {
+      "number": 84,
+      "arabic": "مَالِكُ الْمُلْكِ",
+      "transliteration": "Maalik Ul Mulk",
+      "meaning": "The Owner / Sovereign of All"
+    },
+    {
+      "number": 85,
+      "arabic": "ذُوالْجَلاَلِ وَالإكْرَامِ",
+      "transliteration": "Dhu Al Jalaali Wa Al Ikraam",
+      "meaning": "Possessor of Majesty and Bounty"
+    },
+    {
+      "number": 86,
+      "arabic": "الْمُقْسِطُ",
+      "transliteration": "Al Muqsit",
+      "meaning": "The Equitable One"
+    },
+    {
+      "number": 87,
+      "arabic": "الْجَامِعُ",
+      "transliteration": "Al Jaami'",
+      "meaning": "The Gatherer"
+    },
+    {
+      "number": 88,
+      "arabic": "الْغَنِيُّ",
+      "transliteration": "Al Ghaniyy",
+      "meaning": "The Rich One"
+    },
+    {
+      "number": 89,
+      "arabic": "الْمُغْنِي",
+      "transliteration": "Al Mughni",
+      "meaning": "The Enricher"
+    },
+    {
+      "number": 90,
+      "arabic": "اَلْمَانِعُ",
+      "transliteration": "Al Maani'",
+      "meaning": "The Preventer of harm"
+    },
+    {
+      "number": 91,
+      "arabic": "الضَّارَّ",
+      "transliteration": "Ad Daaarr",
+      "meaning": "The Creator of the harmful"
+    },
+    {
+      "number": 92,
+      "arabic": "النَّافِعُ",
+      "transliteration": "An Naafi’",
+      "meaning": "The Bestower of Benefits"
+    },
+    {
+      "number": 93,
+      "arabic": "النُّورُ",
+      "transliteration": "An Noor",
+      "meaning": "The Light",
+      "surahId": 24,
+      "ayah": 35
+    },
+    {
+      "number": 94,
+      "arabic": "الْهَادِي",
+      "transliteration": "Al Haadi",
+      "meaning": "The Guider"
+    },
+    {
+      "number": 95,
+      "arabic": "الْبَدِيعُ",
+      "transliteration": "Al Badi'",
+      "meaning": "The Originator"
+    },
+    {
+      "number": 96,
+      "arabic": "اَلْبَاقِي",
+      "transliteration": "Al Baaqi",
+      "meaning": "The Everlasting One"
+    },
+    {
+      "number": 97,
+      "arabic": "الْوَارِثُ",
+      "transliteration": "Al Waarith",
+      "meaning": "The Inheritor"
+    },
+    {
+      "number": 98,
+      "arabic": "الرَّشِيدُ",
+      "transliteration": "Ar Rasheed",
+      "meaning": "The Most Righteous Guide"
+    },
+    {
+      "number": 99,
+      "arabic": "الصَّبُورُ",
+      "transliteration": "As Saboor",
+      "meaning": "The Patient One"
+    }
+  ]
+}

@@ -63,6 +63,10 @@ When displaying a hadith, provide context about its source:
 - Or which special collection (Nawawi 40, Qudsi 40, etc.)
 - For well-known collections, a brief description helps users understand significance
 
+## About Hadith (tab orientation)
+
+Opened from the Hadith tab app bar (info icon `Icons.info_outline_rounded`) via `showHadithOverviewSheet()`. Orientation only — what a hadith is, types (saying / action / approval / qudsi), grading vocabulary without inventing grades, how reports were gathered, major compilers of the nine books, famous Companion narrators, and how this page is organised. Not fiqh and not a grade for each report. Per-book summaries stay on each row's **About this book** sheet.
+
 ## Search and Cross-Reference
 
 - Search should cover both Arabic and English text

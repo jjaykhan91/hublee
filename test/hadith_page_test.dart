@@ -84,5 +84,20 @@ void main() {
 
       await tester.pump(const Duration(seconds: 2));
     });
+
+    testWidgets('about Hadith sheet opens from the app bar', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HadithPage()));
+      await tester.pump();
+
+      expect(find.byTooltip('About Hadith'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('About Hadith'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('About Hadith'), findsWidgets);
+      expect(find.text('What it is'), findsOneWidget);
+      expect(find.textContaining('sayings, actions'), findsOneWidget);
+    });
   });
 }

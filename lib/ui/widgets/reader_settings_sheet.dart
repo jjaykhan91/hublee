@@ -18,6 +18,9 @@ import 'arabic_font_list.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
+/// Opens at half screen so the ayah stays visible. Scroll to reach
+/// every control, including Tajweed Guide on a short phone.
+///
 /// If [showTajweedToggle] is true, a tajweed on/off switch and a
 /// "Tajweed Guide" info button are included (Quran reader only).
 void showReaderSettingsSheet(
@@ -27,8 +30,15 @@ void showReaderSettingsSheet(
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _ReaderSettingsSheet(showTajweedToggle: showTajweedToggle),
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTop),
+    builder: (sheetContext) {
+      final height = MediaQuery.sizeOf(sheetContext).height;
+      return SizedBox(
+        height: height * 0.52,
+        child: _ReaderSettingsSheet(showTajweedToggle: showTajweedToggle),
+      );
+    },
   );
 }
 
@@ -42,24 +52,24 @@ class _ReaderSettingsSheet extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final settings = SettingsScope.of(context);
     final appearance = AppScope.of(context).appearance;
+    final bottomPad = 24 + MediaQuery.paddingOf(context).bottom;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: AppRadius.sheetTop,
-        boxShadow: AppShadows.sheet,
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: AppRadius.sheetTop,
+      clipBehavior: Clip.antiAlias,
+      child: ListView(
+        key: const Key('reader-settings-list'),
+        padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPad),
         children: [
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.onSurface.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 16),
