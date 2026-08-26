@@ -36,6 +36,8 @@ abstract final class AppRoute {
   static const String aboutAllahNames = '/about/allah/names';
   static const String aboutProphet = '/about/prophet';
   static const String duas = '/duas';
+  static const String dhikr = '/about/dhikr';
+  static const String salah = '/about/salah';
   static const String homeWidgets = '/settings/widgets';
 
   /// A prose section of the Allah guide (`who`, `tawhid`, `worship`).
@@ -48,6 +50,10 @@ abstract final class AppRoute {
 
   /// One dua category (Quranic set or a Hisn al-Muslim chapter).
   static String duaCategory(String id) => '/duas/${Uri.encodeComponent(id)}';
+
+  /// A salah guide section (`fard`, `sunnah`, `nawafil`, `how-to`, `recite`).
+  static String salahSection(String id) =>
+      '/about/salah/${Uri.encodeComponent(id)}';
 
   /// Path to surah reader, optionally with ayah to scroll to.
   static String surah(int surahId, {int? ayah}) {

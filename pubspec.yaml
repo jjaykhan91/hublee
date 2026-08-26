@@ -1,7 +1,7 @@
 name: hublee
 description: "Quran and Hadith reader app"
 publish_to: 'none'
-version: 1.0.4+6
+version: 1.0.5+7
 
 environment:
   # Floor is set by the strictest dependency (go_router requires ^3.10.0).

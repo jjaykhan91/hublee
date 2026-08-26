@@ -32,6 +32,9 @@ void main() {
       expect(AppRoute.aboutProphet, '/about/prophet');
       expect(AppRoute.aboutProphetSection('life'), '/about/prophet/life');
       expect(AppRoute.duas, '/duas');
+      expect(AppRoute.dhikr, '/about/dhikr');
+      expect(AppRoute.salah, '/about/salah');
+      expect(AppRoute.salahSection('fard'), '/about/salah/fard');
       expect(AppRoute.duaCategory('quran'), '/duas/quran');
       expect(AppRoute.homeWidgets, '/settings/widgets');
     });

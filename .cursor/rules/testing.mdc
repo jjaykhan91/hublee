@@ -39,6 +39,10 @@ All four must pass before a change is considered done. CI runs format, analyze, 
 | `test/hadith_chapters_test.dart` | Chapter start indices and the hadith chapter jump sheet |
 | `test/guidance_repository_test.dart` | Allah names, seerah sections, and dua catalog |
 | `test/everyday_dhikr_test.dart` | Everyday dhikr catalog, daily pick, and wording sheet |
+| `test/dhikr_page_test.dart` | Dhikr hub lists the catalog and opens the wording sheet |
+| `test/salah_guide_test.dart` | Salah fard/sunnah/nafl/recitation catalog integrity |
+| `test/salah_page_test.dart` | Salah hub, fard list, how-to steps, and Al-Fatiha on recite |
+| `test/surah_title_cycle_test.dart` | Reader app-bar title cycles Arabic / English / meaning / city |
 | `test/reader_settings_sheet_test.dart` | Reader settings opens halfway and scrolls to Tajweed Guide |
 | `test/tajweed_colors_test.dart` | Rule colours pinned to the documented Madani hex |
 | `test/quran_chapters_repository_test.dart` | 114 chapters load with valid metadata |

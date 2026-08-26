@@ -1,7 +1,7 @@
 /// Landing page shown in the Home tab.
 ///
-/// Displays the meaning of Hublee, Allah / Prophet / Dua cards, a
-/// search shortcut, and Ayah / Hadith / Dhikr of the Day.
+/// Displays the meaning of Hublee, Allah / Prophet / Dhikr / Salah / Dua
+/// cards, a search shortcut, and Ayah / Hadith / Dhikr of the Day.
 library;
 
 import 'package:flutter/material.dart';
@@ -608,7 +608,7 @@ class _HadithOfTheDayCard extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Allah, the Prophet ﷺ, and Duas
+//  Allah, the Prophet ﷺ, Dhikr, Salah, and Duas
 // ────────────────────────────────────────────────────────────────
 
 class _HomeGuideCards extends StatelessWidget {
@@ -635,6 +635,28 @@ class _HomeGuideCards extends StatelessWidget {
                 arabic: '\u0645\u064f\u062d\u064e\u0645\u0651\u064e\u062f',
                 english: 'The Prophet \uFDFA',
                 onTap: () => context.push(AppRoute.aboutProphet),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _HomeIdentityCard(
+                key: const Key('home-card-dhikr'),
+                arabic: '\u0630\u0650\u0643\u0652\u0631',
+                english: 'Dhikr',
+                onTap: () => context.push(AppRoute.dhikr),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _HomeIdentityCard(
+                key: const Key('home-card-salah'),
+                arabic: '\u0635\u064e\u0644\u064e\u0627\u0629',
+                english: 'Salah',
+                onTap: () => context.push(AppRoute.salah),
               ),
             ),
           ],
@@ -798,8 +820,6 @@ class _HubleeMeaningCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const _QuranSunnahMarks(),
-                      const SizedBox(height: 12),
                       Text(
                         'Ali \u2018Imran 3:103',
                         textAlign: TextAlign.center,
@@ -815,82 +835,6 @@ class _HubleeMeaningCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Quran and Hadith emblems joined by the rope — the two ends of
-/// Hublee.
-class _QuranSunnahMarks extends StatelessWidget {
-  const _QuranSunnahMarks();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ExcludeSemantics(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _ScriptEmblem(
-            icon: Icons.menu_book_rounded,
-            label: 'Quran',
-            color: colorScheme.primary,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: HubleeRopeMark(
-              width: 40,
-              height: 14,
-              colorA: colorScheme.primary,
-              colorB: colorScheme.tertiary,
-            ),
-          ),
-          _ScriptEmblem(
-            icon: Icons.library_books_rounded,
-            label: 'Hadith',
-            color: colorScheme.tertiary,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScriptEmblem extends StatelessWidget {
-  const _ScriptEmblem({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: AppRadius.chip,
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

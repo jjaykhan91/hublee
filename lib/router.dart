@@ -35,6 +35,8 @@ import 'ui/grammar_page.dart';
 import 'ui/allah_page.dart';
 import 'ui/prophet_page.dart';
 import 'ui/dua_pages.dart';
+import 'ui/dhikr_page.dart';
+import 'ui/salah_page.dart';
 import 'ui/home_widgets_page.dart';
 
 /// Navigator key for the root (full-screen) navigator.
@@ -288,6 +290,22 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) =>
           DuaCategoryPage(categoryId: state.pathParameters['categoryId'] ?? ''),
+    ),
+    GoRoute(
+      path: AppRoute.dhikr,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const DhikrPage(),
+    ),
+    GoRoute(
+      path: AppRoute.salah,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SalahPage(),
+    ),
+    GoRoute(
+      path: '${AppRoute.salah}/:sectionId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          SalahPage(sectionId: state.pathParameters['sectionId']),
     ),
   ],
 );

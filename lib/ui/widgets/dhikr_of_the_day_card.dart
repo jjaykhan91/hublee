@@ -169,7 +169,11 @@ class DhikrOfTheDayCard extends StatelessWidget {
 }
 
 /// Full wording, source, and copy actions for [dhikr].
-Future<void> showDhikrOfTheDaySheet(BuildContext context, EverydayDhikr dhikr) {
+Future<void> showDhikrOfTheDaySheet(
+  BuildContext context,
+  EverydayDhikr dhikr, {
+  String title = 'Dhikr of the Day',
+}) {
   AppHaptics.selection();
   return showModalBottomSheet<void>(
     context: context,
@@ -190,7 +194,7 @@ Future<void> showDhikrOfTheDaySheet(BuildContext context, EverydayDhikr dhikr) {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Dhikr of the Day',
+                  title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
