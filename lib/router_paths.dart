@@ -25,14 +25,29 @@ abstract final class AppRoute {
   static const String privacy = '/privacy';
   static const String dictionary = '/dictionary';
   static const String learnQuranic = '/learn/quranic';
-  static const String quranReview = '/learn/review';
   static const String arabicHub = '/arabic';
   static const String msaDictionary = '/arabic/dictionary';
   static const String grammar = '/arabic/grammar';
-  static const String arabicReview = '/arabic/review';
 
   static String grammarLesson(String id) =>
       '/arabic/grammar/${Uri.encodeComponent(id)}';
+
+  static const String aboutAllah = '/about/allah';
+  static const String aboutAllahNames = '/about/allah/names';
+  static const String aboutProphet = '/about/prophet';
+  static const String duas = '/duas';
+  static const String homeWidgets = '/settings/widgets';
+
+  /// A prose section of the Allah guide (`who`, `tawhid`, `worship`).
+  static String aboutAllahSection(String id) =>
+      '/about/allah/${Uri.encodeComponent(id)}';
+
+  /// A prose section of the Prophet guide (`life`, `family`, …).
+  static String aboutProphetSection(String id) =>
+      '/about/prophet/${Uri.encodeComponent(id)}';
+
+  /// One dua category (Quranic set or a Hisn al-Muslim chapter).
+  static String duaCategory(String id) => '/duas/${Uri.encodeComponent(id)}';
 
   /// Path to surah reader, optionally with ayah to scroll to.
   static String surah(int surahId, {int? ayah}) {

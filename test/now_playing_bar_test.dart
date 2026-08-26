@@ -22,6 +22,9 @@ class _RecordingPlayback implements RecitationPlayback {
   Future<void> setLooping(bool looping) async {}
 
   @override
+  VoidCallback? onComplete;
+
+  @override
   void dispose() {}
 }
 
@@ -44,6 +47,7 @@ void main() {
             body: NowPlayingBar(
               surahId: 1,
               surahName: 'Al-Fatiha',
+              verseCount: 7,
               onJumpToAyah: (_) {},
             ),
           ),
@@ -67,6 +71,7 @@ void main() {
             body: NowPlayingBar(
               surahId: 1,
               surahName: 'Al-Fatiha',
+              verseCount: 7,
               onJumpToAyah: (ayah) => jumped = ayah,
             ),
           ),
@@ -79,14 +84,19 @@ void main() {
 
     expect(find.byKey(const Key('now-playing-bar')), findsOneWidget);
     expect(find.text('Playing Al-Fatiha 5'), findsOneWidget);
+    expect(find.byKey(const Key('now-playing-reciter')), findsOneWidget);
+    expect(find.byKey(const Key('now-playing-continue')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('now-playing-bar')));
+    await tester.tap(find.text('Playing Al-Fatiha 5'));
     await tester.pump();
     expect(jumped, 5);
 
-    await service.toggle(surahId: 1, ayah: 5);
+    await tester.tap(find.byKey(const Key('now-playing-continue')));
     await tester.pump();
-    expect(find.byKey(const Key('now-playing-bar')), findsOneWidget);
-    expect(find.text('Paused Al-Fatiha 5'), findsOneWidget);
+    expect(service.continueToNext, isFalse);
+
+    await tester.tap(find.byKey(const Key('now-playing-repeat')));
+    await tester.pump();
+    expect(service.repeatAyah, isTrue);
   });
 }

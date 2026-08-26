@@ -1,0 +1,93 @@
+{
+  "arabicName": "الله",
+  "englishName": "Allah",
+  "intro": "Allah is the name of God in the Quran. He is One, the Creator of the heavens and the earth, unlike anything He created. What we know of Him is what He taught in the Quran and in the authentic Sunnah of Prophet Muhammad (peace be upon him) — not guesswork, and not comparison with creation.",
+  "namesNote": "The Prophet (peace be upon him) said that Allah has ninety-nine names, one hundred minus one, and that whoever enumerates them will enter Paradise (Sahih al-Bukhari 6410 and 7392; Sahih Muslim 2677). That hadith states a number; it does not mean Allah has only ninety-nine names. The list of ninety-nine taught in many books is the well-known enumeration associated with Jami' at-Tirmidhi (3507). Scholars have also gathered names from the Quran itself, so printed lists can differ slightly. Hublee shows the widely taught list, with English glosses from Aladhan's Asma al-Husna data (obvious typos corrected). Where a name appears plainly in the Quran, that ayah is linked.",
+  "sections": [
+    {
+      "id": "who",
+      "title": "Who He is",
+      "subtitle": "From the Quran, not from guesswork",
+      "paragraphs": [
+        "Allah is a proper name, not a title humans invented. Arabic-speaking Jews and Christians also used this name for God. In the Quran it is the name of the One who created everything, who sends revelation, and who alone is worthy of worship.",
+        "He was not born, and He does not give birth. He has no partner, no equal, and no son. Surah Al-Ikhlas (112) is the shortest complete statement of this: He is One; He is the Eternal Refuge; He neither begets nor is born; and there is none comparable to Him.",
+        "He is not like His creation. The Quran says, \"There is nothing like Him, for He is the All-Hearing, All-Seeing\" (42:11). We affirm what He affirmed about Himself — that He sees, hears, knows, creates, and shows mercy — without turning those words into a picture of a body, and without emptying them of meaning.",
+        "He created the heavens and the earth, night and day, and human beings to worship Him (51:56). He is near to those who call on Him: \"When My servants ask you about Me: I am truly near. I respond to one's prayer when they call upon Me\" (2:186)."
+      ]
+    },
+    {
+      "id": "tawhid",
+      "title": "Oneness (tawhid)",
+      "subtitle": "He alone is worshipped",
+      "paragraphs": [
+        "Tawhid is to single Allah out. The first half of the testimony of faith is that nothing is worthy of worship except Allah. The Quran repeats this from beginning to end: \"Your God is only one God. There is no god except Him — the Most Compassionate, Most Merciful\" (2:163).",
+        "Worship includes prayer, du'a, vows, fear, hope, and trust. Directing any of that to other than Allah — to an idol, a grave, a star, or a person — is the opposite of tawhid. The prophets were sent with this message, from Nuh to Muhammad (peace be upon them).",
+        "Allah's names and attributes are part of tawhid. He named Himself the Most Merciful, the All-Knowing, the All-Hearing. We call on Him by those names, as He taught: \"And to Allah belong the most beautiful names, so call upon Him by them\" (7:180).",
+        "He is the First and the Last, the Most High and Most Near (57:3). Nothing happens outside His knowledge and His will, and nothing in the heavens or the earth is hidden from Him."
+      ]
+    },
+    {
+      "id": "worship",
+      "title": "Worship and nearness",
+      "subtitle": "How the Quran teaches us to turn to Him",
+      "paragraphs": [
+        "The opening of the Quran teaches the pattern: we praise Him, we seek His help, and we ask to be guided (1:1–7). Du'a is worship. The Prophet (peace be upon him) taught many supplications; the Quran itself is full of them.",
+        "He is closer to the believer than they may feel in hardship. Yunus (peace be upon him) called from the darkness: \"There is no god except You. Glory be to You! I have certainly done wrong\" (21:87). Ayyub (peace be upon him) called: \"I have been touched with adversity, and You are the Most Merciful of the merciful\" (21:83).",
+        "Forgiveness is with Him. He named Himself Al-Ghafur, At-Tawwab, Al-Afuww. No sin is too great for the one who turns back, and no one is independent of His mercy.",
+        "This page is orientation, not a theology debate. For His words, open the Quran. For the ninety-nine names as commonly taught, open the names list. For calling on Him in the words He and His Messenger (peace be upon him) taught, open Duas."
+      ]
+    }
+  ],
+  "ayahs": [
+    {
+      "title": "Al-Ikhlas",
+      "surahId": 112,
+      "ayah": 1,
+      "ayahEnd": 4,
+      "why": "The Quran's shortest statement of who Allah is: One, Eternal, unlike creation."
+    },
+    {
+      "title": "Ayat al-Kursi",
+      "surahId": 2,
+      "ayah": 255,
+      "why": "He is the Ever-Living, the Self-Sustaining. Nothing escapes His knowledge."
+    },
+    {
+      "title": "The last verses of Al-Hashr",
+      "surahId": 59,
+      "ayah": 22,
+      "ayahEnd": 24,
+      "why": "A cluster of His names: the King, the Holy, the Source of Peace, the Creator."
+    },
+    {
+      "title": "He is near",
+      "surahId": 2,
+      "ayah": 186,
+      "why": "\"I am truly near. I respond to one's prayer when they call upon Me.\""
+    },
+    {
+      "title": "The First and the Last",
+      "surahId": 57,
+      "ayah": 3,
+      "why": "He is the First and the Last, the Most High and Most Near; He has knowledge of all things."
+    },
+    {
+      "title": "Created to worship Him",
+      "surahId": 51,
+      "ayah": 56,
+      "why": "\"I did not create jinn and humans except to worship Me.\""
+    },
+    {
+      "title": "Call on Him by His names",
+      "surahId": 7,
+      "ayah": 180,
+      "why": "\"To Allah belong the most beautiful names, so call upon Him by them.\""
+    },
+    {
+      "title": "Nothing is like Him",
+      "surahId": 42,
+      "ayah": 11,
+      "why": "\"There is nothing like Him, for He is the All-Hearing, All-Seeing.\""
+    }
+  ]
+}

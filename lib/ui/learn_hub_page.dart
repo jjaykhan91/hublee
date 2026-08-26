@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
-import '../services/srs_scope.dart';
 import '../theme/app_tokens.dart';
 
 /// Bottom-nav Learn page. Detail tools push full-screen above the shell.
@@ -14,10 +13,6 @@ class LearnHubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final srs = SrsScope.of(context);
-    final quranDue = srs.dueCount(deck: 'quran');
-    final msaDue = srs.dueCount(deck: 'msa');
-
     return Scaffold(
       appBar: AppBar(title: const Text('Learn')),
       body: ListView(
@@ -40,14 +35,6 @@ class LearnHubPage extends StatelessWidget {
             subtitle: 'Star words while reading, then review them here',
             onTap: () => context.push(AppRoute.learnQuranic),
           ),
-          _LearnTile(
-            icon: Icons.replay_rounded,
-            title: 'Spaced repetition',
-            subtitle: quranDue == 0
-                ? 'SM-2 reviews for starred Quranic words'
-                : '$quranDue due today',
-            onTap: () => context.push(AppRoute.quranReview),
-          ),
           const SizedBox(height: 8),
           const _SectionHeader(
             icon: Icons.language_rounded,
@@ -65,14 +52,6 @@ class LearnHubPage extends StatelessWidget {
             title: 'Grammar course',
             subtitle: 'Roots, verb forms I–X, article, pronouns',
             onTap: () => context.push(AppRoute.grammar),
-          ),
-          _LearnTile(
-            icon: Icons.replay_rounded,
-            title: 'Spaced repetition',
-            subtitle: msaDue == 0
-                ? 'Star MSA words, then review with Again / Hard / Good / Easy'
-                : '$msaDue due today',
-            onTap: () => context.push(AppRoute.arabicReview),
           ),
         ],
       ),

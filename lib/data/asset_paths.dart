@@ -72,4 +72,9 @@ class AssetPaths {
 
   /// Modern Standard Arabic dictionary (Wiktionary + Hublee core).
   static const msaDictionary = 'assets/arabic/msa_dictionary.json';
+
+  // ── Guidance (Allah, Prophet, duas) ─────────────────────────
+  static const guidanceAllah = 'assets/guidance/allah.json';
+  static const guidanceProphet = 'assets/guidance/prophet.json';
+  static const guidanceDuas = 'assets/guidance/duas.json';
 }

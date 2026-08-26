@@ -8,7 +8,7 @@ This document describes the main layers and conventions so the app stays easy to
 
 - **UI** (`lib/ui/`): Pages and widgets only. No direct `rootBundle` or `SharedPreferences` usage. Navigation uses the typed [AppRoute](lib/router_paths.dart) API.
 - **Services** (`lib/services/`): Application logic, state (e.g. `SettingsController`, `BookmarkService`), and orchestration (e.g. `QuranSearchService`, `HadithSearchService`, `DailyContentService`). They call into repositories and persist via `SharedPreferences` where needed.
-- **Data** (`lib/quran/`, `lib/hadith/`, `lib/data/`): Repositories load and parse JSON assets; paths come from [AssetPaths](lib/data/asset_paths.dart). Models live next to their repositories.
+- **Data** (`lib/quran/`, `lib/hadith/`, `lib/guidance/`, `lib/data/`): Repositories load and parse JSON assets; paths come from [AssetPaths](lib/data/asset_paths.dart). Models live next to their repositories.
 
 ## Navigation
 
@@ -44,13 +44,15 @@ Heavy assets are parsed **once per session** and held in static repository cache
 | Standard Uthmanic | `assets/quran/ar/{id}.json` | Per-surah map cache in `QuranArabicRepository` |
 | Surah info | `surah_info.json` | `SurahInfoRepository` static list |
 | Word-by-word glosses | `assets/quran/en.wordbyword/{id}.json` | Per-surah future cache in `WordByWordRepository` |
+| Allah / Prophet / duas | `assets/guidance/*.json` | `GuidanceRepository` static futures |
+| Everyday dhikr | `lib/guidance/everyday_dhikr.dart` | Sync catalog; `DailyContentService.dhikrOfTheDay()` |
 | Tajweed colours | rule engine in `tajweed.dart` | LRU (~300) of assignments keyed by `(brightness, text)` |
 
 **Search** indexes `aya_text_emlaey` (`useGlyphText: false`), never PUA `aya_text`. Display still uses PUA or standard Uthmanic as before.
 
 **Settings:** zoom sliders call `notifyListeners` immediately for live preview; `SharedPreferences` writes are debounced (~300 ms) and flushed on `dispose`.
 
-**Bookmarks:** `isBookmarked` is O(1) via a `Set` kept in sync with the list.
+**Bookmarks:** `isBookmarked` is O(1) via a `Set` kept in sync with the list. Per-surah Quran pins (`quran_pins`) are a separate resume marker: at most one ayah per surah.
 
 ## Word-by-word glossing
 
@@ -90,6 +92,10 @@ glyph column exactly as tajweed already does.
 2. Add the route in [router.dart](lib/router.dart) and a path helper in [router_paths.dart](lib/router_paths.dart) if needed.
 3. Use `AppRoute` for any navigation to the new page.
 4. Use design tokens and shared widgets where they fit.
+
+## Android home-screen widgets
+
+Four native launcher widgets (ayah, hadith, Quran word, MSA word) live in `android/app/src/main/kotlin/com/hublee/app/widgets/`. Dart writes today's strings and look into `home_widget` prefs via [HomeWidgetSync](lib/services/home_widget_sync.dart); Kotlin `RemoteViews` paint them. Looks are stored per kind in [WidgetLookStore](lib/services/widget_look.dart). Widgets are Android-only; other platforms show the Settings page with an explanation. Pin and look UI is [HomeWidgetsPage](lib/ui/home_widgets_page.dart) at `AppRoute.homeWidgets`.
 
 ## Adding a new hadith collection
 

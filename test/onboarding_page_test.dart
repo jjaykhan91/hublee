@@ -11,6 +11,7 @@ import 'package:hublee/services/app_scope.dart';
 import 'package:hublee/services/onboarding_service.dart';
 import 'package:hublee/services/settings_controller.dart';
 import 'package:hublee/services/settings_scope.dart';
+import 'package:hublee/services/widget_routes.dart';
 import 'package:hublee/theme/app_appearance.dart';
 import 'package:hublee/ui/onboarding_page.dart';
 import 'package:hublee/ui/splash_page.dart';
@@ -22,6 +23,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     OnboardingService.resetCache();
+    WidgetLaunch.reset();
   });
 
   test('nextRoute is onboarding until complete', () async {

@@ -7,7 +7,7 @@ alwaysApply: true
 
 | File | Class | Purpose |
 |------|-------|---------|
-| `home_page.dart` | `HomePage` | Home tab with Verse/Hadith of the Day, search, continue reading, explore |
+| `home_page.dart` | `HomePage` | Home tab with Hublee meaning, Allah / Prophet / Dua cards, Ayah/Hadith/Dhikr of the Day |
 | `quran_page.dart` | `QuranPage` | Quran tab: surah list with Surah/Juz/Makki-Madani/Revelation tabs |
 | `surah_reader_page.dart` | `SurahReaderPage` | Full-screen surah reading with scrubber + settings sheet |
 | `hadith_page.dart` | `HadithPage` | Hadith tab: all books from all collections |
@@ -16,7 +16,11 @@ alwaysApply: true
 | `settings_page.dart` | `SettingsPage` | Settings tab |
 | `global_search_page.dart` | `SearchPage` | Full-screen global search |
 | `tajweed_guide_page.dart` | `TajweedGuidePage` | Full-screen tajweed colour legend & rules guide |
-| `app_shell.dart` | `AppShell` | Bottom nav shell (6 tabs) |
+| `allah_page.dart` | `AllahPage` | Who Allah is, tawhid, 99 names, key ayahs |
+| `prophet_page.dart` | `ProphetPage` | Seerah hub: life, family, names, character, timeline |
+| `dua_pages.dart` | `DuaHubPage` / `DuaCategoryPage` | Quranic and Hisn al-Muslim du'as by category |
+| `home_widgets_page.dart` | `HomeWidgetsPage` | Android home-screen widgets: look chips and pin (Settings → Home screen widgets) |
+| `app_shell.dart` | `AppShell` | Bottom nav shell (6 tabs). Home/Quran/Hadith/Learn use `HubleeNavIcon` (dome-home, mushaf, Madinah mosque, library); Saved/Settings stay Material. |
 
 ## Navigation
 
@@ -55,8 +59,10 @@ Both reader pages share these features:
 - **Auto-save**: Last-read position saved on open and as you scroll (`notify: false`)
 
 ### Surah Reader specifics
-- **App bar:** Info (surah details), Quran Reading & Tajweed guide (book icon → `showQuranReadingGuideSheet()`), in-page search, settings
+- **App bar:** Calligraphic surah name in Meccan (amber) / Medinan (green) colour, download (opens reciter list), in-page search, settings. The Quran Reading & Tajweed guide lives on the Quran tab, not here.
+- Surah details card above the first ayah (Listen, Info, Meccan/Medinan chip, translation chip)
 - Bismillah header for all surahs except Al-Fatiha (1) and At-Tawbah (9)
+- Ayah chrome: `surah:ayah`, play, bookmark, and pin on the left. Pin is one resume marker per surah (opening the surah jumps there). Sajdah ayahs show a tappable Sajdah chip. Long-press copies or shares. Reciter, repeat, and continue-to-next live on the sticky player bar, which follows the playing ayah unless the reader is scrolling.
 - Arabic with tajweed coloring
 - Tajweed legend at the bottom
 - **Word-by-word** (when `settings.wordByWordEnabled`): ayah Arabic renders via `WordByWordArabicText`; tapping a word tints it and shows `WordGlossCard` floating at the bottom of the screen. Only one word is selected at a time across the surah, and the card floats so revealing a meaning never shifts the text being read. Search results stay plain.
@@ -75,10 +81,13 @@ Both reader pages share these features:
 - **Type**: Two sections (Meccan, Medinan)
 - **Revelation**: Sorted by chronological revelation order
 
-Each surah card: left = number badge + English name (and translation on some tabs); center = Arabic surah name (vowelled, big and bold); right = ayah count. Makki/Madani badge (amber/teal). No CDN or first-ayah images — Arabic text only.
+App bar: **About the Quran** (info icon) opens `showQuranOverviewSheet()`; the book icon opens the Reading & Tajweed guide.
+
+Each surah card: left = number badge + English name (and translation on some tabs); center = Arabic surah name (vowelled, big and bold); right = ayah count and pin ayah when set. Makki/Madani badge (amber/teal). A **Continue where you left off** banner uses automatic last-read; opening a pinned surah jumps to that ayah. No CDN or first-ayah images — Arabic text only.
 
 ## Hadith Page (Tab)
 
+- App bar: **About Hadith** (info icon) opens `showHadithOverviewSheet()`
 - Search bar always visible; collection chips (All / Forties / Nine Books / Other)
 - **Start here** row for the three 40-hadith collections when browsing All
 - Continue-reading banner when `lastReadHadith` exists
@@ -88,10 +97,14 @@ Each surah card: left = number badge + English name (and translation on some tab
 
 ## Home Page
 
-- Verse of the Day card (deep indigo gradient)
-- Hadith of the Day card (emerald gradient)
-- Continue Reading cards
-- Explore tiles (Quran, Hadith)
+- Hublee wordmark in the app bar (eight-point star + name)
+- Hublee meaning card with rope motif, star lattice, and Quran / Hadith emblems (tap opens 3:103)
+- Search shortcut
+- Allah, Prophet Muhammad ﷺ, and Duas cards (full-screen guides above the shell)
+- Verse of the Day card (deep indigo gradient, star lattice wash)
+- Hadith of the Day card (emerald gradient, star lattice wash)
+- Dhikr of the Day card (violet gradient, star lattice wash; tap opens wording, source, and copy)
+- Continue-reading lives on the Quran and Hadith tabs, not here
 
 ## Reusable Widgets
 
@@ -100,14 +113,17 @@ Each surah card: left = number badge + English name (and translation on some tab
 - `WordByWordArabicText` -- tappable per-word Arabic that preserves tajweed colours; selection is shown with a background tint
 - `WordGlossCard` -- floating bottom card showing the tapped word's Arabic and English
 - `tajweedSpans()` -- Public API in `lib/ui/widgets/tajweed.dart` that converts raw Qur'anic text into colour-coded `InlineSpan`s. Also exposes `tajweedColorAssignments()` for unit testing without `BuildContext`.
-- `GradientTile` -- Card with gradient background, icon, title, subtitle
+- `HubleeWordmark` / `HubleeStarMark` / `HubleeRopeMark` -- Identity marks and Islamic star lattice (`hublee_marks.dart`)
 - `ReaderSettingsSheet` -- Bottom sheet for reader font/theme settings (`showReaderSettingsSheet()`)
 - `HadithChapterSheet` -- Chapter table of contents for the hadith reader (`showHadithChapterSheet()`)
+- `showQuranOverviewSheet()` / `showHadithOverviewSheet()` -- Tab orientation sheets from each app-bar info icon
+- `HomeScreenWidgetPreview` -- In-app preview of an Android launcher widget look
+- `DhikrOfTheDayCard` -- Home daily dhikr card and wording sheet (`dhikr_of_the_day_card.dart`)
 - `ScrollScrubber` -- Draggable vertical scrubber for `ScrollablePositionedList`
 
 ## Animations
 
 Uses `flutter_animate` for:
 - Staggered fade+slide list entry animations on QuranPage and HadithPage
-- Fade+slide on Verse/Hadith of the Day cards
+- Fade+slide on Verse/Hadith/Dhikr of the Day cards
 - Keep delays short (30ms per item, capped at 600ms) for responsiveness

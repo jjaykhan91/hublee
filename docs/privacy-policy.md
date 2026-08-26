@@ -1,12 +1,12 @@
 # Privacy policy
 
-**Hublee** — last updated 25 August 2026
+**Hublee** — last updated 26 August 2026
 
 Hublee is an offline Quran and Hadith reader. There is no Hublee account, no Hublee server, and no advertising or analytics SDK.
 
 ## What stays on your device
 
-Settings, bookmarks, last-read positions, first-run choices, and optional Learn-tab study cards are saved in app storage on this device. If you download recitation, ayah audio files are stored in the app’s private support folder. Uninstalling Hublee removes that data. We cannot read it from another phone.
+Settings, bookmarks, last-read positions, per-surah reading pins, first-run choices, optional Learn-tab study cards, and the text shown on Android home-screen widgets are saved in app storage on this device. If you download recitation, ayah audio files are stored in the app’s private support folder. Uninstalling Hublee removes that data. We cannot read it from another phone.
 
 ## When Hublee uses the internet
 

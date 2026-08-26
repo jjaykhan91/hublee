@@ -62,3 +62,14 @@ android {
 flutter {
     source = "../.."
 }
+
+// Amiri for widget TextViews (same face as in-app Arabic fallback).
+tasks.register<Copy>("copyAmiriFont") {
+    from(rootProject.file("../assets/fonts/Amiri-Regular.ttf"))
+    into(file("src/main/res/font"))
+    rename { "amiri.ttf" }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("copyAmiriFont")
+}

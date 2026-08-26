@@ -6,6 +6,7 @@ import 'dart:async';
 import '../quran/quran_chapters_repository.dart';
 import 'daily_content_service.dart';
 import 'hadith_search_service.dart';
+import 'home_widget_sync.dart';
 import 'quran_search_service.dart';
 
 /// Loads chapter metadata and daily verse/hadith in parallel.
@@ -20,7 +21,9 @@ Future<void> warmLaunchCaches() {
     const QuranChaptersRepository().loadChapters(),
     DailyContentService.loadVerseOfTheDay(),
     DailyContentService.loadHadithOfTheDay(),
-  ]);
+  ]).whenComplete(() {
+    unawaited(HomeWidgetSync.syncAll());
+  });
 }
 
 /// Starts Quran and Hadith search indexes without blocking the UI.

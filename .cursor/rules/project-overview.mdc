@@ -21,20 +21,21 @@ Hublee is a cross-platform Flutter app for reading the Quran and Hadith. This is
 
 - **Offline-first**: All Quran and Hadith data is bundled as JSON assets. No backend server, no database, no authentication, no runtime API calls.
 - **Repository pattern**: `QuranChaptersRepository`, `QuranArabicRepository`, `QuranTranslationRepository`, `HadithRepository` load and parse JSON assets.
-- **Service layer**: `ThemeModeService`, `SettingsController`, `BookmarkService`, `DailyContentService`, `QuranSearchService`, `HadithSearchService`, `warmLaunchCaches` (`launch_preload.dart`) handle business logic and persistence.
+- **Service layer**: `ThemeModeService`, `SettingsController`, `BookmarkService`, `DailyContentService`, `QuranSearchService`, `HadithSearchService`, `HomeWidgetSync` (Android launcher widgets), `warmLaunchCaches` (`launch_preload.dart`) handle business logic and persistence.
 - **Router**: `lib/router.dart` defines all routes using go_router. Use the typed **`AppRoute`** API in `lib/router_paths.dart` for all navigation (e.g. `context.push(AppRoute.surah(id))`, `AppRoute.hadithBook(...)`). Do not hard-code path strings.
 - **Design tokens**: `lib/theme/app_tokens.dart` — use `AppRadius`, `AppSpacing`, and `AppShadows` for consistent layout and shadows.
-- **Pages**: `QuranPage` (surah list with Juz/Makki-Madani/Revelation tabs), `SurahReaderPage` (reading with scrubber + settings sheet), `HadithPage` (all books flat), `HadithReaderPage` (reading with scrubber + settings sheet), `SearchPage`, `BookmarksPage`, `SettingsPage`, `HomePage` (with Verse/Hadith of the Day)
+- **Pages**: `QuranPage` (surah list with Juz/Makki-Madani/Revelation tabs), `SurahReaderPage` (reading with scrubber + settings sheet), `HadithPage` (all books flat), `HadithReaderPage` (reading with scrubber + settings sheet), `SearchPage`, `BookmarksPage`, `SettingsPage`, `HomeWidgetsPage` (Android home-screen widgets), `HomePage` (Hublee meaning, Allah / Prophet / Dua cards, Ayah/Hadith/Dhikr of the Day), `AllahPage`, `ProphetPage`, `DuaHubPage`
 
 ## Key Directories
 
 - `lib/router.dart` -- GoRouter config with StatefulShellRoute
 - `lib/ui/app_shell.dart` -- Bottom navigation shell
 - `lib/ui/` -- Pages and shared widgets
-- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `HubleeCard`, `SectionHeader`, `ReaderSettingsSheet`, `ScrollScrubber`, `tajweed.dart` (colour engine with `tajweedSpans()` and `tajweedColorAssignments()` testing API)
+- `lib/ui/widgets/` -- Reusable widgets: `ArabicText`, `GradientTile`, `HubleeCard`, `HubleeWordmark` / `hublee_marks.dart`, `SectionHeader`, `ReaderSettingsSheet`, `ScrollScrubber`, `quran_overview_sheet.dart` / `hadith_overview_sheet.dart`, `tajweed.dart` (colour engine with `tajweedSpans()` and `tajweedColorAssignments()` testing API)
 - `lib/router_paths.dart` -- Typed route paths (`AppRoute`); single source for all navigation URLs.
 - `lib/quran/` -- Quran data models and repositories, plus `arabic_word_segmenter.dart` (the single definition of a Qur'anic word) and `word_by_word_repository.dart`
 - `lib/hadith/` -- Hadith data models and repository
+- `lib/guidance/` -- Allah, Prophet, and dua models + `GuidanceRepository`, everyday dhikr catalog
 - `lib/services/` -- Settings, theme, bookmarks, scopes, search models, daily content
 - `lib/theme/` -- Light/dark theme config and Tajweed color extension
 - `lib/data/` -- `AssetPaths` helper for asset file paths

@@ -27,6 +27,9 @@ class _MissingPluginPlayback implements RecitationPlayback {
   Future<void> setLooping(bool looping) async {}
 
   @override
+  VoidCallback? onComplete;
+
+  @override
   void dispose() {}
 }
 
@@ -59,6 +62,11 @@ class _RecordingPlayback implements RecitationPlayback {
   Future<void> setLooping(bool value) async {
     looping = value;
   }
+
+  @override
+  VoidCallback? onComplete;
+
+  void complete() => onComplete?.call();
 
   @override
   void dispose() {}
@@ -363,6 +371,46 @@ void main() {
     expect(cache.files.length, 2);
     expect(cache.files.containsKey('alafasy/112/1'), isTrue);
     expect(cache.files.containsKey('alafasy/108/1'), isTrue);
+    service.dispose();
+  });
+
+  test('complete advances to the next ayah when continue is on', () async {
+    final playback = _RecordingPlayback();
+    final service = RecitationService(playback: playback);
+
+    expect(await service.play(surahId: 1, ayah: 1, verseCount: 7), isNull);
+    expect(service.continueToNext, isTrue);
+    playback.complete();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(service.isPlayingPassage(1, 2), isTrue);
+    expect(playback.urls.length, 2);
+    service.dispose();
+  });
+
+  test('complete stops on the last ayah even when continue is on', () async {
+    final playback = _RecordingPlayback();
+    final service = RecitationService(playback: playback);
+
+    expect(await service.play(surahId: 1, ayah: 7, verseCount: 7), isNull);
+    playback.complete();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(service.isPlaying, isFalse);
+    expect(service.current?.ayah, 7);
+    service.dispose();
+  });
+
+  test('repeat ayah does not advance on complete', () async {
+    final playback = _RecordingPlayback();
+    final service = RecitationService(playback: playback);
+    await service.setRepeatAyah(true);
+    expect(await service.play(surahId: 1, ayah: 1, verseCount: 7), isNull);
+    playback.complete();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(service.isPlayingPassage(1, 1), isTrue);
+    expect(playback.urls.length, 1);
     service.dispose();
   });
 }

@@ -1,4 +1,4 @@
-/// Widget tests for the ayah play, reciter, and repeat controls.
+/// Widget tests for the ayah play control.
 library;
 
 import 'package:flutter/material.dart';
@@ -26,6 +26,9 @@ class _RecordingPlayback implements RecitationPlayback {
   Future<void> setLooping(bool looping) async {}
 
   @override
+  VoidCallback? onComplete;
+
+  @override
   void dispose() {}
 }
 
@@ -36,7 +39,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('ayah bar shows reciter and opens the picker', (tester) async {
+  testWidgets('play button starts recitation for that ayah', (tester) async {
     final playback = _RecordingPlayback();
     final service = RecitationService(playback: playback);
     addTearDown(service.dispose);
@@ -46,47 +49,7 @@ void main() {
         service: service,
         child: const MaterialApp(
           home: Scaffold(
-            body: AyahRecitationBar(
-              surahId: 1,
-              ayah: 1,
-              surahName: 'Al-Fatiha',
-              verseCount: 7,
-            ),
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('Alafasy'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('ayah-reciter-1-1')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('reciter-download-alafasy')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('reciter-abdulbaset-mujawwad')));
-    await tester.pumpAndSettle();
-
-    expect(service.reciter.id, 'abdulbaset-mujawwad');
-    expect(find.text('AbdulBaset · Mujawwad'), findsOneWidget);
-  });
-
-  testWidgets('play and repeat buttons drive the recitation service', (
-    tester,
-  ) async {
-    final playback = _RecordingPlayback();
-    final service = RecitationService(playback: playback);
-    addTearDown(service.dispose);
-
-    await tester.pumpWidget(
-      RecitationScope(
-        service: service,
-        child: const MaterialApp(
-          home: Scaffold(
-            body: AyahRecitationBar(
-              surahId: 1,
-              ayah: 1,
-              surahName: 'Al-Fatiha',
-              verseCount: 7,
-            ),
+            body: AyahRecitationBar(surahId: 1, ayah: 1, verseCount: 7),
           ),
         ),
       ),
@@ -96,10 +59,5 @@ void main() {
     await tester.pump();
     expect(service.isPlayingPassage(1, 1), isTrue);
     expect(playback.urls, isNotEmpty);
-
-    await tester.tap(find.byKey(const Key('ayah-repeat-1-1')));
-    await tester.pump();
-    expect(service.repeatAyah, isTrue);
-    expect(service.isRepeatingPassage(1, 1), isTrue);
   });
 }

@@ -20,6 +20,7 @@ void showReciterPickerSheet(
   required int surahId,
   required String surahName,
   required int verseCount,
+  String title = 'Reciter',
 }) {
   final recitation = RecitationScope.maybeOf(context);
   if (recitation == null) return;
@@ -33,6 +34,7 @@ void showReciterPickerSheet(
       surahId: surahId,
       surahName: surahName,
       verseCount: verseCount,
+      title: title,
     ),
   );
 }
@@ -43,12 +45,14 @@ class _ReciterPickerSheet extends StatefulWidget {
     required this.surahId,
     required this.surahName,
     required this.verseCount,
+    required this.title,
   });
 
   final RecitationService recitation;
   final int surahId;
   final String surahName;
   final int verseCount;
+  final String title;
 
   @override
   State<_ReciterPickerSheet> createState() => _ReciterPickerSheetState();
@@ -141,7 +145,7 @@ class _ReciterPickerSheetState extends State<_ReciterPickerSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Reciter',
+                          widget.title,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_ayah_label">Ayah of the day</string>
+    <string name="widget_hadith_label">Hadith of the day</string>
+    <string name="widget_qword_label">Quran word of the day</string>
+    <string name="widget_aword_label">Arabic word of the day</string>
+    <string name="widget_ayah_description">Today\'s Quran verse, with optional English.</string>
+    <string name="widget_hadith_description">Today\'s hadith from Nawawi 40.</string>
+    <string name="widget_qword_description">A Quranic word and its English gloss.</string>
+    <string name="widget_aword_description">A Modern Standard Arabic word of the day.</string>
+    <string name="widget_placeholder">Open Hublee to load today\'s text.</string>
+</resources>

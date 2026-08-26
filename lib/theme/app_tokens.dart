@@ -52,7 +52,7 @@ abstract final class AppRadius {
   /// Search bar and input fields (14px).
   static const BorderRadius input = BorderRadius.all(Radius.circular(14));
 
-  /// Large feature cards e.g. Verse/Hadith of the Day (20px).
+  /// Large feature cards e.g. Ayah/Hadith/Dhikr of the Day (20px).
   static const BorderRadius featureCard = BorderRadius.all(Radius.circular(20));
 
   /// Bottom sheet top corners (24px).
@@ -172,7 +172,7 @@ abstract final class AppShadows {
 // ── Feature palettes ─────────────────────────────────────────────
 
 /// Product-surface colours that are not derived from [ColorScheme]
-/// because they identify a card (ayah of the day vs hadith of the day)
+/// because they identify a card (ayah, hadith, or dhikr of the day)
 /// rather than following the seed.
 abstract final class AppColors {
   AppColors._();
@@ -190,6 +190,13 @@ abstract final class AppColors {
     Color(0xFF10B981),
   ];
   static const hadithOfDayTint = Color(0xFF047857);
+
+  static const dhikrOfDay = [
+    Color(0xFF4C1D95),
+    Color(0xFF6D28D9),
+    Color(0xFF8B5CF6),
+  ];
+  static const dhikrOfDayTint = Color(0xFF6D28D9);
 
   /// Warm amber used on Meccan surah cards.
   static const meccanAccent = Color(0xFFD4A054);

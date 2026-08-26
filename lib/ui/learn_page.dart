@@ -8,8 +8,6 @@ import '../router_paths.dart';
 import '../services/quran_dictionary_service.dart';
 import '../services/vocab_scope.dart';
 import '../services/vocab_service.dart';
-import '../services/srs_scope.dart';
-import '../services/srs_service.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/app_haptics.dart';
@@ -182,41 +180,6 @@ class _Lobby extends StatelessWidget {
               AppHaptics.selection();
               onFrequent();
             },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.school_rounded),
-            title: const Text('Spaced repetition (SM-2)'),
-            subtitle: const Text(
-              'Again / Hard / Good / Easy — Anki-style intervals',
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            enabled: savedCount > 0,
-            onTap: savedCount == 0
-                ? null
-                : () async {
-                    final vocab = VocabScope.of(context);
-                    final srs = SrsScope.of(context);
-                    for (final entry in vocab.entries) {
-                      await srs.ensure(
-                        SrsCard(
-                          id: SrsCard.cardId(
-                            deck: 'quran',
-                            arabic: entry.arabic,
-                            english: entry.gloss,
-                          ),
-                          deck: 'quran',
-                          arabic: entry.arabic,
-                          english: entry.gloss,
-                          due: DateTime.now(),
-                        ),
-                      );
-                    }
-                    if (!context.mounted) return;
-                    context.push(AppRoute.quranReview);
-                  },
           ),
         ),
       ],

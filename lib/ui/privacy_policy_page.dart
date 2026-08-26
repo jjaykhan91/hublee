@@ -22,7 +22,7 @@ class PrivacyPolicyPage extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.page,
         children: [
-          Text('Last updated: 25 August 2026', style: muted),
+          Text('Last updated: 26 August 2026', style: muted),
           const SizedBox(height: 16),
           Text(
             'Hublee is an offline Quran and Hadith reader. There is no '
@@ -35,8 +35,9 @@ class PrivacyPolicyPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Settings, bookmarks, last-read positions, first-run choices, '
-            'and optional Learn-tab study cards are saved in app storage '
-            'on this device (SharedPreferences). If you download recitation, '
+            'optional Learn-tab study cards, and the text shown on Android '
+            'home-screen widgets are saved in app storage on this device '
+            '(SharedPreferences). If you download recitation, '
             'ayah audio files are stored in the app’s private support '
             'folder. Uninstalling Hublee removes that data. We cannot '
             'read it from another phone.',

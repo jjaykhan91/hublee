@@ -4,6 +4,8 @@
 /// and go_router navigation.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -17,19 +19,20 @@ import 'services/bookmark_service.dart';
 import 'services/bookmark_scope.dart';
 import 'services/vocab_service.dart';
 import 'services/vocab_scope.dart';
-import 'services/srs_service.dart';
-import 'services/srs_scope.dart';
 import 'services/recitation_service.dart';
 import 'services/recitation_scope.dart';
 import 'services/recitation_cache.dart';
 import 'services/recitation_cache_factory.dart';
 import 'services/app_metrics.dart';
 import 'services/launch_preload.dart';
+import 'services/home_widget_sync.dart';
 import 'router.dart';
+import 'router_paths.dart';
 import 'ui/widgets/metrics_hud.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  unawaited(HomeWidgetSync.captureLaunch());
   runApp(const HubleeApp());
 }
 
@@ -49,7 +52,6 @@ class _HubleeAppState extends State<HubleeApp> {
   final _settingsController = SettingsController();
   final _bookmarkService = BookmarkService();
   final _vocabService = VocabService();
-  final _srsService = SrsService();
   final _recitationService = RecitationService(
     cache: kIsWeb ? const NoopRecitationCache() : createRecitationCache(),
   );
@@ -66,13 +68,28 @@ class _HubleeAppState extends State<HubleeApp> {
     _settingsController.load();
     _bookmarkService.load();
     _vocabService.load();
-    _srsService.load();
     _recitationService.load();
     AppMetrics.instance.attachFrameTiming();
     AppMetrics.instance.addListener(_onOverlay);
+    HomeWidgetSync.bindNavigation(
+      currentLocation: () {
+        try {
+          return appRouter.routerDelegate.currentConfiguration.uri.path;
+        } catch (_) {
+          return '';
+        }
+      },
+      openPath: (path) {
+        appRouter.go(AppRoute.home);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          appRouter.push(path);
+        });
+      },
+    );
     appRouter.routerDelegate.addListener(_onRoute);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       startSearchIndexWarmup();
+      unawaited(HomeWidgetSync.registerBackgroundWork());
     });
   }
 
@@ -94,7 +111,6 @@ class _HubleeAppState extends State<HubleeApp> {
     appRouter.routerDelegate.removeListener(_onRoute);
     _settingsController.dispose();
     _vocabService.dispose();
-    _srsService.dispose();
     _recitationService.dispose();
     super.dispose();
   }
@@ -114,38 +130,35 @@ class _HubleeAppState extends State<HubleeApp> {
         service: _bookmarkService,
         child: VocabScope(
           service: _vocabService,
-          child: SrsScope(
-            service: _srsService,
-            child: RecitationScope(
-              service: _recitationService,
-              child: AppScope(
-                appearance: _appearance,
-                setAppearance: _setAppearance,
-                child: MaterialApp.router(
-                  title: 'Hublee',
-                  debugShowCheckedModeBanner: false,
-                  showPerformanceOverlay: _overlayEnabled,
-                  theme: _appearance == AppAppearance.paper
-                      ? buildPaperTheme()
-                      : buildLightTheme(),
-                  darkTheme: buildDarkTheme(),
-                  themeMode: _appearance.themeMode,
-                  routerConfig: appRouter,
-                  builder: (context, child) {
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        child ?? const SizedBox.shrink(),
-                        if (!kReleaseMode)
-                          const Positioned(
-                            left: 8,
-                            bottom: 88,
-                            child: MetricsHud(),
-                          ),
-                      ],
-                    );
-                  },
-                ),
+          child: RecitationScope(
+            service: _recitationService,
+            child: AppScope(
+              appearance: _appearance,
+              setAppearance: _setAppearance,
+              child: MaterialApp.router(
+                title: 'Hublee',
+                debugShowCheckedModeBanner: false,
+                showPerformanceOverlay: _overlayEnabled,
+                theme: _appearance == AppAppearance.paper
+                    ? buildPaperTheme()
+                    : buildLightTheme(),
+                darkTheme: buildDarkTheme(),
+                themeMode: _appearance.themeMode,
+                routerConfig: appRouter,
+                builder: (context, child) {
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      child ?? const SizedBox.shrink(),
+                      if (!kReleaseMode)
+                        const Positioned(
+                          left: 8,
+                          bottom: 88,
+                          child: MetricsHud(),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

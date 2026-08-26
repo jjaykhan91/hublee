@@ -8,6 +8,7 @@ import '../router_paths.dart';
 import '../services/app_scope.dart';
 import '../services/onboarding_service.dart';
 import '../services/settings_scope.dart';
+import '../services/widget_routes.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/appearance_chips.dart';
@@ -39,6 +40,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     await OnboardingService.complete();
     if (!mounted) return;
     context.go(AppRoute.home);
+    final widgetPath = WidgetLaunch.takePath();
+    if (widgetPath != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.push(widgetPath);
+      });
+    }
   }
 
   void _next() {

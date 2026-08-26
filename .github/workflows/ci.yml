@@ -37,14 +37,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install Play upload tool
+        run: dart pub get -C tools/play_release
+
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed lib test tools
 
       - name: Analyze
         run: flutter analyze
 
+      - name: Analyze Play upload tool
+        run: dart analyze tools/play_release
+
       # Golden tests are excluded: font rasterization differs between this
       # Linux runner and a developer machine, so goldens would fail spuriously.
       # They are a local check — run `flutter test` without the flag locally.
       - name: Test
         run: flutter test --exclude-tags golden
+
+      - name: Test Play upload tool
+        working-directory: tools/play_release
+        run: dart test

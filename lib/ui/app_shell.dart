@@ -9,30 +9,39 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'widgets/app_haptics.dart';
+import 'widgets/hublee_nav_icons.dart';
 import 'widgets/reading_width.dart';
 
-const _destinations = <({IconData icon, IconData selected, String label})>[
-  (icon: Icons.home_outlined, selected: Icons.home_rounded, label: 'Home'),
+const _destinations = <({String label, Widget icon, Widget selected})>[
   (
-    icon: Icons.menu_book_outlined,
-    selected: Icons.menu_book_rounded,
+    label: 'Home',
+    icon: HubleeNavIcon(kind: HubleeNavKind.home),
+    selected: HubleeNavIcon(kind: HubleeNavKind.home, filled: true),
+  ),
+  (
     label: 'Quran',
+    icon: HubleeNavIcon(kind: HubleeNavKind.quran),
+    selected: HubleeNavIcon(kind: HubleeNavKind.quran, filled: true),
   ),
   (
-    icon: Icons.library_books_outlined,
-    selected: Icons.library_books_rounded,
     label: 'Hadith',
+    icon: HubleeNavIcon(kind: HubleeNavKind.hadith),
+    selected: HubleeNavIcon(kind: HubleeNavKind.hadith, filled: true),
   ),
-  (icon: Icons.school_outlined, selected: Icons.school_rounded, label: 'Learn'),
   (
-    icon: Icons.bookmark_outline_rounded,
-    selected: Icons.bookmark_rounded,
+    label: 'Learn',
+    icon: HubleeNavIcon(kind: HubleeNavKind.learn),
+    selected: HubleeNavIcon(kind: HubleeNavKind.learn, filled: true),
+  ),
+  (
     label: 'Saved',
+    icon: Icon(Icons.bookmark_outline_rounded),
+    selected: Icon(Icons.bookmark_rounded),
   ),
   (
-    icon: Icons.settings_outlined,
-    selected: Icons.settings_rounded,
     label: 'Settings',
+    icon: Icon(Icons.settings_outlined),
+    selected: Icon(Icons.settings_rounded),
   ),
 ];
 
@@ -79,8 +88,8 @@ class AppShell extends StatelessWidget {
               destinations: [
                 for (final dest in _destinations)
                   NavigationRailDestination(
-                    icon: Icon(dest.icon),
-                    selectedIcon: Icon(dest.selected),
+                    icon: dest.icon,
+                    selectedIcon: dest.selected,
                     label: Text(dest.label),
                   ),
               ],
@@ -110,8 +119,8 @@ class AppShell extends StatelessWidget {
         destinations: [
           for (final dest in _destinations)
             NavigationDestination(
-              icon: Icon(dest.icon),
-              selectedIcon: Icon(dest.selected),
+              icon: dest.icon,
+              selectedIcon: dest.selected,
               label: dest.label,
             ),
         ],

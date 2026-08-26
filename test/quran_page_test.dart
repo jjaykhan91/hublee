@@ -9,8 +9,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hublee/quran/quran_chapters_repository.dart';
+import 'package:hublee/services/bookmark_scope.dart';
+import 'package:hublee/services/bookmark_service.dart';
 import 'package:hublee/ui/quran_page.dart';
 
 /// Pumps enough frames for the chapter future to resolve and the entry
@@ -26,11 +29,7 @@ Future<void> _settleQuranPage(WidgetTester tester) async {
 
 void main() {
   setUp(() {
-    // Both of these cache Futures for the session, and each test runs in its
-    // own fake-async zone — a Future completed in a previous test never
-    // delivers in this one, leaving the page stuck on its spinner with no
-    // error to explain why. rootBundle is the one that actually bites: it
-    // caches asset strings independently of our repositories.
+    SharedPreferences.setMockInitialValues({});
     QuranChaptersRepository.resetCache();
     rootBundle.clear();
   });
@@ -48,6 +47,8 @@ void main() {
       findsOneWidget,
       reason: 'the list should start at the first surah',
     );
+    expect(find.byTooltip('About the Quran'), findsOneWidget);
+    expect(find.byTooltip('Quran reading & Tajweed guide'), findsOneWidget);
 
     // Scroll the first surah out of view.
     await tester.drag(find.text('Al-Fatihah'), const Offset(0, -1500));
@@ -82,5 +83,49 @@ void main() {
     await tester.tap(find.text('Type'));
     await _settleQuranPage(tester);
     expect(find.textContaining('Meccan ('), findsOneWidget);
+  });
+
+  testWidgets('continue banner and pin marker use last-read and pins', (
+    tester,
+  ) async {
+    final bookmarks = BookmarkService();
+    await bookmarks.load();
+    await bookmarks.saveLastReadQuran(
+      surahId: 2,
+      ayah: 255,
+      surahName: 'Al-Baqarah',
+    );
+    await bookmarks.toggleQuranPin(
+      surahId: 1,
+      ayah: 5,
+      surahName: 'Al-Fatihah',
+    );
+
+    await tester.pumpWidget(
+      BookmarkScope(
+        service: bookmarks,
+        child: const MaterialApp(home: QuranPage()),
+      ),
+    );
+    await _settleQuranPage(tester);
+
+    expect(find.text('Continue where you left off'), findsOneWidget);
+    expect(find.textContaining('2:255'), findsOneWidget);
+    expect(find.text('5'), findsWidgets);
+    expect(find.byIcon(Icons.push_pin_rounded), findsWidgets);
+  });
+
+  testWidgets('about the Quran sheet opens from the app bar', (tester) async {
+    await tester.pumpWidget(harness());
+    await _settleQuranPage(tester);
+
+    await tester.tap(find.byTooltip('About the Quran'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('About the Quran'), findsWidgets);
+    expect(find.text('What it is'), findsOneWidget);
+    expect(find.textContaining('twenty-three years'), findsOneWidget);
+    expect(find.text('Names'), findsOneWidget);
   });
 }

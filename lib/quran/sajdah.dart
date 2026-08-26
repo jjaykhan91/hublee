@@ -34,3 +34,39 @@ bool isSajdahAyah(int surahId, int ayah) =>
 /// True when [arabic] contains the sajdah marker ۩ (U+06E9).
 bool hasSajdahMarker(String? arabic) =>
     arabic != null && arabic.contains('\u06E9');
+
+/// How many Hafs ayahs carry a recitation sajdah.
+const kSajdahAyahCount = 15;
+
+/// Opening line for the reading-guide sajdah section.
+const kSajdahCountIntro =
+    'There are 15 verses in the Quran where prostration (sajdah) '
+    'is recommended when reciting or listening. They are marked '
+    'with the symbol \u06E9 (sajdah marker).';
+
+/// Physical action for a tilawah prostration.
+const kSajdahWhatToDo =
+    'Make one prostration (suj\u016Bd): place forehead, nose, '
+    'hands, knees and toes on the ground, facing the qibla.';
+
+/// Du'a recited in a tilawah prostration. This is not Quran text.
+const kSajdahArabic =
+    '\u0633\u064E\u062C\u064E\u062F\u064E '
+    '\u0648\u064E\u062C\u0652\u0647\u0650\u064A\u064E '
+    '\u0644\u0650\u0644\u0651\u064E\u0630\u0650\u064A '
+    '\u062E\u064E\u0644\u064E\u0642\u064E\u0647\u064F '
+    '\u0648\u064E\u0634\u064E\u0642\u0651\u064E '
+    '\u0633\u064E\u0645\u0652\u0639\u064E\u0647\u064F '
+    '\u0648\u064E\u0628\u064E\u0635\u064E\u0631\u064E\u0647\u064F '
+    '\u0628\u0650\u062D\u064E\u0648\u0652\u0644\u0650\u0647\u0650 '
+    '\u0648\u064E\u0642\u064F\u0648\u0651\u064E\u062A\u0650\u0647\u0650';
+
+/// Latin rendering of [kSajdahArabic].
+const kSajdahTransliteration =
+    'Sajada wajh\u012B lilladh\u012B khalaqahu wa-shaqqa sam\u02BFahu '
+    'wa-ba\u1E63arahu bi-\u1E25awlih\u012B wa-quwwatih\u012B.';
+
+/// English meaning of [kSajdahArabic].
+const kSajdahMeaning =
+    'My face prostrated to the One who created it, gave it hearing '
+    'and sight by His might and power.';

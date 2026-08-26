@@ -1,0 +1,259 @@
+{
+  "arabicName": "مُحَمَّد",
+  "englishName": "Prophet Muhammad",
+  "honorific": "peace be upon him",
+  "intro": "Muhammad (peace be upon him) is the Messenger of Allah and the Seal of the Prophets (33:40). The Quran calls him a mercy to the worlds (21:107) and an excellent example (33:21). What follows is a short, sourced outline of his life, family, names, and character — from the Quran where it speaks, and from the classical seerah (Ibn Ishaq as transmitted by Ibn Hisham) for the well-known chronology. It is not a complete biography.",
+  "sections": [
+    {
+      "id": "life",
+      "title": "Life and mission",
+      "subtitle": "From Makkah to Madinah",
+      "paragraphs": [
+        "He was born in Makkah, in the tribe of Quraysh and the clan of Banu Hashim, in the Year of the Elephant — commonly dated to about 570 CE. His father, Abdullah ibn Abd al-Muttalib, died before he was born. His mother, Aminah bint Wahb, died when he was about six. He was then in the care of his grandfather Abd al-Muttalib, and after him his uncle Abu Talib.",
+        "Before prophethood he was known among his people as al-Amin — the trustworthy. At about twenty-five he married Khadijah bint Khuwaylid (may Allah be pleased with her). She was his only wife until she died, and the first to believe in him.",
+        "At about forty, while he worshipped in the cave of Hira above Makkah, the first revelation came: the opening verses of Surah Al-Alaq (96:1–5). That is commonly dated to 610 CE. The Quran continued to be revealed over the next twenty-three years, in Makkah and then in Madinah.",
+        "The early Muslims were persecuted in Makkah. In 622 CE he emigrated to Yathrib — thereafter Madinah — an event called the Hijra, which begins the Islamic calendar (1 AH). There he established the mosque, a community bound by faith, and treaties with the local tribes.",
+        "Years of struggle followed, including Badr (2 AH), Uhud (3 AH), and the Trench (5 AH). In 6 AH the treaty of Hudaybiyyah opened a path to peace. In 8 AH / 630 CE Makkah was opened with little bloodshed. He forgave its people.",
+        "In 10 AH he performed the Farewell Hajj and addressed the pilgrims on the plain of Arafah. He died in Madinah in 11 AH (632 CE) and was buried in the chamber of Aisha (may Allah be pleased with her), now inside the Prophet's Mosque.",
+        "The Quran is his miracle and his message. He did not write it; he recited what was revealed, and it was memorised and written in his lifetime. Hublee's Quran tab is that recitation. The Hadith tab is the record of what he said, did, and approved."
+      ],
+      "ayahs": [
+        {
+          "title": "The first revelation",
+          "surahId": 96,
+          "ayah": 1,
+          "ayahEnd": 5,
+          "why": "\"Read in the Name of your Lord Who created…\""
+        },
+        {
+          "title": "Seal of the Prophets",
+          "surahId": 33,
+          "ayah": 40,
+          "why": "Muhammad is the Messenger of Allah and the last of the prophets."
+        },
+        {
+          "title": "The Night Journey",
+          "surahId": 17,
+          "ayah": 1,
+          "why": "The Quran mentions his night journey from the Sacred Mosque to the Farthest Mosque."
+        }
+      ]
+    },
+    {
+      "id": "family",
+      "title": "Family",
+      "subtitle": "Household and descendants",
+      "paragraphs": [
+        "His wives are called the Mothers of the Believers (33:6). After Khadijah (may Allah be pleased with her) died, he married other believing women; the well-known list of wives who survived him, or are counted among the Mothers of the Believers in the standard seerah, is given below. Speak of them with respect.",
+        "His children with Khadijah (may Allah be pleased with her) were al-Qasim, Zaynab, Ruqayyah, Umm Kulthum, Fatimah, and Abdullah. The boys died in childhood. Fatimah (may Allah be pleased with her) married Ali ibn Abi Talib (may Allah be pleased with him); their sons Hasan and Husayn (may Allah be pleased with them) are his grandsons.",
+        "Ibrahim was his son by Mariyah al-Qibtiyyah (may Allah be pleased with her); he also died in infancy in Madinah.",
+        "The Quran commands sending blessings on him (33:56). When you name him, add the honorific: peace be upon him — صلى الله عليه وسلم."
+      ],
+      "groups": [
+        {
+          "heading": "Children (may Allah be pleased with them)",
+          "items": [
+            "Al-Qasim — son of Khadijah; died in childhood in Makkah.",
+            "Zaynab — daughter of Khadijah; married Abu al-As ibn al-Rabi'.",
+            "Ruqayyah — daughter of Khadijah; married Uthman ibn Affan (may Allah be pleased with him).",
+            "Umm Kulthum — daughter of Khadijah; later also married Uthman (may Allah be pleased with him) after Ruqayyah died.",
+            "Fatimah — daughter of Khadijah; married Ali ibn Abi Talib (may Allah be pleased with him).",
+            "Abdullah — son of Khadijah; died in childhood in Makkah.",
+            "Ibrahim — son of Mariyah al-Qibtiyyah; died in infancy in Madinah."
+          ]
+        },
+        {
+          "heading": "Mothers of the Believers (may Allah be pleased with them)",
+          "items": [
+            "Khadijah bint Khuwaylid — first wife; first to believe; mother of his older children.",
+            "Sawdah bint Zam'ah",
+            "Aisha bint Abi Bakr — daughter of Abu Bakr (may Allah be pleased with him); many hadiths of the Prophet's home life come through her.",
+            "Hafsah bint Umar — daughter of Umar ibn al-Khattab (may Allah be pleased with him).",
+            "Zaynab bint Khuzaymah — known for generosity; she died during the Prophet's lifetime (peace be upon him).",
+            "Umm Salamah (Hind bint Abi Umayyah)",
+            "Zaynab bint Jahsh",
+            "Juwayriyah bint al-Harith",
+            "Umm Habibah (Ramlah bint Abi Sufyan)",
+            "Safiyyah bint Huyayy",
+            "Maymunah bint al-Harith"
+          ]
+        }
+      ],
+      "ayahs": [
+        {
+          "title": "Mothers of the Believers",
+          "surahId": 33,
+          "ayah": 6,
+          "why": "His wives are the Mothers of the Believers."
+        },
+        {
+          "title": "Send blessings on him",
+          "surahId": 33,
+          "ayah": 56,
+          "why": "Allah and the angels send blessings on the Prophet; the believers are commanded to do the same."
+        }
+      ]
+    },
+    {
+      "id": "names",
+      "title": "Names and titles",
+      "subtitle": "How the Quran names him",
+      "paragraphs": [
+        "The Quran names him Muhammad in four places, and Ahmad once. It also describes him by roles: prophet, messenger, warner, bringer of good news, witness, and a mercy to the worlds. Hublee does not invent a numbered \"99 names of the Prophet\" list; that is a later teaching aid, not a Quranic catalogue.",
+        "He is the unlettered prophet (7:157): he did not compose the Quran as a book of his own learning. He is the Seal of the Prophets (33:40): no prophet comes after him.",
+        "When you mention him, add peace be upon him. The Quran does not treat his name as ordinary speech."
+      ],
+      "groups": [
+        {
+          "heading": "Names and titles in the Quran",
+          "items": [
+            "Muhammad — 3:144, 33:40, 47:2, 48:29.",
+            "Ahmad — 61:6, in the prophecy on the tongue of Isa (peace be upon him).",
+            "The Messenger of Allah — throughout; with \"Seal of the Prophets\" in 33:40.",
+            "A mercy to the worlds — 21:107.",
+            "An excellent example — 33:21.",
+            "On a tremendous character — 68:4.",
+            "A witness, a bearer of good news, and a warner — 33:45.",
+            "The unlettered prophet — 7:157.",
+            "Kind and merciful to the believers — 9:128."
+          ]
+        }
+      ],
+      "ayahs": [
+        {
+          "title": "Muhammad, Seal of the Prophets",
+          "surahId": 33,
+          "ayah": 40
+        },
+        {
+          "title": "Ahmad",
+          "surahId": 61,
+          "ayah": 6
+        },
+        {
+          "title": "A mercy to the worlds",
+          "surahId": 21,
+          "ayah": 107
+        },
+        {
+          "title": "A tremendous character",
+          "surahId": 68,
+          "ayah": 4
+        }
+      ]
+    },
+    {
+      "id": "character",
+      "title": "Character",
+      "subtitle": "What the Quran says of him",
+      "paragraphs": [
+        "The Quran's own testimony is enough to begin with: \"And you are truly a man of outstanding character\" (68:4). \"There has certainly been for you in the Messenger of Allah an excellent example\" (33:21). \"We have sent you only as a mercy to the worlds\" (21:107).",
+        "He was concerned for his people: \"There has certainly come to you a messenger from among yourselves. He is concerned by your suffering, anxious for your well-being, and gracious and merciful to the believers\" (9:128).",
+        "Before revelation his people already called him trustworthy. After it, the hadith collections in this app — especially Sahih al-Bukhari and Sahih Muslim — record how he lived: how he prayed, how he treated neighbours, how he was with children, and how he forgave when Makkah was opened.",
+        "Love of him is part of faith, but it is not worship. Worship is for Allah alone. Following him is how that love is shown: \"Say: If you love Allah, follow me; Allah will love you and forgive your sins\" (3:31)."
+      ],
+      "ayahs": [
+        {
+          "title": "Outstanding character",
+          "surahId": 68,
+          "ayah": 4
+        },
+        {
+          "title": "An excellent example",
+          "surahId": 33,
+          "ayah": 21
+        },
+        {
+          "title": "If you love Allah, follow me",
+          "surahId": 3,
+          "ayah": 31
+        },
+        {
+          "title": "Gracious and merciful to the believers",
+          "surahId": 9,
+          "ayah": 128
+        }
+      ]
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline",
+      "subtitle": "Widely agreed dates from the seerah",
+      "paragraphs": [
+        "Years in the Common Era are the usual conversion of the seerah chronology. Hijri years count from the Hijra (622 CE). Exact birth-day reconstructions differ; the outline below is the standard teaching chronology, not a new calendar."
+      ],
+      "timeline": [
+        {
+          "when": "c. 570 CE",
+          "title": "Birth in Makkah",
+          "body": "Year of the Elephant. Banu Hashim of Quraysh. His father had already died."
+        },
+        {
+          "when": "c. 576 CE",
+          "title": "His mother dies",
+          "body": "Aminah dies when he is about six. Care passes to Abd al-Muttalib, then to Abu Talib."
+        },
+        {
+          "when": "c. 595 CE",
+          "title": "Marriage to Khadijah",
+          "body": "Khadijah bint Khuwaylid (may Allah be pleased with her). She is his only wife until her death."
+        },
+        {
+          "when": "c. 610 CE",
+          "title": "First revelation",
+          "body": "Cave Hira. Opening of Surah Al-Alaq (96:1–5). He is about forty."
+        },
+        {
+          "when": "c. 619 CE",
+          "title": "Year of Sorrow",
+          "body": "Khadijah and Abu Talib die. Public preaching in Makkah continues under heavier pressure."
+        },
+        {
+          "when": "c. 621 CE",
+          "title": "Night Journey and Ascension",
+          "body": "The Quran mentions the night journey in 17:1. The seerah places it in this period, before the Hijra."
+        },
+        {
+          "when": "622 CE / 1 AH",
+          "title": "Hijra to Madinah",
+          "body": "Emigration from Makkah to Yathrib. The Islamic calendar begins."
+        },
+        {
+          "when": "2 AH",
+          "title": "Badr",
+          "body": "The first major battle. The Quran discusses it in Surah Al-Anfal."
+        },
+        {
+          "when": "3 AH",
+          "title": "Uhud",
+          "body": "A hard day for the Muslims. The Quran discusses it in Surah Al Imran."
+        },
+        {
+          "when": "5 AH",
+          "title": "The Trench",
+          "body": "Madinah is besieged. The Quran discusses the confederates in Surah Al-Ahzab."
+        },
+        {
+          "when": "6 AH",
+          "title": "Hudaybiyyah",
+          "body": "A treaty with Quraysh that the Quran calls a clear victory (48:1)."
+        },
+        {
+          "when": "8 AH / 630 CE",
+          "title": "Opening of Makkah",
+          "body": "The city is opened. He announces a general amnesty."
+        },
+        {
+          "when": "10 AH",
+          "title": "Farewell Hajj",
+          "body": "Sermon at Arafah. The Quran's \"today I have perfected your religion\" (5:3) is associated with this pilgrimage."
+        },
+        {
+          "when": "11 AH / 632 CE",
+          "title": "Death in Madinah",
+          "body": "He dies in the house of Aisha (may Allah be pleased with her) and is buried there. The mosque that grew around that chamber is Masjid an-Nabawi."
+        }
+      ]
+    }
+  ]
+}

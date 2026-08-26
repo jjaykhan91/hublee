@@ -49,6 +49,10 @@ app.*.map.json
 !.env.example
 env.*.json
 
+# Google Play Android Publisher service-account key (never commit)
+**/play-service-account.json
+android/play-*.json
+
 # Cursor (track rules, skills and mcp config, ignore internal files)
 .cursor/*
 !.cursor/rules/
@@ -57,3 +61,6 @@ env.*.json
 
 # Local device screenshots used to eyeball a change on an emulator
 .screens/
+
+# Generated Amiri copy for Android widget TextViews
+/android/app/src/main/res/font/amiri.ttf
