@@ -51,14 +51,25 @@ void main() {
       expect(path, isNot(contains('index=')));
     });
 
-    test('hadithBook builds path with index', () {
+    test('hadithBook builds path with chapter', () {
       final path = AppRoute.hadithBook(
-        collectionId: 'forties',
-        bookFile: 'nawawi40.json',
-        bookTitle: 'Nawawi 40',
-        index: 5,
+        collectionId: 'the_9_books',
+        bookFile: 'bukhari.json',
+        bookTitle: 'Sahih al-Bukhari',
+        chapterId: 2,
       );
-      expect(path, contains('index=5'));
+      expect(path, contains('/hadith/the_9_books/bukhari.json'));
+      expect(path, contains('chapter=2'));
+    });
+
+    test('hadithChapters builds the chapter grid path', () {
+      final path = AppRoute.hadithChapters(
+        collectionId: 'the_9_books',
+        bookFile: 'bukhari.json',
+        bookTitle: 'Sahih al-Bukhari',
+      );
+      expect(path, contains('/hadith/the_9_books/bukhari.json/chapters'));
+      expect(path, contains('title='));
     });
 
     test('tryParseSurahId accepts 1–114', () {

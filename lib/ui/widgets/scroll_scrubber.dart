@@ -1,11 +1,9 @@
-/// A vertical scroll position scrubber overlay for use with
-/// [ScrollablePositionedList]. Shows a draggable thumb on the right
-/// edge with a tooltip label indicating the current position.
+/// Overlay scrubber that appears while the reader is scrolling, then
+/// hides so it does not keep a gutter of screen space.
 ///
-/// Since [ScrollablePositionedList] uses [ItemScrollController]
-/// instead of a standard [ScrollController], this widget listens
-/// to [ItemPositionsListener] to track position and uses
-/// [ItemScrollController.jumpTo] for navigation.
+/// Wrap your [ScrollablePositionedList] and this widget in a [Stack].
+/// The overlay floats on the physical right edge; it is not visible
+/// until the list moves or the user drags the thumb.
 library;
 
 import 'dart:async';
@@ -18,21 +16,19 @@ import 'app_haptics.dart';
 
 const _kThumbSize = 36.0;
 const _kTrackWidth = 20.0;
+const _kHideAfter = Duration(milliseconds: 1400);
 
 /// Overlay scrubber that sits on the right edge of the reader.
-///
-/// Wrap your [ScrollablePositionedList] and this widget in a [Stack].
-/// Give the list right padding of [ScrollScrubber.gutter] so text is
-/// not drawn under the track.
 class ScrollScrubber extends StatefulWidget {
   /// Inset from the physical right edge of the stack.
   static const double edgeInset = 8;
 
-  /// Width of the overlay hit area. At least 48 dp for a usable target.
+  /// Width of the overlay hit area when visible.
   static const double overlayWidth = AppSpacing.minTouchTarget;
 
-  /// Right padding readers should reserve so content clears the overlay.
-  static const double gutter = edgeInset + overlayWidth;
+  /// Right padding readers reserve. The overlay floats, so this is a
+  /// slim edge inset rather than a permanent column.
+  static const double gutter = 12;
 
   /// Total number of scrollable items.
   final int itemCount;
@@ -60,20 +56,16 @@ class ScrollScrubber extends StatefulWidget {
 
 class _ScrollScrubberState extends State<ScrollScrubber>
     with SingleTickerProviderStateMixin {
-  /// Current position as a fraction [0.0, 1.0].
   double _position = 0.0;
-
-  /// Whether the user is currently dragging.
   bool _isDragging = false;
-
-  /// Current item index derived from position.
   int _currentIndex = 0;
+  var _seeded = false;
+  var _shown = false;
+  double? _lastLeading;
+  int? _lastIndex;
 
-  /// Controls the fade animation for the label tooltip.
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
-
-  /// Timer to auto-hide the label after inactivity.
   Timer? _hideTimer;
 
   @override
@@ -81,15 +73,19 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-
-    // Listen to scroll positions to update the thumb.
     widget.positionsListener.itemPositions.addListener(_onPositionsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _seeded) return;
+      if (widget.positionsListener.itemPositions.value.isNotEmpty) {
+        _onPositionsChanged();
+      }
+    });
   }
 
   @override
@@ -104,14 +100,32 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     final positions = widget.positionsListener.itemPositions.value;
     if (_isDragging || positions.isEmpty) return;
 
-    // Find the topmost visible item.
     final sorted = positions.toList()
       ..sort((a, b) => a.itemLeadingEdge.compareTo(b.itemLeadingEdge));
     final topItem = sorted.first;
     final index = topItem.index.clamp(0, widget.itemCount - 1);
+    final leading = topItem.itemLeadingEdge;
 
     if (widget.itemCount <= 1) return;
     final newPosition = index / (widget.itemCount - 1);
+
+    if (!_seeded) {
+      _seeded = true;
+      _lastIndex = index;
+      _lastLeading = leading;
+      _position = newPosition.clamp(0.0, 1.0);
+      _currentIndex = index;
+      // First report after the user already moved (e.g. tests that
+      // skip the idle layout tick) should still show the thumb.
+      if (index > 0 || leading < -0.02) _reveal();
+      return;
+    }
+
+    final moved =
+        index != _lastIndex ||
+        (leading - (_lastLeading ?? leading)).abs() > 0.002;
+    _lastIndex = index;
+    _lastLeading = leading;
 
     if (mounted) {
       setState(() {
@@ -119,12 +133,23 @@ class _ScrollScrubberState extends State<ScrollScrubber>
         _currentIndex = index;
       });
     }
+    if (moved) _reveal();
+  }
+
+  void _reveal() {
+    _hideTimer?.cancel();
+    if (!_shown && mounted) setState(() => _shown = true);
+    _fadeController.forward();
+    _scheduleHide();
   }
 
   void _onDragStart(DragStartDetails details) {
-    setState(() => _isDragging = true);
-    _fadeController.forward();
     _hideTimer?.cancel();
+    setState(() {
+      _isDragging = true;
+      _shown = true;
+    });
+    _fadeController.forward();
     _updatePositionFromGlobal(details.globalPosition);
   }
 
@@ -170,14 +195,19 @@ class _ScrollScrubberState extends State<ScrollScrubber>
 
   void _scheduleHide() {
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) _fadeController.reverse();
+    if (_isDragging) return;
+    _hideTimer = Timer(_kHideAfter, () {
+      if (!mounted || _isDragging) return;
+      _fadeController.reverse().whenComplete(() {
+        if (!mounted || _isDragging || _fadeController.value > 0) return;
+        setState(() => _shown = false);
+      });
     });
   }
 
   void _onTapDown(TapDownDetails details) {
-    _fadeController.forward();
     _hideTimer?.cancel();
+    _fadeController.forward();
     _updatePositionFromGlobal(details.globalPosition);
     _scheduleHide();
   }
@@ -196,66 +226,68 @@ class _ScrollScrubberState extends State<ScrollScrubber>
       top: 8,
       bottom: 8,
       width: ScrollScrubber.overlayWidth,
-      child: Semantics(
-        slider: true,
-        label: 'Reading position',
-        value: widget.labelBuilder(_currentIndex),
-        child: GestureDetector(
-          onVerticalDragStart: _onDragStart,
-          onVerticalDragUpdate: _onDragUpdate,
-          onVerticalDragEnd: _onDragEnd,
-          onTapDown: _onTapDown,
-          behavior: HitTestBehavior.translucent,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Track line, aligned with the thumb on the physical right.
-              Positioned(
-                right: _kTrackWidth / 2 - 1.5,
-                top: _kThumbSize / 2,
-                bottom: _kThumbSize / 2,
-                child: Container(
-                  width: 3,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(
-                      alpha: _isDragging ? 0.2 : 0.08,
+      child: AnimatedBuilder(
+        animation: _fadeAnimation,
+        builder: (context, child) {
+          final visible = _shown || _isDragging;
+          return IgnorePointer(
+            ignoring: !visible,
+            child: Opacity(
+              opacity: _isDragging ? 1 : _fadeAnimation.value,
+              child: child,
+            ),
+          );
+        },
+        child: Semantics(
+          slider: true,
+          label: 'Reading position',
+          value: widget.labelBuilder(_currentIndex),
+          child: GestureDetector(
+            onVerticalDragStart: _onDragStart,
+            onVerticalDragUpdate: _onDragUpdate,
+            onVerticalDragEnd: _onDragEnd,
+            onTapDown: _onTapDown,
+            behavior: HitTestBehavior.translucent,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  right: _kTrackWidth / 2 - 1.5,
+                  top: _kThumbSize / 2,
+                  bottom: _kThumbSize / 2,
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(
+                        alpha: _isDragging ? 0.2 : 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-
-              // Thumb
-              Positioned(
-                right: 0,
-                top: thumbTop,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: _kTrackWidth,
-                  height: _kThumbSize,
-                  decoration: BoxDecoration(
-                    color: _isDragging
-                        ? colorScheme.primary
-                        : colorScheme.primary.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.drag_handle_rounded,
-                    size: 18,
-                    color: _isDragging
-                        ? colorScheme.onPrimary
-                        : colorScheme.onPrimary.withValues(alpha: 0.7),
+                Positioned(
+                  right: 0,
+                  top: thumbTop,
+                  child: Container(
+                    width: _kTrackWidth,
+                    height: _kThumbSize,
+                    decoration: BoxDecoration(
+                      color: _isDragging
+                          ? colorScheme.primary
+                          : colorScheme.primary.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.drag_handle_rounded,
+                      size: 18,
+                      color: colorScheme.onPrimary,
+                    ),
                   ),
                 ),
-              ),
-
-              // Label floats inward so it does not hang off the screen.
-              Positioned(
-                right: _kTrackWidth + 8,
-                top: thumbTop + (_kThumbSize - 36) / 2,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
+                Positioned(
+                  right: _kTrackWidth + 8,
+                  top: thumbTop + (_kThumbSize - 36) / 2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -276,8 +308,8 @@ class _ScrollScrubberState extends State<ScrollScrubber>
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

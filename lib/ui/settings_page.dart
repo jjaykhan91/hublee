@@ -12,10 +12,10 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../router_paths.dart';
-import '../services/settings_controller.dart';
 import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/arabic_font_list.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/appearance_chips.dart';
 
@@ -94,41 +94,9 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: ArabicFontOption.values.map((font) {
-                          final isSelected = font == settings.arabicFont;
-                          return ChoiceChip(
-                            label: Text(font.label),
-                            selected: isSelected,
-                            onSelected: (_) {
-                              AppHaptics.selection();
-                              settings.arabicFont = font;
-                            },
-                            materialTapTargetSize: MaterialTapTargetSize.padded,
-                            selectedColor: colorScheme.primary.withValues(
-                              alpha: 0.15,
-                            ),
-                            labelStyle: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurface,
-                              fontSize: 13,
-                            ),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? colorScheme.primary.withValues(alpha: 0.4)
-                                  : colorScheme.outline.withValues(alpha: 0.3),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          );
-                        }).toList(),
+                      ArabicFontList(
+                        selected: settings.arabicFont,
+                        onChanged: (font) => settings.arabicFont = font,
                       ),
                     ],
                   ),

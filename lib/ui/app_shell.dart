@@ -38,8 +38,8 @@ const _destinations = <({IconData icon, IconData selected, String label})>[
 
 /// Persistent navigation scaffold.
 ///
-/// Phone: 6-tab [NavigationBar]. Wide windows: [NavigationRail] and a
-/// capped reading column.
+/// Phone and open foldables: 6-tab [NavigationBar]. Wide windows
+/// without a fold: [NavigationRail] and a capped reading column.
 class AppShell extends StatelessWidget {
   /// The shell that manages the active tab body and branch state.
   final StatefulNavigationShell navigationShell;
@@ -58,7 +58,12 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final wide = ReadingLayout.useRail(MediaQuery.sizeOf(context).width);
+    final size = MediaQuery.sizeOf(context);
+    final wide = ReadingLayout.useRail(
+      size,
+      displayFeatures: MediaQuery.displayFeaturesOf(context),
+    );
+    final compactBar = ReadingLayout.compactChrome(size);
 
     if (wide) {
       return Scaffold(
@@ -98,7 +103,9 @@ class AppShell extends StatelessWidget {
         onDestinationSelected: _select,
         backgroundColor: isDark ? const Color(0xFF0B0F14) : colorScheme.surface,
         indicatorColor: colorScheme.primary.withValues(alpha: 0.15),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelBehavior: compactBar
+            ? NavigationDestinationLabelBehavior.onlyShowSelected
+            : NavigationDestinationLabelBehavior.alwaysShow,
         height: 68,
         destinations: [
           for (final dest in _destinations)

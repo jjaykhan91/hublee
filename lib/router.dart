@@ -14,6 +14,7 @@ import 'ui/home_page.dart';
 import 'ui/quran_page.dart';
 import 'ui/surah_reader_page.dart';
 import 'ui/hadith_page.dart';
+import 'ui/hadith_chapters_page.dart';
 import 'ui/hadith_reader_page.dart';
 import 'ui/global_search_page.dart';
 import 'ui/bookmarks_page.dart';
@@ -112,6 +113,21 @@ final GoRouter appRouter = GoRouter(
               path: '/hadith',
               builder: (context, state) => const HadithPage(),
               routes: [
+                GoRoute(
+                  path: ':collectionId/:bookFile/chapters',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) {
+                    final collectionId = state.pathParameters['collectionId']!;
+                    final bookFile = state.pathParameters['bookFile']!;
+                    final title =
+                        state.uri.queryParameters['title'] ?? bookFile;
+                    return HadithChaptersPage(
+                      collectionId: collectionId,
+                      bookFile: bookFile,
+                      title: title,
+                    );
+                  },
+                ),
                 // Full-screen hadith book reading view
                 // Path: /hadith/:collectionId/:bookFile
                 GoRoute(
@@ -123,12 +139,16 @@ final GoRouter appRouter = GoRouter(
                     final title =
                         state.uri.queryParameters['title'] ?? bookFile;
                     final scrollToIndex = state.uri.queryParameters['index'];
+                    final chapterRaw = state.uri.queryParameters['chapter'];
                     return HadithReaderPage(
                       collectionId: collectionId,
                       bookFile: bookFile,
                       title: title,
                       scrollToIndex: scrollToIndex != null
                           ? int.tryParse(scrollToIndex)
+                          : null,
+                      chapterId: chapterRaw != null
+                          ? int.tryParse(chapterRaw)
                           : null,
                     );
                   },

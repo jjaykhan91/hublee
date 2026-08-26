@@ -14,6 +14,7 @@ import '../../services/app_scope.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 import 'appearance_chips.dart';
+import 'arabic_font_list.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -208,7 +209,7 @@ class _ReaderSettingsSheet extends StatelessWidget {
   }
 }
 
-/// Horizontal font family picker with selectable chips.
+/// Vertical font family picker.
 class _FontPicker extends StatelessWidget {
   final ArabicFontOption selected;
   final ValueChanged<ArabicFontOption> onChanged;
@@ -242,42 +243,7 @@ class _FontPicker extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: ArabicFontOption.values.map((font) {
-              final isSelected = font == selected;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(font.label),
-                  selected: isSelected,
-                  onSelected: (_) {
-                    AppHaptics.selection();
-                    onChanged(font);
-                  },
-                  materialTapTargetSize: MaterialTapTargetSize.padded,
-                  selectedColor: colorScheme.primary.withValues(alpha: 0.15),
-                  labelStyle: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurface,
-                    fontSize: 13,
-                  ),
-                  side: BorderSide(
-                    color: isSelected
-                        ? colorScheme.primary.withValues(alpha: 0.4)
-                        : colorScheme.outline.withValues(alpha: 0.3),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+        ArabicFontList(selected: selected, onChanged: onChanged),
       ],
     );
   }
