@@ -119,6 +119,56 @@ Do not commit the JSON. Losing it is fine (mint a new key); leaking it lets anyo
 2. `flutter build appbundle --release`
 3. New Play release with the new AAB.
 
+## Automated closed testing (GitHub Actions)
+
+Cloud agents cannot sign or upload from the VM: the upload keystore is gitignored and lives on your PC. After the secrets below are in GitHub, **Deploy Play** builds a signed AAB and uploads it to Closed testing (`alpha` in the Play API).
+
+Ask the cloud agent to deploy, or push a `v*` tag, or run **Actions → Deploy Play → Run workflow**.
+
+### 1. Play Developer API service account (once)
+
+Manual Play Console uploads do **not** replace this. The workflow talks to the API as a service account.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) (same Google account as Play), create or pick a project.
+2. **APIs & Services → Library** → enable **Google Play Android Developer API**.
+3. **IAM & Admin → Service Accounts → Create service account**. Name it e.g. `hublee-play-upload`. Skip Cloud IAM roles.
+4. Open the account → **Keys → Add key → Create new key → JSON**. Save the file off-repo.
+5. In [Play Console](https://play.google.com/console) → **Users and permissions → Invite new users**.
+6. Email = `client_email` from the JSON (ends with `.iam.gserviceaccount.com`).
+7. App **Hublee** (`com.hublee.app`). Permissions:
+   - **Release apps to testing tracks**
+   - **View app information** (read)
+8. **Invite user**. Wait up to 24 hours if the first API call returns a permission error.
+
+### 2. GitHub Actions secrets (once)
+
+On the PC that already has the keystore:
+
+```powershell
+.\scripts\prep-play-github-secrets.ps1
+```
+
+Add repository secrets at [github.com/jjaykhan91/hublee/settings/secrets/actions](https://github.com/jjaykhan91/hublee/settings/secrets/actions):
+
+| Secret | Value |
+|---|---|
+| `PLAY_KEYSTORE_BASE64` | Output of the script (clipboard) |
+| `PLAY_STORE_PASSWORD` | `storePassword` in `android/key.properties` |
+| `PLAY_KEY_PASSWORD` | `keyPassword` in `android/key.properties` |
+| `PLAY_KEY_ALIAS` | `keyAlias` (usually `upload`) |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Entire service-account JSON file |
+
+Do not commit the `.jks`, `key.properties`, or JSON key.
+
+### 3. Deploy
+
+Each Play upload needs a **new** `version:` in `pubspec.yaml` (higher `+build`). Then either:
+
+- Tag `v1.0.2` (or whatever matches that version) and push the tag → uploads to **Closed testing** (`alpha`), status `completed`.
+- **Actions → Deploy Play → Run workflow** and optionally change track (`internal`, `alpha`, `beta`, `production`) or upload as `draft`.
+
+The workflow file is `.github/workflows/deploy-play.yml`. It must be on `master` before a tag on `master` will use it.
+
 ## If `flutter build appbundle` complains about debug symbols
 
 Gradle may still have written `build\app\outputs\bundle\release\app-release.aab`. Flutter’s post-check needs Android **cmdline-tools** (`apkanalyzer`). Install them in Android Studio: **SDK Manager → SDK Tools → Android SDK Command-line Tools**, then `flutter doctor` until the Android toolchain is clean.

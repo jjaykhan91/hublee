@@ -1,0 +1,155 @@
+# Sign a release AAB and upload it to Google Play.
+#
+# Default destination is the Closed testing track (Play API name: `alpha`).
+# Triggered by a `v*` tag, or manually via workflow_dispatch.
+#
+# Required repository secrets (see docs/PLAY_STORE.md):
+#   PLAY_SERVICE_ACCOUNT_JSON, PLAY_KEYSTORE_BASE64,
+#   PLAY_STORE_PASSWORD, PLAY_KEY_PASSWORD, PLAY_KEY_ALIAS
+
+name: Deploy Play
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      track:
+        description: >
+          Play track. `alpha` is the default Closed testing track.
+          Use `internal`, `beta`, `production`, or a custom closed-track name.
+        required: true
+        default: alpha
+        type: string
+      status:
+        description: >
+          `completed` rolls the release out to testers. `draft` only uploads.
+        required: true
+        default: completed
+        type: choice
+        options:
+          - completed
+          - draft
+
+concurrency:
+  group: deploy-play
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build AAB and upload to Play
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      PLAY_TRACK: ${{ inputs.track || 'alpha' }}
+      PLAY_STATUS: ${{ inputs.status || 'completed' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Require Play secrets
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_KEYSTORE_BASE64 }}
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+        run: |
+          missing=0
+          for name in PLAY_SERVICE_ACCOUNT_JSON PLAY_KEYSTORE_BASE64 PLAY_STORE_PASSWORD PLAY_KEY_PASSWORD PLAY_KEY_ALIAS; do
+            if [ -z "${!name}" ]; then
+              echo "Missing repository secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Add the secrets listed in docs/PLAY_STORE.md, then re-run."
+            exit 1
+          fi
+
+      - name: Write upload keystore
+        env:
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_KEYSTORE_BASE64 }}
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib, sys
+
+          raw = os.environ["PLAY_KEYSTORE_BASE64"].strip()
+          try:
+              data = base64.b64decode(raw, validate=True)
+          except Exception as exc:
+              sys.exit(f"PLAY_KEYSTORE_BASE64 is not valid base64: {exc}")
+          if len(data) < 32:
+              sys.exit("PLAY_KEYSTORE_BASE64 decoded to an empty or tiny file")
+
+          android = pathlib.Path("android")
+          (android / "upload-keystore.jks").write_bytes(data)
+          (android / "key.properties").write_text(
+              "storePassword={store}\n"
+              "keyPassword={key}\n"
+              "keyAlias={alias}\n"
+              "storeFile=upload-keystore.jks\n".format(
+                  store=os.environ["PLAY_STORE_PASSWORD"],
+                  key=os.environ["PLAY_KEY_PASSWORD"],
+                  alias=os.environ["PLAY_KEY_ALIAS"],
+              ),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # Keep in sync with .github/workflows/ci.yml
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Report toolchain versions
+        run: |
+          java -version
+          flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Read app version
+        id: version
+        run: |
+          version=$(awk '/^version:/{print $2; exit}' pubspec.yaml)
+          echo "name=$version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $version"
+
+      - name: Build signed app bundle
+        run: flutter build appbundle --release
+
+      - name: Confirm AAB exists
+        run: |
+          aab=build/app/outputs/bundle/release/app-release.aab
+          test -s "$aab"
+          ls -lh "$aab"
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.hublee.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          tracks: ${{ env.PLAY_TRACK }}
+          status: ${{ env.PLAY_STATUS }}
+          releaseName: ${{ steps.version.outputs.name }}
