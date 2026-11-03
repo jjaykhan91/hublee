@@ -233,7 +233,7 @@ class _TajweedPage extends StatelessWidget {
           Text(
             'A full legend is in Settings and on the reader toolbar.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.55),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -298,9 +298,7 @@ class _IntroFrame extends StatelessWidget {
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.65),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.45,
           ),
         ),

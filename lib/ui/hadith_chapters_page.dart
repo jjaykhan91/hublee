@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../hadith/hadith_chapters.dart';
 import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
+import '../services/app_metrics.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/arabic_text.dart';
@@ -37,6 +38,7 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
   late final Future<HadithBook> _bookFuture;
   final _searchController = TextEditingController();
   var _query = '';
+  var _skippedPicker = false;
 
   @override
   void initState() {
@@ -67,6 +69,24 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
     );
   }
 
+  void _openOnlyChapter(HadithBook book) {
+    if (_skippedPicker) return;
+    _skippedPicker = true;
+    final chapter = book.chapters.single;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.pushReplacement(
+        AppRoute.hadithBook(
+          collectionId: widget.collectionId,
+          bookFile: widget.bookFile,
+          bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+          chapterId: chapter.id,
+          index: firstHadithIndexForChapter(book.hadiths, chapter.id),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<HadithBook>(
@@ -92,13 +112,26 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (snapshot.hasError) {
+      // Keep the cause findable in Diagnostics and the console.
+      AppMetrics.instance.recordError(snapshot.error!);
       return Padding(
         padding: AppSpacing.page,
-        child: Text('Error: ${snapshot.error}'),
+        child: Center(
+          child: Text(
+            "Couldn't open this book. Go back and try again.",
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ),
       );
     }
 
     final book = snapshot.data!;
+    if (book.chapters.length == 1) {
+      // A one-chapter book has nothing to pick: go straight to reading.
+      _openOnlyChapter(book);
+      return const Center(child: CircularProgressIndicator());
+    }
     if (book.chapters.isEmpty) {
       return _EmptyChapters(
         onReadAll: () {
@@ -159,9 +192,7 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
             child: Text(
               '${book.chapters.length} chapters',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -210,7 +241,9 @@ class HadithChapterGrid extends StatelessWidget {
       itemCount: chapters.length,
       itemBuilder: (context, index) {
         final chapter = chapters[index];
-        final number = chapter.id ?? (index + 1);
+        // Some sources number a lone chapter 0; readers count from 1.
+        final id = chapter.id;
+        final number = id != null && id > 0 ? id : index + 1;
         return _ChapterTile(
           number: number,
           chapter: chapter,
@@ -319,9 +352,9 @@ class _ChapterTile extends StatelessWidget {
             ],
             const Spacer(),
             Text(
-              hadithCount == 1 ? '1 hadith' : '$hadithCount hadiths',
+              hadithCountLabel(hadithCount),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.55),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],

@@ -50,6 +50,7 @@ start ms-settings:developers
 | **Chrome (recommended)** | `flutter run -d chrome` | Google Chrome |
 | **Windows desktop** | `flutter run -d windows` | [Visual Studio](https://visualstudio.microsoft.com/downloads/) with **Desktop development with C++** |
 | **Android** | `flutter run` (with device/emulator) | Android Studio, SDK, accepted licenses (`flutter doctor --android-licenses`) |
+| **iOS (Mac only)** | `flutter run` / `flutter build ipa` | Xcode + Apple Developer. See [APP_STORE.md](APP_STORE.md) |
 
 For day-to-day UI work, **Chrome is the fastest path** — no Visual Studio or emulator required.
 

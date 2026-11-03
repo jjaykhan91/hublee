@@ -61,7 +61,11 @@ class FileRecitationCache implements RecitationCache {
     required List<int> bytes,
   }) async {
     final file = _file(await _surahDir(reciterId, surahId, create: true), ayah);
-    await file.writeAsBytes(bytes);
+    // Write beside the target and rename, so a kill mid-write leaves a
+    // `.part` that [downloadedAyahs] ignores instead of a truncated mp3.
+    final partial = File('${file.path}.part');
+    await partial.writeAsBytes(bytes, flush: true);
+    await partial.rename(file.path);
   }
 
   @override

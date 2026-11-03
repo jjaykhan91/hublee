@@ -368,6 +368,10 @@ class BookmarkService extends ChangeNotifier {
     if (notify) notifyListeners();
   }
 
+  /// Tells listeners that a last-read position saved with `notify: false`
+  /// has changed, such as the Quran tab's continue banner.
+  void notifyLastReadChanged() => notifyListeners();
+
   /// Sets or moves the pin in [surahId]. One pin per surah.
   ///
   /// Tapping the already-pinned ayah clears it. Tapping another ayah

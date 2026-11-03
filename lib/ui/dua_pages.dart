@@ -127,7 +127,7 @@ class _DuaHubBody extends StatelessWidget {
             catalog.sourceNote,
             style: theme.textTheme.bodySmall?.copyWith(
               height: 1.5,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -258,7 +258,7 @@ class _DuaCard extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(
                 fontStyle: FontStyle.italic,
                 height: 1.4,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -281,7 +281,7 @@ class _DuaCard extends StatelessWidget {
               dua.note!,
               style: theme.textTheme.bodySmall?.copyWith(
                 height: 1.4,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],

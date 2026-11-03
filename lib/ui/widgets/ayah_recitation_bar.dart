@@ -102,9 +102,7 @@ class _AyahRecitationBarState extends State<AyahRecitationBar> {
       icon: Icon(
         _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
         size: 22,
-        color: _playing
-            ? colorScheme.primary
-            : colorScheme.onSurface.withValues(alpha: 0.55),
+        color: _playing ? colorScheme.primary : colorScheme.onSurfaceVariant,
       ),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,

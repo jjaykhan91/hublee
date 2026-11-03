@@ -233,9 +233,7 @@ class _ReciterTile extends StatelessWidget {
       selected: selected,
       leading: Icon(
         selected ? Icons.check_circle_rounded : Icons.person_outline_rounded,
-        color: selected
-            ? colorScheme.primary
-            : colorScheme.onSurface.withValues(alpha: 0.45),
+        color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
       ),
       title: Text(reciter.name, overflow: TextOverflow.ellipsis),
       subtitle: downloadingThis
@@ -332,7 +330,7 @@ class _ReciterDownloadButton extends StatelessWidget {
         surahSaved ? Icons.download_done_rounded : Icons.download_rounded,
         color: surahSaved
             ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       onSelected: (choice) {
         AppHaptics.selection();

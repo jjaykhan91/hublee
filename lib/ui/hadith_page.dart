@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../hadith/hadith_book_summaries.dart';
+import '../hadith/hadith_chapters.dart';
 import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
@@ -564,7 +565,7 @@ class _StartHereRow extends StatelessWidget {
                 Text(
                   '40-hadith collections',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -637,9 +638,9 @@ class _FeaturedBookCard extends StatelessWidget {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             Text(
-              count == null ? row.collectionTitle : '$count hadith',
+              count == null ? row.collectionTitle : hadithCountLabel(count),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.55),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             if (blurb != null) ...[
@@ -677,9 +678,10 @@ class _CollectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final accent = _accentFor(colorScheme, collectionId);
-    final countLabel = hadithCount == null
+    final hadiths = hadithCount;
+    final countLabel = hadiths == null
         ? '$bookCount books'
-        : '$bookCount books · $hadithCount hadith';
+        : '$bookCount books · ${hadithCountLabel(hadiths)}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
@@ -706,7 +708,7 @@ class _CollectionHeader extends StatelessWidget {
           Text(
             countLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -742,7 +744,7 @@ class _BookTile extends StatelessWidget {
     final count = book.length;
     final semantics = [
       book.title,
-      if (count != null) '$count hadith',
+      if (count != null) hadithCountLabel(count),
       collectionTitle,
       if (isSaved) 'bookmarked',
       if (resumeIndex != null) 'resume at hadith ${resumeIndex! + 1}',
@@ -750,16 +752,100 @@ class _BookTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Semantics(
-        button: true,
-        label: semantics,
-        child: HubleeCard(
-          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-          onTap: () =>
-              _openBook(context, collectionId: collectionId, book: book),
-          onLongPress: summary == null
-              ? null
-              : () => _showBookAbout(
+      child: HubleeCard(
+        semanticLabel: semantics,
+        longPressHint: 'About this book',
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+        onTap: () => _openBook(context, collectionId: collectionId, book: book),
+        onLongPress: summary == null
+            ? null
+            : () => _showBookAbout(
+                context,
+                book: book,
+                collectionId: collectionId,
+                collectionTitle: collectionTitle,
+                summary: summary,
+                resumeIndex: resumeIndex,
+              ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.14),
+                borderRadius: AppRadius.badge,
+              ),
+              child: Text(
+                '$indexInCollection',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: accent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        count == null
+                            ? collectionTitle
+                            : hadithCountLabel(count),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      if (resumeIndex != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.16),
+                            borderRadius: AppRadius.badge,
+                          ),
+                          child: Text(
+                            'Resume · ${resumeIndex! + 1}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      if (isSaved)
+                        Icon(
+                          Icons.bookmark_rounded,
+                          size: 14,
+                          color: colorScheme.primary,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (summary != null)
+              IconButton(
+                tooltip: 'About this book',
+                icon: const Icon(Icons.info_outline_rounded),
+                onPressed: () => _showBookAbout(
                   context,
                   book: book,
                   collectionId: collectionId,
@@ -767,97 +853,8 @@ class _BookTile extends StatelessWidget {
                   summary: summary,
                   resumeIndex: resumeIndex,
                 ),
-          child: ExcludeSemantics(
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.14),
-                    borderRadius: AppRadius.badge,
-                  ),
-                  child: Text(
-                    '$indexInCollection',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: accent,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            count == null ? collectionTitle : '$count hadith',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.55,
-                              ),
-                            ),
-                          ),
-                          if (resumeIndex != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: accent.withValues(alpha: 0.16),
-                                borderRadius: AppRadius.badge,
-                              ),
-                              child: Text(
-                                'Resume · ${resumeIndex! + 1}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: accent,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          if (isSaved)
-                            Icon(
-                              Icons.bookmark_rounded,
-                              size: 14,
-                              color: colorScheme.primary,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (summary != null)
-                  IconButton(
-                    tooltip: 'About this book',
-                    icon: const Icon(Icons.info_outline_rounded),
-                    onPressed: () => _showBookAbout(
-                      context,
-                      book: book,
-                      collectionId: collectionId,
-                      collectionTitle: collectionTitle,
-                      summary: summary,
-                      resumeIndex: resumeIndex,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -893,13 +890,11 @@ void _showBookAbout(
               const SizedBox(height: 6),
               Text(
                 [
-                  if (book.length != null) '${book.length} hadith',
+                  if (book.length != null) hadithCountLabel(book.length!),
                   collectionTitle,
                 ].join(' · '),
                 style: Theme.of(sheetContext).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(
-                    sheetContext,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                 ),
               ),
               if (summary != null) ...[

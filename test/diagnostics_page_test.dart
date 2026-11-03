@@ -35,7 +35,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.text('Performance overlay'));
     await tester.pump();
 
     expect(AppMetrics.instance.overlayEnabled, isTrue);
@@ -43,5 +43,36 @@ void main() {
       AppMetrics.instance.events.any((e) => e.name == 'performanceOverlay'),
       isTrue,
     );
+  });
+
+  testWidgets('timing chip is off until switched on here', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(theme: buildLightTheme(), home: const DiagnosticsPage()),
+    );
+    expect(AppMetrics.instance.hudEnabled, isFalse);
+
+    await tester.tap(find.text('Timing chip'));
+    await tester.pump();
+
+    expect(AppMetrics.instance.hudEnabled, isTrue);
+  });
+
+  testWidgets('recorded errors are listed', (tester) async {
+    tester.view.physicalSize = const Size(400, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    AppMetrics.instance.recordError(StateError('boom\nstack detail'));
+
+    await tester.pumpWidget(
+      MaterialApp(theme: buildLightTheme(), home: const DiagnosticsPage()),
+    );
+
+    expect(find.text('Bad state: boom'), findsOneWidget);
+    expect(find.text('error'), findsOneWidget);
+    expect(AppMetrics.instance.errorCount, 1);
   });
 }

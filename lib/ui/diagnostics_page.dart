@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/app_metrics.dart';
@@ -64,10 +65,40 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
             'Stays on this device. Use this screen to compare search, '
             'launch, and frame cost after a UI change.',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            kDebugMode
+                ? 'Debug build: timings and jank are much slower than '
+                      'release. Measure with flutter run --profile.'
+                : 'Profile build: timings are close to release.',
+            key: const Key('diagnostics-build-mode'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: kDebugMode ? colorScheme.error : colorScheme.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              title: const Text('Timing chip'),
+              subtitle: const Text(
+                'Floating latest timing and error count over the app',
+              ),
+              value: metrics.hudEnabled,
+              onChanged: (value) {
+                metrics.hudEnabled = value;
+                metrics.recordUi('timingChip', detail: {'on': '$value'});
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             child: SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -129,7 +160,7 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
                 'Open Search, switch tabs, or wait for splash — '
                 'timings will show up here.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             )
@@ -175,6 +206,7 @@ class _EventTile extends StatelessWidget {
       MetricKind.timing => Icons.timer_outlined,
       MetricKind.navigation => Icons.navigation_outlined,
       MetricKind.ui => Icons.tune_rounded,
+      MetricKind.error => Icons.error_outline_rounded,
     };
     final trailing = event.milliseconds != null
         ? '${event.milliseconds} ms'
@@ -205,6 +237,7 @@ class _EventTile extends StatelessWidget {
       MetricKind.timing => 'timing',
       MetricKind.navigation => 'nav',
       MetricKind.ui => 'ui',
+      MetricKind.error => 'error',
     };
   }
 }

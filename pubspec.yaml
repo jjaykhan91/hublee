@@ -1,7 +1,7 @@
 name: hublee
 description: "Quran and Hadith reader app"
 publish_to: 'none'
-version: 1.0.5+7
+version: 1.0.6+8
 
 environment:
   # Floor is set by the strictest dependency (go_router requires ^3.10.0).
@@ -102,6 +102,7 @@ flutter_native_splash:
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
   image_path: assets/images/HubleeAppLogo.png
   adaptive_icon_background: "#0B4D5C"
   adaptive_icon_foreground: assets/images/HubleeAppLogo.png

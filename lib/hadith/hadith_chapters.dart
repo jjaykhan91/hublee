@@ -54,3 +54,7 @@ int hadithCountForChapter(List<Hadith> hadiths, int? chapterId) {
   }
   return count;
 }
+
+/// "1 hadith" or "42 hadiths", for counts shown in lists and tiles.
+String hadithCountLabel(int count) =>
+    count == 1 ? '1 hadith' : '$count hadiths';

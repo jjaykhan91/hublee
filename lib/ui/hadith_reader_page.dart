@@ -144,12 +144,20 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
     _lastReadTimer?.cancel();
     final title = _bookTitle;
     final index = _visibleIndex ?? widget.scrollToIndex ?? 0;
-    if (title != null) {
-      _bookmarks?.saveLastReadHadith(
-        collectionId: widget.collectionId,
-        bookFile: widget.bookFile,
-        bookTitle: title,
-        hadithIndex: index,
+    final bookmarks = _bookmarks;
+    if (title != null && bookmarks != null) {
+      // The tree is locked during dispose, so listeners such as the
+      // continue banner are told after this frame instead of now.
+      unawaited(
+        bookmarks
+            .saveLastReadHadith(
+              collectionId: widget.collectionId,
+              bookFile: widget.bookFile,
+              bookTitle: title,
+              hadithIndex: index,
+              notify: false,
+            )
+            .then((_) => bookmarks.notifyLastReadChanged()),
       );
     }
     _searchController.dispose();
@@ -443,9 +451,7 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
             Text(
               'No matching hadiths found',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

@@ -59,70 +59,72 @@ class HadithRepository {
   ) async {
     final path = AssetPaths.hadith(collectionId, bookFile);
     final rawJson = await rootBundle.loadString(path);
-    final root = json.decode(rawJson);
+    return _parseHadithBook(rawJson, bookFile);
+  }
+}
 
-    if (root is! Map<String, dynamic>) {
-      throw const FormatException(
-        'Expected top-level Map for hadith book JSON.',
-      );
-    }
+/// Parses one book's JSON. Top-level so search indexing can run it in a
+/// background isolate.
+HadithBook _parseHadithBook(String rawJson, String bookFile) {
+  final root = json.decode(rawJson);
 
-    // Resolve the display title by checking multiple JSON shapes.
-    final title = _resolveBookTitle(root, bookFile);
-
-    final chapters =
-        (root['chapters'] is List
-                ? root['chapters'] as List
-                : const <dynamic>[])
-            .whereType<Map<String, dynamic>>()
-            .map<HadithChapter>(HadithChapter.fromJson)
-            .toList(growable: false);
-
-    final hadiths =
-        (root['hadiths'] is List ? root['hadiths'] as List : const <dynamic>[])
-            .whereType<Map<String, dynamic>>()
-            .map<Hadith>(Hadith.fromJson)
-            .toList(growable: false);
-
-    return HadithBook(title: title, chapters: chapters, hadiths: hadiths);
+  if (root is! Map<String, dynamic>) {
+    throw const FormatException('Expected top-level Map for hadith book JSON.');
   }
 
-  /// Attempts to extract a book title from the JSON root using
-  /// several common key paths. Falls back to a title derived
-  /// from the file name.
-  String _resolveBookTitle(Map<String, dynamic> root, String bookFile) {
-    // Try root.english.title
-    final english = root['english'];
-    if (english is Map<String, dynamic>) {
-      final title = english['title'] as String?;
+  // Resolve the display title by checking multiple JSON shapes.
+  final title = _resolveBookTitle(root, bookFile);
+
+  final chapters =
+      (root['chapters'] is List ? root['chapters'] as List : const <dynamic>[])
+          .whereType<Map<String, dynamic>>()
+          .map<HadithChapter>(HadithChapter.fromJson)
+          .toList(growable: false);
+
+  final hadiths =
+      (root['hadiths'] is List ? root['hadiths'] as List : const <dynamic>[])
+          .whereType<Map<String, dynamic>>()
+          .map<Hadith>(Hadith.fromJson)
+          .toList(growable: false);
+
+  return HadithBook(title: title, chapters: chapters, hadiths: hadiths);
+}
+
+/// Attempts to extract a book title from the JSON root using
+/// several common key paths. Falls back to a title derived
+/// from the file name.
+String _resolveBookTitle(Map<String, dynamic> root, String bookFile) {
+  // Try root.english.title
+  final english = root['english'];
+  if (english is Map<String, dynamic>) {
+    final title = english['title'] as String?;
+    if (title != null) return title;
+  }
+
+  // Try root.metadata.english.title
+  final metadata = root['metadata'];
+  if (metadata is Map<String, dynamic>) {
+    final metaEnglish = metadata['english'];
+    if (metaEnglish is Map<String, dynamic>) {
+      final title = metaEnglish['title'] as String?;
       if (title != null) return title;
     }
-
-    // Try root.metadata.english.title
-    final metadata = root['metadata'];
-    if (metadata is Map<String, dynamic>) {
-      final metaEnglish = metadata['english'];
-      if (metaEnglish is Map<String, dynamic>) {
-        final title = metaEnglish['title'] as String?;
-        if (title != null) return title;
-      }
-    }
-
-    return _titleFromFileName(bookFile);
   }
 
-  /// Derives a human-readable title from a file name.
-  ///
-  /// Example: `"nawawi40.json"` → `"Nawawi40"`
-  String _titleFromFileName(String file) {
-    final baseName = file.split('/').last.split('.').first;
-    return baseName
-        .replaceAll('_', ' ')
-        .replaceFirstMapped(
-          RegExp(r'^\w'),
-          (match) => match.group(0)!.toUpperCase(),
-        );
-  }
+  return _titleFromFileName(bookFile);
+}
+
+/// Derives a human-readable title from a file name.
+///
+/// Example: `"nawawi40.json"` → `"Nawawi40"`
+String _titleFromFileName(String file) {
+  final baseName = file.split('/').last.split('.').first;
+  return baseName
+      .replaceAll('_', ' ')
+      .replaceFirstMapped(
+        RegExp(r'^\w'),
+        (match) => match.group(0)!.toUpperCase(),
+      );
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -349,52 +351,89 @@ extension HadithSearchExtension on HadithRepository {
         final loaded = await Future.wait(
           specs.sublist(i, end).map((spec) async {
             try {
-              final book = await loadBook(spec.collectionId, spec.meta.file);
-              return (spec.collectionId, spec.meta, book);
+              // Not cached: once indexed, the raw text is not needed again.
+              final raw = await rootBundle.loadString(
+                AssetPaths.hadith(spec.collectionId, spec.meta.file),
+                cache: false,
+              );
+              return _HadithIndexSource(
+                collectionId: spec.collectionId,
+                bookFile: spec.meta.file,
+                fallbackTitle: spec.meta.title,
+                rawJson: raw,
+              );
             } catch (_) {
               return null;
             }
           }),
         );
-        for (final item in loaded) {
-          if (item == null) continue;
-          final (collectionId, bookMeta, book) = item;
-          final bookTitle = book.title.isNotEmpty ? book.title : bookMeta.title;
-          for (var index = 0; index < book.hadiths.length; index++) {
-            final hadith = book.hadiths[index];
-            final english = hadith.english ?? '';
-            rows.add(
-              _HadithIndexRow(
-                collectionId: collectionId,
-                bookFile: bookMeta.file,
-                bookTitle: bookTitle,
-                hadithIndex: index,
-                idInBook: hadith.idInBook,
-                arabic: hadith.arabic ?? '',
-                arabicFold: foldArabicForSearch(hadith.arabic ?? ''),
-                english: english,
-                englishLower: english.toLowerCase(),
-              ),
-            );
-          }
-        }
-        await Future<void>.delayed(Duration.zero);
+        // About 76 MB of JSON in all: decode and index off the UI isolate
+        // so launch and first scrolls do not stutter. Raw books are not
+        // cached here; readers load the one they open.
+        rows.addAll(
+          await compute(
+            _indexRowsForBooks,
+            loaded.whereType<_HadithIndexSource>().toList(),
+          ),
+        );
       }
       return rows;
     });
   }
 }
 
+/// One book's raw JSON, handed to [_indexRowsForBooks].
+class _HadithIndexSource {
+  const _HadithIndexSource({
+    required this.collectionId,
+    required this.bookFile,
+    required this.fallbackTitle,
+    required this.rawJson,
+  });
+
+  final String collectionId;
+  final String bookFile;
+  final String fallbackTitle;
+  final String rawJson;
+}
+
+/// Parses [sources] and builds their search rows. Runs via [compute].
+List<_HadithIndexRow> _indexRowsForBooks(List<_HadithIndexSource> sources) {
+  final rows = <_HadithIndexRow>[];
+  for (final source in sources) {
+    final HadithBook book;
+    try {
+      book = _parseHadithBook(source.rawJson, source.bookFile);
+    } catch (_) {
+      continue;
+    }
+    final bookTitle = book.title.isNotEmpty ? book.title : source.fallbackTitle;
+    for (var index = 0; index < book.hadiths.length; index++) {
+      final hadith = book.hadiths[index];
+      final english = hadith.english ?? '';
+      rows.add(
+        _HadithIndexRow(
+          collectionId: source.collectionId,
+          bookFile: source.bookFile,
+          bookTitle: bookTitle,
+          hadithIndex: index,
+          idInBook: hadith.idInBook,
+          arabic: hadith.arabic ?? '',
+          arabicFold: foldArabicForSearch(hadith.arabic ?? ''),
+          english: english,
+          englishLower: english.toLowerCase(),
+        ),
+      );
+    }
+  }
+  return rows;
+}
+
 String? _hadithSnippet(String english, String englishLower, String queryLower) {
   if (english.isEmpty) return null;
   final matchIndex = englishLower.indexOf(queryLower);
   if (matchIndex < 0) return english;
-  final start = (matchIndex - 40).clamp(0, english.length);
-  final end = (matchIndex + queryLower.length + 60).clamp(0, english.length);
-  var snippet = english.substring(start, end).trim();
-  if (start > 0) snippet = '…$snippet';
-  if (end < english.length) snippet = '$snippet…';
-  return snippet;
+  return searchExcerpt(english, matchIndex, queryLower.length);
 }
 
 /// One searchable hadith in the session index.

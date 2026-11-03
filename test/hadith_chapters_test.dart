@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hublee/hadith/hadith_chapters.dart';
@@ -104,5 +105,68 @@ void main() {
     await tester.tap(find.byKey(const Key('hadith-chapter-2')));
     await tester.pump();
     expect(selected?.id, 2);
+  });
+
+  testWidgets('a chapter numbered 0 in the source shows as 1', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: HadithChapterGrid(
+              chapters: [_c(id: 0, english: 'Forty Hadith')],
+              hadiths: [_h(chapterId: 0)],
+              onSelect: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('hadith-chapter-1')), findsOneWidget);
+    expect(find.text('0'), findsNothing);
+  });
+
+  testWidgets('a one-chapter book skips the picker', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    HadithRepository.resetCache();
+    final router = GoRouter(
+      initialLocation: '/chapters',
+      routes: [
+        GoRoute(
+          path: '/chapters',
+          builder: (_, _) => const HadithChaptersPage(
+            collectionId: 'forties',
+            bookFile: 'nawawi40.json',
+            title: 'Nawawi',
+          ),
+        ),
+        GoRoute(
+          path: '/hadith/:collectionId/:bookFile',
+          builder: (_, state) => Text('reader ${state.uri.path}'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    // The book loads from real assets; pump until the picker hands off.
+    for (var i = 0; i < 50; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      if (find.textContaining('reader ').evaluate().isNotEmpty) break;
+    }
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byKey(const Key('hadith-chapter-grid')), findsNothing);
+    expect(find.text('reader /hadith/forties/nawawi40.json'), findsOneWidget);
   });
 }

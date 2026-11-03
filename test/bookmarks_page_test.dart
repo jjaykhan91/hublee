@@ -33,9 +33,9 @@ void main() {
   ) async {
     await tester.pumpWidget(harness());
 
-    expect(find.text('No favorite ayahs yet'), findsOneWidget);
+    expect(find.text('No saved ayahs yet'), findsOneWidget);
     expect(
-      find.text('Tap the bookmark icon on any ayah or hadith to save it'),
+      find.text('Tap the bookmark icon on any ayah to save it here'),
       findsOneWidget,
     );
     expect(find.textContaining('Long-press'), findsNothing);

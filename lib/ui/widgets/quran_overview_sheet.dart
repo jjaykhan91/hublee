@@ -122,7 +122,7 @@ class _QuranOverviewBody extends StatelessWidget {
           'A short orientation before you open a surah.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.65),
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
@@ -217,7 +217,7 @@ class _QuranOverviewBody extends StatelessWidget {
                   'the surahs were revealed, not mushaf order.\n\n'
                   'Pin an ayah inside a surah to resume there the next time '
                   'you open it. Continue where you left off follows wherever '
-                  'you last scrolled. Bookmark saves favorites. The book icon '
+                  'you last scrolled. Bookmark adds it to Saved. The book icon '
                   'in the app bar opens sajdah, stop signs, and tajweed.',
                   style: body,
                 ),
@@ -287,7 +287,7 @@ class _NameRow extends StatelessWidget {
                 Text(
                   name.meaning,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.65),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

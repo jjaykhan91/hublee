@@ -81,7 +81,7 @@ class SurahDetailsHeader extends StatelessWidget {
             Text(
               '${chapter.versesCount} ayahs · $juz',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.55),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             _RevelationChip(isMeccan: chapter.isMeccan, accent: accent),
@@ -123,7 +123,7 @@ class SurahDetailsHeader extends StatelessWidget {
               'translation, tajweed colouring, word-by-word meaning, '
               'and optional recitation.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
                 height: 1.45,
               ),
             ),
