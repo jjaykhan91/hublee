@@ -72,7 +72,9 @@ class AppShell extends StatelessWidget {
       size,
       displayFeatures: MediaQuery.displayFeaturesOf(context),
     );
-    final compactBar = ReadingLayout.compactChrome(size);
+    // Six tabs still fit their labels from 360 dp (about 60 dp each), and
+    // icons like Learn's book shelf are ambiguous on their own.
+    final compactBar = size.width < 360;
 
     if (wide) {
       return Scaffold(
@@ -81,7 +83,7 @@ class AppShell extends StatelessWidget {
             NavigationRail(
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: _select,
-              labelType: NavigationRailLabelType.selected,
+              labelType: NavigationRailLabelType.all,
               backgroundColor: isDark
                   ? const Color(0xFF0B0F14)
                   : colorScheme.surface,

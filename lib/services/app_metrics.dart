@@ -4,11 +4,13 @@
 /// memory (cheap) but the HUD and Diagnostics page are hidden.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 /// Kind of [MetricEvent].
-enum MetricKind { timing, navigation, ui }
+enum MetricKind { timing, navigation, ui, error }
 
 /// One recorded sample.
 @immutable
@@ -45,6 +47,7 @@ class AppMetrics extends ChangeNotifier {
 
   final List<MetricEvent> _events = [];
   bool _overlayEnabled = false;
+  bool _hudEnabled = false;
   bool _listeningFrames = false;
 
   int frameCount = 0;
@@ -56,6 +59,20 @@ class AppMetrics extends ChangeNotifier {
   List<MetricEvent> get events => List.unmodifiable(_events);
 
   bool get overlayEnabled => _overlayEnabled;
+
+  /// Whether the floating timing chip is shown. Off by default because it
+  /// sits over content; turn it on from Diagnostics.
+  bool get hudEnabled => _hudEnabled;
+
+  set hudEnabled(bool value) {
+    if (_hudEnabled == value) return;
+    _hudEnabled = value;
+    notifyListeners();
+  }
+
+  /// Number of errors recorded this session.
+  int get errorCount =>
+      _events.where((event) => event.kind == MetricKind.error).length;
 
   /// Last timing event, if any.
   MetricEvent? get lastTiming {
@@ -138,6 +155,18 @@ class AppMetrics extends ChangeNotifier {
     );
   }
 
+  /// Records a caught framework or async error by its first line.
+  void recordError(Object error) {
+    final summary = error.toString().split('\n').first.trim();
+    _push(
+      MetricEvent(
+        name: summary.isEmpty ? error.runtimeType.toString() : summary,
+        kind: MetricKind.error,
+        at: DateTime.now(),
+      ),
+    );
+  }
+
   /// Starts listening for [FrameTiming]s. Safe to call more than once.
   void attachFrameTiming() {
     if (_listeningFrames) return;
@@ -159,6 +188,7 @@ class AppMetrics extends ChangeNotifier {
   @visibleForTesting
   void reset() {
     _overlayEnabled = false;
+    _hudEnabled = false;
     clear();
   }
 
@@ -178,6 +208,11 @@ class AppMetrics extends ChangeNotifier {
     if (_events.length > _maxEvents) {
       _events.removeLast();
     }
-    notifyListeners();
+    if (event.kind == MetricKind.error) {
+      // Errors are often reported mid-frame, when listeners cannot rebuild.
+      scheduleMicrotask(notifyListeners);
+    } else {
+      notifyListeners();
+    }
   }
 }

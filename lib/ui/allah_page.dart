@@ -278,7 +278,7 @@ class _NameCard extends StatelessWidget {
                 Text(
                   name.meaning,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.65),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 if (name.surahId != null && name.ayah != null)

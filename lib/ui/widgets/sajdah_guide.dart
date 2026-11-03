@@ -199,7 +199,7 @@ class _SajdahSheet extends StatelessWidget {
                       Text(
                         'Recommended when you recite or hear this ayah.',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

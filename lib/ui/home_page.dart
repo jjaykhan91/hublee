@@ -94,15 +94,19 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // ── Search shortcut (3D shadow) ─────────────────
-                      Material(
-                        color: Colors.transparent,
-                        borderRadius: AppRadius.input,
-                        child: InkWell(
-                          onTap: () => context.push(AppRoute.search),
+                      // One labelled button for screen readers; the inert
+                      // field's own hint would otherwise be read again.
+                      Semantics(
+                        button: true,
+                        label: 'Search Quran and Hadith',
+                        onTap: () => context.push(AppRoute.search),
+                        excludeSemantics: true,
+                        child: Material(
+                          color: Colors.transparent,
                           borderRadius: AppRadius.input,
-                          child: Semantics(
-                            button: true,
-                            label: 'Search Quran and Hadith',
+                          child: InkWell(
+                            onTap: () => context.push(AppRoute.search),
+                            borderRadius: AppRadius.input,
                             child: AbsorbPointer(
                               child: Container(
                                 decoration: BoxDecoration(
@@ -121,9 +125,7 @@ class _HomePageState extends State<HomePage> {
                                     hintText: 'Search Quran and Hadith',
                                     suffixIcon: Icon(
                                       Icons.arrow_forward_rounded,
-                                      color: colorScheme.onSurface.withValues(
-                                        alpha: 0.4,
-                                      ),
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
@@ -739,17 +741,23 @@ class _HubleeMeaningCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    void open() => context.push(AppRoute.surah(3, ayah: 103));
+
+    // The summary label replaces the visible text, which screen readers
+    // would otherwise announce a second time.
     return Semantics(
       button: true,
       label:
           'Hublee means my rope. The rope of Allah is the Quran and '
           'the Sunnah. Opens Ali Imran 3:103.',
+      onTap: open,
+      excludeSemantics: true,
       child: Card(
         key: const Key('hublee-meaning-card'),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.push(AppRoute.surah(3, ayah: 103)),
+          onTap: open,
           child: Ink(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -825,7 +833,7 @@ class _HubleeMeaningCard extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

@@ -147,7 +147,7 @@ class _HadithOverviewBody extends StatelessWidget {
           'A short orientation before you open a book.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.65),
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
@@ -306,7 +306,7 @@ class _HadithOverviewBody extends StatelessWidget {
                   'al-Masabih, and Bulugh al-Maram.\n\n'
                   'Search finds a book by name. Each row\u2019s info icon '
                   'opens a short summary of that book. Continue reading '
-                  'resumes where you left off. Bookmark saves favorites.',
+                  'resumes where you left off. Bookmark adds it to Saved.',
                   style: body,
                 ),
               ],
@@ -366,7 +366,7 @@ class _TermRow extends StatelessWidget {
                 Text(
                   item.meaning,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.65),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -402,7 +402,7 @@ class _CompilerRow extends StatelessWidget {
           Text(
             '${compiler.work} \u00b7 ${compiler.died}',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

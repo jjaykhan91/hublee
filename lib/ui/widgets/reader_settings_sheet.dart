@@ -136,16 +136,12 @@ class _ReaderSettingsSheet extends StatelessWidget {
           _SettingRow(
             icon: Icons.translate_rounded,
             label: 'Show translation',
-            trailing: Semantics(
-              label: 'Show translation',
-              toggled: settings.showTranslation,
-              child: Switch(
-                value: settings.showTranslation,
-                onChanged: (value) {
-                  AppHaptics.selection();
-                  settings.showTranslation = value;
-                },
-              ),
+            trailing: Switch(
+              value: settings.showTranslation,
+              onChanged: (value) {
+                AppHaptics.selection();
+                settings.showTranslation = value;
+              },
             ),
             onTap: () {
               AppHaptics.selection();
@@ -159,17 +155,13 @@ class _ReaderSettingsSheet extends StatelessWidget {
             const SizedBox(height: 8),
             _SettingRow(
               icon: Icons.color_lens_rounded,
-              label: 'Tajweed Colors',
-              trailing: Semantics(
-                label: 'Tajweed colors',
-                toggled: settings.tajweedEnabled,
-                child: Switch(
-                  value: settings.tajweedEnabled,
-                  onChanged: (v) {
-                    AppHaptics.selection();
-                    settings.tajweedEnabled = v;
-                  },
-                ),
+              label: 'Tajweed Colours',
+              trailing: Switch(
+                value: settings.tajweedEnabled,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.tajweedEnabled = v;
+                },
               ),
               onTap: () {
                 AppHaptics.selection();
@@ -181,16 +173,12 @@ class _ReaderSettingsSheet extends StatelessWidget {
             _SettingRow(
               icon: Icons.touch_app_rounded,
               label: 'Word by Word',
-              trailing: Semantics(
-                label: 'Word by word',
-                toggled: settings.wordByWordEnabled,
-                child: Switch(
-                  value: settings.wordByWordEnabled,
-                  onChanged: (v) {
-                    AppHaptics.selection();
-                    settings.wordByWordEnabled = v;
-                  },
-                ),
+              trailing: Switch(
+                value: settings.wordByWordEnabled,
+                onChanged: (v) {
+                  AppHaptics.selection();
+                  settings.wordByWordEnabled = v;
+                },
               ),
               onTap: () {
                 AppHaptics.selection();
@@ -204,7 +192,7 @@ class _ReaderSettingsSheet extends StatelessWidget {
               label: 'Tajweed Guide',
               trailing: Icon(
                 Icons.chevron_right_rounded,
-                color: colorScheme.onSurface.withValues(alpha: 0.4),
+                color: colorScheme.onSurfaceVariant,
               ),
               onTap: () {
                 Navigator.of(context).pop(); // close sheet
@@ -288,17 +276,19 @@ class _ZoomSlider extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         Expanded(
-          child: Semantics(
-            label: label,
-            value: '${(value * 100).round()} percent',
-            slider: true,
-            child: Slider(
-              value: value,
-              min: 0.8,
-              max: 1.8,
-              divisions: 10,
-              label: '${(value * 100).round()}%',
-              onChanged: onChanged,
+          child: MergeSemantics(
+            child: Semantics(
+              label: label,
+              child: Slider(
+                semanticFormatterCallback: (v) =>
+                    '${(v * 100).round()} percent',
+                value: value,
+                min: 0.8,
+                max: 1.8,
+                divisions: 10,
+                label: '${(value * 100).round()}%',
+                onChanged: onChanged,
+              ),
             ),
           ),
         ),
@@ -310,11 +300,14 @@ class _ZoomSlider extends StatelessWidget {
             color: colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            '${(value * 100).round()}%',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
+          // The slider already speaks its value.
+          child: ExcludeSemantics(
+            child: Text(
+              '${(value * 100).round()}%',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -341,25 +334,28 @@ class _SettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: colorScheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+    // One focus stop: the label and its switch read as a single toggle.
+    return MergeSemantics(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            trailing,
-          ],
+              trailing,
+            ],
+          ),
         ),
       ),
     );

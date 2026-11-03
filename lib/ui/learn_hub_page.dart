@@ -107,7 +107,7 @@ class _SectionHeader extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

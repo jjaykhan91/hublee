@@ -228,12 +228,7 @@ class QuranSearchService {
     if (text.isEmpty) return null;
     final matchIndex = text.toLowerCase().indexOf(queryLower);
     if (matchIndex >= 0) {
-      final start = (matchIndex - 40).clamp(0, text.length);
-      final end = (matchIndex + queryLength + 60).clamp(0, text.length);
-      var snippet = text.substring(start, end).trim();
-      if (start > 0) snippet = '\u2026$snippet';
-      if (end < text.length) snippet = '$snippet\u2026';
-      return snippet;
+      return searchExcerpt(text, matchIndex, queryLength);
     }
     return text;
   }

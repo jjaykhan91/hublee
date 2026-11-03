@@ -32,8 +32,23 @@ import 'ui/widgets/metrics_hud.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kReleaseMode) _recordErrorsInDiagnostics();
   unawaited(HomeWidgetSync.captureLaunch());
   runApp(const HubleeApp());
+}
+
+/// Adds caught errors to Diagnostics while keeping the default reporting.
+void _recordErrorsInDiagnostics() {
+  final previousFlutterError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    AppMetrics.instance.recordError(details.exception);
+    previousFlutterError?.call(details);
+  };
+  final previousPlatformError = PlatformDispatcher.instance.onError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppMetrics.instance.recordError(error);
+    return previousPlatformError?.call(error, stack) ?? false;
+  };
 }
 
 /// Root widget that wires up all services and scopes.
@@ -100,9 +115,9 @@ class _HubleeAppState extends State<HubleeApp> {
   }
 
   void _onRoute() {
-    AppMetrics.instance.recordNav(
-      appRouter.routerDelegate.currentConfiguration.uri.toString(),
-    );
+    // [GoRouter.state] is the top route, so pushed readers are logged too,
+    // not only the tab underneath them.
+    AppMetrics.instance.recordNav(appRouter.state.uri.toString());
   }
 
   @override

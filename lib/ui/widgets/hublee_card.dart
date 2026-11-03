@@ -16,6 +16,8 @@ class HubleeCard extends StatelessWidget {
     this.onLongPress,
     required this.child,
     this.padding,
+    this.semanticLabel,
+    this.longPressHint,
   });
 
   final VoidCallback? onTap;
@@ -25,8 +27,30 @@ class HubleeCard extends StatelessWidget {
   /// Override default card padding (defaults to [AppSpacing.cardTight]).
   final EdgeInsets? padding;
 
+  /// When set, screen readers get one button with this label and the
+  /// card's tap and long-press actions, instead of its inner widgets.
+  final String? semanticLabel;
+
+  /// Spoken for the long-press action, e.g. "About this book".
+  final String? longPressHint;
+
   @override
   Widget build(BuildContext context) {
+    final label = semanticLabel;
+    final card = _buildCard();
+    if (label == null) return card;
+    return Semantics(
+      button: true,
+      label: label,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      onLongPressHint: onLongPress == null ? null : longPressHint,
+      excludeSemantics: true,
+      child: card,
+    );
+  }
+
+  Widget _buildCard() {
     return RepaintBoundary(
       child: Card(
         margin: EdgeInsets.zero,

@@ -138,7 +138,7 @@ class GuidanceAyahCard extends StatelessWidget {
               ayah.why!,
               style: theme.textTheme.bodySmall?.copyWith(
                 height: 1.4,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

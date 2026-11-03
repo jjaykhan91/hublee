@@ -77,6 +77,58 @@ void main() {
     expect(last['ayah'], greaterThan(1));
   });
 
+  testWidgets('leaving the reader refreshes last-read listeners', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final bookmarks = BookmarkService();
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: BookmarkScope(
+          service: bookmarks,
+          child: VocabScope(
+            service: VocabService(),
+            child: MaterialApp(
+              navigatorKey: navigatorKey,
+              home: Builder(
+                builder: (context) {
+                  final last = BookmarkScope.of(context).lastReadQuran;
+                  return Text(
+                    last == null
+                        ? 'none'
+                        : 'continue ${last['surahId']}:${last['ayah']}',
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('none'), findsOneWidget);
+
+    navigatorKey.currentState!.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const SurahReaderPage(surahId: 1, scrollToAyah: 5),
+      ),
+    );
+    await tester.pump();
+    await _pumpUntilReaderLoaded(tester);
+
+    // Popping disposes the reader; it used to notify while the tree was
+    // locked, which threw and left the banner showing a stale position.
+    navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('continue 1:5'), findsOneWidget);
+  });
+
   testWidgets('compact phone width does not overflow the app bar', (
     tester,
   ) async {

@@ -94,7 +94,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
               'Shows the Arabic used in the Quran for that English meaning. '
               'It is a Quranic glossary, not a modern newspaper dictionary.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -130,9 +130,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
           'No Arabic in the Quran for “$_query”. Try lord, mercy, path, or Allah.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.55),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       );

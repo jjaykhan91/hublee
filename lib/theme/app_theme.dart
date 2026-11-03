@@ -158,11 +158,12 @@ ThemeData buildLightTheme() {
         color: _lightScheme.onSurface,
       ),
     ),
-    inputDecorationTheme: const InputDecorationTheme(
+    inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      hintStyle: TextStyle(color: _darkMuted),
-      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(
+      // Was the dark palette's muted grey, about 1.8:1 on the light fill.
+      hintStyle: TextStyle(color: _lightScheme.onSurfaceVariant),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
         borderSide: BorderSide.none,
       ),

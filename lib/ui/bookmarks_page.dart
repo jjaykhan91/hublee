@@ -46,9 +46,9 @@ class BookmarksPage extends StatelessWidget {
                     context,
                     colorScheme,
                     icon: Icons.menu_book_outlined,
-                    title: 'No favorite ayahs yet',
+                    title: 'No saved ayahs yet',
                     subtitle:
-                        'Tap the bookmark icon on any ayah or hadith to save it',
+                        'Tap the bookmark icon on any ayah to save it here',
                   )
                 : _buildBookmarkList(
                     context,
@@ -61,7 +61,7 @@ class BookmarksPage extends StatelessWidget {
                     context,
                     colorScheme,
                     icon: Icons.library_books_outlined,
-                    title: 'No favorite hadiths yet',
+                    title: 'No saved hadiths yet',
                     subtitle: 'Bookmark a hadith while reading to save it here',
                   )
                 : _buildBookmarkList(
@@ -106,14 +106,14 @@ class BookmarksPage extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

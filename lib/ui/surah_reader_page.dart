@@ -353,11 +353,19 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     unawaited(_recitation?.stop());
     final name = _surahName;
     final ayah = _visibleAyah ?? widget.scrollToAyah ?? 1;
-    if (name != null) {
-      _bookmarks?.saveLastReadQuran(
-        surahId: widget.surahId,
-        ayah: ayah,
-        surahName: name,
+    final bookmarks = _bookmarks;
+    if (name != null && bookmarks != null) {
+      // The tree is locked during dispose, so listeners such as the
+      // continue banner are told after this frame instead of now.
+      unawaited(
+        bookmarks
+            .saveLastReadQuran(
+              surahId: widget.surahId,
+              ayah: ayah,
+              surahName: name,
+              notify: false,
+            )
+            .then((_) => bookmarks.notifyLastReadChanged()),
       );
     }
     _searchController.dispose();
@@ -796,9 +804,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             Text(
               'No matching ayahs found',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -1211,7 +1217,7 @@ class _AyahCard extends StatelessWidget {
                   Text(
                     '$surahId:$ayahNumber',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.55),
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1308,7 +1314,7 @@ class _AyahCard extends StatelessWidget {
                 Text(
                   'ClearQuran',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

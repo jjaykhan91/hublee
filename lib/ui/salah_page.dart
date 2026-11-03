@@ -96,7 +96,7 @@ class _SalahHub extends StatelessWidget {
             salahSourceNote,
             style: theme.textTheme.bodySmall?.copyWith(
               height: 1.5,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -198,7 +198,7 @@ class _SalahPrayerCard extends StatelessWidget {
               prayer.note!,
               style: theme.textTheme.bodySmall?.copyWith(
                 height: 1.4,
-                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -468,7 +468,7 @@ class _RecitationBody extends StatelessWidget {
           style: theme.textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             height: 1.4,
-            color: colorScheme.onSurface.withValues(alpha: 0.65),
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 6),
@@ -490,7 +490,7 @@ class _RecitationBody extends StatelessWidget {
             recitation.note!,
             style: theme.textTheme.bodySmall?.copyWith(
               height: 1.4,
-              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

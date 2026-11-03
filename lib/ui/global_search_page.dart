@@ -198,16 +198,20 @@ class _SearchPageState extends State<SearchPage> {
                   : (_jumpHint ?? 'No verses or hadiths match “$_activeQuery”'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.5),
+                color: cs.onSurfaceVariant,
               ),
             ),
-            if (idle) ...[
+            if (idle || _jumpHint == null) ...[
               const SizedBox(height: 8),
               Text(
-                'Try a word, or jump with 2:255',
+                idle
+                    ? 'Try a word, or jump with 2:255'
+                    : 'Check the spelling, try a shorter word or Arabic, '
+                          'or jump with a reference like 2:255',
+                key: idle ? null : const Key('search-no-results-hint'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.4),
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ],

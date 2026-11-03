@@ -256,7 +256,7 @@ class _Review extends StatelessWidget {
                         Text(
                           'Tap to show the meaning',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
