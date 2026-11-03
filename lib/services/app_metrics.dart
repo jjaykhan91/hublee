@@ -156,8 +156,17 @@ class AppMetrics extends ChangeNotifier {
   }
 
   /// Records a caught framework or async error by its first line.
+  ///
+  /// The same error repeated back to back is recorded once, so an error
+  /// thrown while a metrics listener rebuilds cannot loop every frame.
   void recordError(Object error) {
     final summary = error.toString().split('\n').first.trim();
+    final latest = _events.isEmpty ? null : _events.first;
+    if (latest != null &&
+        latest.kind == MetricKind.error &&
+        latest.name == summary) {
+      return;
+    }
     _push(
       MetricEvent(
         name: summary.isEmpty ? error.runtimeType.toString() : summary,

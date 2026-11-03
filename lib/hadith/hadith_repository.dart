@@ -351,8 +351,10 @@ extension HadithSearchExtension on HadithRepository {
         final loaded = await Future.wait(
           specs.sublist(i, end).map((spec) async {
             try {
+              // Not cached: once indexed, the raw text is not needed again.
               final raw = await rootBundle.loadString(
                 AssetPaths.hadith(spec.collectionId, spec.meta.file),
+                cache: false,
               );
               return _HadithIndexSource(
                 collectionId: spec.collectionId,

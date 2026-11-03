@@ -116,8 +116,11 @@ class _HubleeAppState extends State<HubleeApp> {
 
   void _onRoute() {
     // [GoRouter.state] is the top route, so pushed readers are logged too,
-    // not only the tab underneath them.
-    AppMetrics.instance.recordNav(appRouter.state.uri.toString());
+    // not only the tab underneath them. An unmatched path has no top route,
+    // and reading [GoRouter.state] then would throw.
+    final configuration = appRouter.routerDelegate.currentConfiguration;
+    final uri = configuration.isEmpty ? configuration.uri : appRouter.state.uri;
+    AppMetrics.instance.recordNav(uri.toString());
   }
 
   @override

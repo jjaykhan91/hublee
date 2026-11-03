@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../router.dart';
 import '../../router_paths.dart';
@@ -12,7 +13,10 @@ import '../../theme/app_tokens.dart';
 /// Hidden in release, and until turned on in Diagnostics. Tap to open
 /// the full metrics log.
 class MetricsHud extends StatelessWidget {
-  const MetricsHud({super.key});
+  const MetricsHud({super.key, this.router});
+
+  /// Router that opens Diagnostics; the app's [appRouter] when null.
+  final GoRouter? router;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +49,7 @@ class MetricsHud extends StatelessWidget {
               borderRadius: AppRadius.chip,
               // The chip sits above the router in MaterialApp.builder, so
               // there is no GoRouter in this context; use the router itself.
-              onTap: () => appRouter.push(AppRoute.diagnostics),
+              onTap: () => (router ?? appRouter).push(AppRoute.diagnostics),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,

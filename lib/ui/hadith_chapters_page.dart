@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../hadith/hadith_chapters.dart';
 import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
+import '../services/app_metrics.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/arabic_text.dart';
@@ -111,6 +112,8 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (snapshot.hasError) {
+      // Keep the cause findable in Diagnostics and the console.
+      AppMetrics.instance.recordError(snapshot.error!);
       return Padding(
         padding: AppSpacing.page,
         child: Center(
@@ -187,9 +190,7 @@ class _HadithChaptersPageState extends State<HadithChaptersPage> {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              book.chapters.length == 1
-                  ? '1 chapter'
-                  : '${book.chapters.length} chapters',
+              '${book.chapters.length} chapters',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -351,7 +352,7 @@ class _ChapterTile extends StatelessWidget {
             ],
             const Spacer(),
             Text(
-              hadithCount == 1 ? '1 hadith' : '$hadithCount hadiths',
+              hadithCountLabel(hadithCount),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

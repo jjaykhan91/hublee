@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../hadith/hadith_book_summaries.dart';
+import '../hadith/hadith_chapters.dart';
 import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
@@ -637,7 +638,7 @@ class _FeaturedBookCard extends StatelessWidget {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             Text(
-              count == null ? row.collectionTitle : _hadithCount(count),
+              count == null ? row.collectionTitle : hadithCountLabel(count),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -680,7 +681,7 @@ class _CollectionHeader extends StatelessWidget {
     final hadiths = hadithCount;
     final countLabel = hadiths == null
         ? '$bookCount books'
-        : '$bookCount books · ${_hadithCount(hadiths)}';
+        : '$bookCount books · ${hadithCountLabel(hadiths)}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
@@ -743,7 +744,7 @@ class _BookTile extends StatelessWidget {
     final count = book.length;
     final semantics = [
       book.title,
-      if (count != null) _hadithCount(count),
+      if (count != null) hadithCountLabel(count),
       collectionTitle,
       if (isSaved) 'bookmarked',
       if (resumeIndex != null) 'resume at hadith ${resumeIndex! + 1}',
@@ -804,7 +805,9 @@ class _BookTile extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        count == null ? collectionTitle : _hadithCount(count),
+                        count == null
+                            ? collectionTitle
+                            : hadithCountLabel(count),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.55),
                         ),
@@ -887,7 +890,7 @@ void _showBookAbout(
               const SizedBox(height: 6),
               Text(
                 [
-                  if (book.length != null) _hadithCount(book.length!),
+                  if (book.length != null) hadithCountLabel(book.length!),
                   collectionTitle,
                 ].join(' · '),
                 style: Theme.of(sheetContext).textTheme.labelMedium?.copyWith(
@@ -931,6 +934,3 @@ void _showBookAbout(
     },
   );
 }
-
-/// "1 hadith" or "42 hadiths", matching the chapter tiles.
-String _hadithCount(int count) => count == 1 ? '1 hadith' : '$count hadiths';
