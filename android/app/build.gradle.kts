@@ -49,13 +49,22 @@ android {
 
     buildTypes {
         release {
-            signingConfig =
-                if (keystorePropertiesFile.exists()) {
-                    signingConfigs.getByName("release")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+}
+
+// A release signed with the debug key is rejected by Play, so refuse to
+// build one rather than fall back silently. Debug and profile still work.
+gradle.taskGraph.whenReady {
+    val wantsRelease = allTasks.any { it.project == project && it.name.contains("Release") }
+    if (wantsRelease && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "Release builds need android/key.properties and the upload keystore. " +
+                "See docs/PLAY_STORE.md.",
+        )
     }
 }
 

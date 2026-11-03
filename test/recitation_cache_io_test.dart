@@ -30,4 +30,34 @@ void main() {
     );
     expect(await cache.downloadedAyahs(reciterId: 'alafasy', surahId: 1), {1});
   });
+
+  test('an interrupted write is not counted as downloaded', () async {
+    final root = await Directory.systemTemp.createTemp('hublee_recitation');
+    addTearDown(() => root.delete(recursive: true));
+    final cache = FileRecitationCache(root: root);
+
+    // What a kill mid-write leaves behind.
+    final dir = Directory('${root.path}/alafasy/001')
+      ..createSync(recursive: true);
+    File('${dir.path}/002.mp3.part').writeAsBytesSync([1, 2]);
+
+    expect(
+      await cache.downloadedAyahs(reciterId: 'alafasy', surahId: 1),
+      isEmpty,
+    );
+    expect(
+      await cache.pathIfPresent(reciterId: 'alafasy', surahId: 1, ayah: 2),
+      isNull,
+    );
+
+    await cache.write(
+      reciterId: 'alafasy',
+      surahId: 1,
+      ayah: 2,
+      bytes: [1, 2, 3],
+    );
+    expect(await cache.downloadedAyahs(reciterId: 'alafasy', surahId: 1), {2});
+    expect(File('${dir.path}/002.mp3').readAsBytesSync(), [1, 2, 3]);
+    expect(File('${dir.path}/002.mp3.part').existsSync(), isFalse);
+  });
 }

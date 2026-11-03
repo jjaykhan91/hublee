@@ -29,6 +29,10 @@ class HttpRecitationFetcher implements RecitationFetcher {
     if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
       throw RecitationFetchException(response.statusCode);
     }
+    // A captive portal answers 200 with HTML; never store that as audio.
+    if (!looksLikeMp3(response.bodyBytes)) {
+      throw RecitationFetchException(response.statusCode, notAudio: true);
+    }
     return response.bodyBytes;
   }
 
@@ -38,12 +42,25 @@ class HttpRecitationFetcher implements RecitationFetcher {
   }
 }
 
-/// Thrown when a recitation URL is not HTTP 200 with a body.
+/// Whether [bytes] start like an MP3: an ID3v2 tag or an MPEG frame sync.
+bool looksLikeMp3(List<int> bytes) {
+  if (bytes.length < 3) return false;
+  final id3 = bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33;
+  final frameSync = bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0;
+  return id3 || frameSync;
+}
+
+/// Thrown when a recitation URL is not HTTP 200 with an MP3 body.
 class RecitationFetchException implements Exception {
-  RecitationFetchException(this.statusCode);
+  RecitationFetchException(this.statusCode, {this.notAudio = false});
 
   final int statusCode;
 
+  /// True when the server answered 200 but the body was not audio.
+  final bool notAudio;
+
   @override
-  String toString() => 'RecitationFetchException($statusCode)';
+  String toString() => notAudio
+      ? 'RecitationFetchException($statusCode, not audio)'
+      : 'RecitationFetchException($statusCode)';
 }
