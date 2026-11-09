@@ -187,6 +187,66 @@ void main() {
       expect(find.text('Ayah 100'), findsOneWidget);
     });
   });
+
+  testWidgets('a big bubble shows the ayah only while dragging', (
+    tester,
+  ) async {
+    final controller = ItemScrollController();
+    final listener = ItemPositionsListener.create();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              ScrollablePositionedList.builder(
+                itemScrollController: controller,
+                itemPositionsListener: listener,
+                itemCount: 100,
+                itemBuilder: (_, i) =>
+                    SizedBox(height: 80, child: Text('item $i')),
+              ),
+              ScrollScrubber(
+                itemCount: 100,
+                labelBuilder: (i) => 'Ayah ${i + 1} of 100',
+                scrollController: controller,
+                positionsListener: listener,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    controller.jumpTo(index: 2);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    double bubbleOpacity() => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byKey(const Key('scroll-scrubber-bubble')),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+
+    expect(bubbleOpacity(), 0);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('scroll-scrubber-handle'))),
+    );
+    await gesture.moveBy(const Offset(0, 40));
+    await gesture.moveBy(const Offset(0, 200));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(bubbleOpacity(), 1);
+    expect(find.text('of 100'), findsOneWidget);
+    expect(find.text('Ayah'), findsOneWidget);
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(bubbleOpacity(), 0);
+  });
 }
 
 IgnorePointer _gate(WidgetTester tester) =>

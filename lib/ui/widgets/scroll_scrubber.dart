@@ -314,25 +314,25 @@ class _ScrollScrubberState extends State<ScrollScrubber>
                   ),
                 ),
               ),
+              // The big bubble pops out only while the handle is dragged.
               Positioned(
-                right: _kTrackWidth + 8,
-                top: thumbTop + (_kThumbSize - 36) / 2,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.inverseSurface,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: AppShadows.scrubber,
-                  ),
-                  child: Text(
-                    widget.labelBuilder(_currentIndex),
-                    style: TextStyle(
-                      color: colorScheme.onInverseSurface,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                right: _kTrackWidth + 10,
+                top: thumbTop + _kThumbSize / 2,
+                child: FractionalTranslation(
+                  translation: const Offset(0, -0.5),
+                  child: AnimatedOpacity(
+                    opacity: _isDragging ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: AnimatedScale(
+                      scale: _isDragging ? 1 : 0.6,
+                      alignment: Alignment.centerRight,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutBack,
+                      child: ExcludeSemantics(
+                        child: _ScrubberBubble(
+                          label: widget.labelBuilder(_currentIndex),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -360,6 +360,74 @@ class _ScrollScrubberState extends State<ScrollScrubber>
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The bubble shown beside the handle while dragging. "Ayah 3 of 7" and
+/// "Hadith 12 of 40" become a large number with small words around it;
+/// any other label, such as a surah name, is shown as large text.
+class _ScrubberBubble extends StatelessWidget {
+  const _ScrubberBubble({required this.label});
+
+  final String label;
+
+  static final _counted = RegExp(r'^(.*?)\s+(\d+)\s+of\s+(\d+)$');
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onBubble = colorScheme.onPrimary;
+    final match = _counted.firstMatch(label);
+
+    final Widget content;
+    if (match == null) {
+      content = Text(
+        label,
+        style: theme.textTheme.titleLarge?.copyWith(
+          color: onBubble,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+    } else {
+      final small = theme.textTheme.labelLarge?.copyWith(
+        color: onBubble.withValues(alpha: 0.85),
+        fontWeight: FontWeight.w600,
+      );
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(match.group(1)!, style: small),
+          Text(
+            match.group(2)!,
+            style: theme.textTheme.displaySmall?.copyWith(
+              color: onBubble,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+          ),
+          Text('of ${match.group(3)}', style: small),
+        ],
+      );
+    }
+
+    return Container(
+      key: const Key('scroll-scrubber-bubble'),
+      constraints: const BoxConstraints(minWidth: 96),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.primary,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          bottomLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+          bottomRight: Radius.circular(6),
+        ),
+        boxShadow: AppShadows.scrubber,
+      ),
+      alignment: Alignment.center,
+      child: content,
     );
   }
 }
