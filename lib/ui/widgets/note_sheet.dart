@@ -11,9 +11,12 @@ import 'app_haptics.dart';
 /// Longest note, so one passage cannot fill local storage.
 const noteMaxLength = 2000;
 
-/// "Sahih al-Bukhari · Hadith 12", preferring the book's own number.
+/// "Sahih al-Bukhari · #12" with the book's own number, else
+/// "Sahih al-Bukhari · Hadith 12" by position. Saved uses the same title.
 String hadithNoteTitle(String bookTitle, int hadithIndex, int? idInBook) =>
-    '$bookTitle · Hadith ${idInBook ?? hadithIndex + 1}';
+    idInBook != null
+    ? '$bookTitle · #$idInBook'
+    : '$bookTitle · Hadith ${hadithIndex + 1}';
 
 /// Opens the note editor for [target], titled with [title] such as
 /// `Al-Baqarah 2:255`.
@@ -80,7 +83,8 @@ class _NoteEditorState extends State<_NoteEditor> {
     final theme = Theme.of(context);
     final insets = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Padding(
+    // Scrolls when a long note and the keyboard leave too little room.
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + insets),
       child: Column(
         mainAxisSize: MainAxisSize.min,

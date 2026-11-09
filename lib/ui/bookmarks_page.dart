@@ -433,10 +433,9 @@ class BookmarksPage extends StatelessWidget {
 
   String _hadithTitle(Bookmark bookmark) {
     final book = bookmark.bookTitle ?? 'Hadith';
+    final index = bookmark.hadithIndex;
+    if (index != null) return hadithNoteTitle(book, index, bookmark.idInBook);
     if (bookmark.idInBook != null) return '$book · #${bookmark.idInBook}';
-    if (bookmark.hadithIndex != null) {
-      return '$book · Hadith ${bookmark.hadithIndex! + 1}';
-    }
     return book;
   }
 

@@ -566,7 +566,8 @@ class _StartHereRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 172,
+            // Cover and padding are fixed; the three text lines scale.
+            height: 110 + MediaQuery.textScalerOf(context).scale(62),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: books.length,

@@ -1244,7 +1244,14 @@ class _AyahCard extends StatelessWidget {
                   ),
                   if (isSajdah) ...[
                     const SizedBox(width: 4),
-                    const SajdahChip(),
+                    // Shrinks rather than overflowing a narrow row.
+                    const Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: SajdahChip(),
+                      ),
+                    ),
                   ],
                   const Spacer(),
                   PassageActionsButton(
