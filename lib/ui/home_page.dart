@@ -635,7 +635,7 @@ class _HomeGuideCards extends StatelessWidget {
               child: _HomeIdentityCard(
                 key: const Key('home-card-prophet'),
                 arabic: '\u0645\u064f\u062d\u064e\u0645\u0651\u064e\u062f',
-                english: 'The Prophet \uFDFA',
+                english: 'Muhammad \uFDFA',
                 onTap: () => context.push(AppRoute.aboutProphet),
               ),
             ),
@@ -801,19 +801,12 @@ class _HubleeMeaningCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Hublee \u00b7 my rope',
+                        'Hublee',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: colorScheme.primary,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      HubleeRopeMark(
-                        width: 120,
-                        height: 16,
-                        colorA: colorScheme.primary.withValues(alpha: 0.7),
-                        colorB: colorScheme.tertiary.withValues(alpha: 0.7),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -827,7 +820,15 @@ class _HubleeMeaningCard extends StatelessWidget {
                           color: colorScheme.onSurface.withValues(alpha: 0.78),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      // The rope line sits between the meaning and its ayah.
+                      const SizedBox(height: 14),
+                      HubleeRopeMark(
+                        width: 120,
+                        height: 16,
+                        colorA: colorScheme.primary.withValues(alpha: 0.7),
+                        colorB: colorScheme.tertiary.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(height: 8),
                       Text(
                         'Ali \u2018Imran 3:103',
                         textAlign: TextAlign.center,

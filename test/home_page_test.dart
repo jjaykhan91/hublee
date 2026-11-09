@@ -40,6 +40,8 @@ void main() {
     expect(find.byKey(const Key('hublee-wordmark')), findsOneWidget);
     expect(find.byKey(const Key('hublee-meaning-card')), findsOneWidget);
     expect(find.textContaining('my rope'), findsWidgets);
+    expect(find.text('Hublee · my rope'), findsNothing);
+    expect(find.text('Muhammad ﷺ'), findsOneWidget);
     expect(find.textContaining('Quran and the Sunnah'), findsOneWidget);
     expect(find.text('Quran'), findsNothing);
     expect(find.text('Hadith'), findsNothing);
