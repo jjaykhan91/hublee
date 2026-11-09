@@ -27,7 +27,7 @@ void main() {
     expect(service.bookmarks.single.ayah, 255);
     expect(service.lastReadQuran, isNull);
     expect(service.lastReadHadith, isNull);
-    expect(service.quranPins, isEmpty);
+    expect(service.positionFor(2), isNull);
   });
 
   test('persists hadith idInBook', () async {
@@ -50,55 +50,94 @@ void main() {
     expect(reloaded.bookmarks.single.bookTitle, 'Nawawi 40');
   });
 
-  test('one pin per surah; toggle clears; corrupt rows skipped', () async {
-    SharedPreferences.setMockInitialValues({
-      'quran_pins':
-          '[{"surahId":2,"ayah":255,"surahName":"Al-Baqarah",'
-          '"updatedAt":"2024-01-01T00:00:00.000"},'
-          '{"surahId":0,"ayah":1,"surahName":"Bad","updatedAt":"2024-01-01T00:00:00.000"},'
-          '"oops"]',
-    });
+  test('remembers where reading stopped in each surah', () async {
+    SharedPreferences.setMockInitialValues({});
     final service = BookmarkService();
     await service.load();
-    expect(service.pinFor(2)?.ayah, 255);
-    expect(service.isAyahPinned(2, 255), isTrue);
-    expect(service.pinFor(1), isNull);
-
-    expect(
-      await service.toggleQuranPin(
-        surahId: 2,
-        ayah: 100,
-        surahName: 'Al-Baqarah',
-      ),
-      QuranPinChange.moved,
+    await service.saveLastReadQuran(
+      surahId: 2,
+      ayah: 45,
+      surahName: 'Al-Baqarah',
     );
-    expect(service.pinFor(2)?.ayah, 100);
-
-    expect(
-      await service.toggleQuranPin(
-        surahId: 2,
-        ayah: 100,
-        surahName: 'Al-Baqarah',
-      ),
-      QuranPinChange.cleared,
-    );
-    expect(service.pinFor(2), isNull);
-
-    expect(
-      await service.toggleQuranPin(surahId: 18, ayah: 10, surahName: 'Al-Kahf'),
-      QuranPinChange.pinned,
+    await service.saveLastReadQuran(
+      surahId: 18,
+      ayah: 10,
+      surahName: 'Al-Kahf',
     );
 
     final reloaded = BookmarkService();
     await reloaded.load();
-    expect(reloaded.pinFor(18)?.ayah, 10);
-    expect(reloaded.pinFor(2), isNull);
+    expect(reloaded.positionFor(2), 45);
+    expect(reloaded.positionFor(18), 10);
+    expect(reloaded.positionFor(1), isNull);
+    expect(reloaded.lastReadQuran?['surahId'], 18);
   });
 
-  test('quranOpenAyah prefers an explicit request over the pin', () {
-    expect(quranOpenAyah(requestedAyah: 7, pinnedAyah: 50), 7);
-    expect(quranOpenAyah(pinnedAyah: 50), 50);
+  test('skips saved positions outside the Quran', () async {
+    SharedPreferences.setMockInitialValues({
+      'quran_positions': '{"2":45,"0":3,"x":1,"5":"a","6":0,"115":2}',
+    });
+    final service = BookmarkService();
+    await service.load();
+    expect(service.positionFor(2), 45);
+    for (final surah in [0, 5, 6, 115]) {
+      expect(service.positionFor(surah), isNull);
+    }
+  });
+
+  test('old pins become bookmarks and positions, once', () async {
+    SharedPreferences.setMockInitialValues({
+      'bookmarks':
+          '[{"type":"quran","surahId":18,"ayah":10,"surahName":"Al-Kahf",'
+          '"createdAt":"2024-01-01T00:00:00.000"}]',
+      'quran_positions': '{"18":30}',
+      'quran_pins':
+          '[{"surahId":2,"ayah":255,"surahName":"Al-Baqarah",'
+          '"updatedAt":"2024-02-01T00:00:00.000"},'
+          '{"surahId":18,"ayah":10,"surahName":"Al-Kahf",'
+          '"updatedAt":"2024-02-01T00:00:00.000"},'
+          '{"surahId":0,"ayah":1,"surahName":"Bad","updatedAt":"x"},'
+          '"oops"]',
+    });
+    final service = BookmarkService();
+    await service.load();
+
+    expect(service.isBookmarked('quran:2:255'), isTrue);
+    expect(service.isBookmarked('quran:18:10'), isTrue);
+    expect(service.bookmarks, hasLength(2));
+    expect(service.positionFor(2), 255);
+    expect(service.positionFor(18), 30, reason: 'a saved position wins');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('quran_pins'), isNull);
+
+    final reloaded = BookmarkService();
+    await reloaded.load();
+    expect(reloaded.bookmarks, hasLength(2));
+    expect(reloaded.positionFor(2), 255);
+  });
+
+  test('lists a surah\'s bookmarks in ayah order', () async {
+    SharedPreferences.setMockInitialValues({});
+    final service = BookmarkService();
+    await service.load();
+    for (final ayah in [200, 3, 45]) {
+      await service.toggleBookmark(
+        Bookmark.quran(surahId: 2, ayah: ayah, surahName: 'Al-Baqarah'),
+      );
+    }
+    await service.toggleBookmark(
+      Bookmark.quran(surahId: 1, ayah: 1, surahName: 'Al-Fatihah'),
+    );
+
+    expect(service.quranBookmarksIn(2).map((b) => b.ayah), [3, 45, 200]);
+    expect(service.quranBookmarksIn(3), isEmpty);
+  });
+
+  test('quranOpenAyah prefers an explicit request over the saved spot', () {
+    expect(quranOpenAyah(requestedAyah: 7, savedAyah: 50), 7);
+    expect(quranOpenAyah(savedAyah: 50), 50);
     expect(quranOpenAyah(), isNull);
-    expect(quranOpenAyah(requestedAyah: 0, pinnedAyah: 3), 3);
+    expect(quranOpenAyah(requestedAyah: 0, savedAyah: 3), 3);
   });
 }

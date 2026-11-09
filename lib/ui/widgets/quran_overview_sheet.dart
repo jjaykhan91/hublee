@@ -215,10 +215,12 @@ class _QuranOverviewBody extends StatelessWidget {
                   'Surah is the full list. Juz groups by the 30 parts. Type '
                   'splits Meccan and Medinan. Revelation sorts by the order '
                   'the surahs were revealed, not mushaf order.\n\n'
-                  'Pin an ayah inside a surah to resume there the next time '
-                  'you open it. Continue where you left off follows wherever '
-                  'you last scrolled. Bookmark adds it to Saved. The book icon '
-                  'in the app bar opens sajdah, stop signs, and tajweed.',
+                  'Each surah opens where you stopped in it, and its card '
+                  'shows how far you have read. Continue where you left off '
+                  'takes you to the last surah you read. Bookmark an ayah to '
+                  'add it to Saved; the bookmark count on a surah card lists '
+                  "that surah's bookmarks. The book icon in the app bar "
+                  'opens sajdah, stop signs, and tajweed.',
                   style: body,
                 ),
               ],

@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +17,7 @@ import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/hublee_card.dart';
 import 'widgets/quran_overview_sheet.dart';
+import 'widgets/surah_bookmarks_sheet.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
 
 /// Juz names (commonly used Arabic names for the 30 parts).
@@ -621,19 +623,28 @@ class _SurahCard extends StatelessWidget {
         : 'assets/images/masjid_nabawi_madani.png';
     const textColor = AppColors.surahCardOnImage;
 
-    final pin = BookmarkScope.maybeOf(context)?.pinFor(chapter.id);
+    final bookmarks = BookmarkScope.maybeOf(context);
+    final position = bookmarks?.positionFor(chapter.id);
+    final hasProgress = position != null && position > 1;
+    final saved = bookmarks?.quranBookmarksIn(chapter.id) ?? const [];
     final semanticsLabel = [
       'Surah ${chapter.id}',
       chapter.nameSimple,
       if (chapter.nameTranslated != null) chapter.nameTranslated!,
       '${chapter.versesCount} ayahs',
       if (isMeccan) 'Meccan' else 'Medinan',
-      if (pin != null) 'pinned at ayah ${pin.ayah}',
+      if (hasProgress) 'stopped at ayah $position',
+      if (saved.isNotEmpty) bookmarkCountLabel(saved.length),
     ].join(', ');
+    void showSaved() => showSurahBookmarksSheet(context, chapter, saved);
 
     return Semantics(
       button: true,
       label: semanticsLabel,
+      customSemanticsActions: {
+        if (saved.isNotEmpty)
+          const CustomSemanticsAction(label: 'Show bookmarks'): showSaved,
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: AppRadius.card,
@@ -644,8 +655,8 @@ class _SurahCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () =>
-                  context.push(AppRoute.surah(chapter.id, ayah: pin?.ayah)),
+              // The reader opens where this surah was left.
+              onTap: () => context.push(AppRoute.surah(chapter.id)),
               child: ExcludeSemantics(
                 child: Container(
                   height: showRevelationOrder
@@ -669,6 +680,20 @@ class _SurahCard extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                      if (hasProgress)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: LinearProgressIndicator(
+                            key: Key('surah-progress-${chapter.id}'),
+                            value: position / chapter.versesCount,
+                            minHeight: 3,
+                            color: accentColor,
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
 
                       // Content row.
                       Padding(
@@ -708,16 +733,6 @@ class _SurahCard extends StatelessWidget {
                                         ),
                                   ),
                                 ),
-                                if (pin != null)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: Icon(
-                                      Icons.push_pin_rounded,
-                                      size: 14,
-                                      color: accentColor,
-                                    ),
-                                  ),
                               ],
                             ),
                             const SizedBox(width: 14),
@@ -789,35 +804,22 @@ class _SurahCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // Ayah count, and pin ayah when one is set.
+                            // Bookmarks, and where reading stopped.
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                if (pin != null)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.push_pin_rounded,
-                                        size: 12,
-                                        color: accentColor,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        '${pin.ayah}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: accentColor,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                    ],
+                                if (saved.isNotEmpty)
+                                  _SurahBookmarkChip(
+                                    key: Key('surah-bookmarks-${chapter.id}'),
+                                    count: saved.length,
+                                    color: accentColor,
+                                    onTap: showSaved,
                                   ),
                                 Text(
-                                  '${chapter.versesCount} Ayahs',
+                                  hasProgress
+                                      ? 'Ayah $position / ${chapter.versesCount}'
+                                      : '${chapter.versesCount} Ayahs',
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: textColor.withValues(alpha: 0.6),
@@ -834,6 +836,45 @@ class _SurahCard extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bookmark count on a surah card; tap to list them.
+class _SurahBookmarkChip extends StatelessWidget {
+  const _SurahBookmarkChip({
+    super.key,
+    required this.count,
+    required this.color,
+    required this.onTap,
+  });
+
+  final int count;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppRadius.chip,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bookmark_rounded, size: 14, color: color),
+            const SizedBox(width: 3),
+            Text(
+              '$count',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );

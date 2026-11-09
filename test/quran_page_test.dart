@@ -85,21 +85,26 @@ void main() {
     expect(find.textContaining('Meccan ('), findsOneWidget);
   });
 
-  testWidgets('continue banner and pin marker use last-read and pins', (
+  testWidgets('surah cards show reading position and bookmarks', (
     tester,
   ) async {
     final bookmarks = BookmarkService();
     await bookmarks.load();
     await bookmarks.saveLastReadQuran(
-      surahId: 2,
-      ayah: 255,
-      surahName: 'Al-Baqarah',
-    );
-    await bookmarks.toggleQuranPin(
       surahId: 1,
       ayah: 5,
       surahName: 'Al-Fatihah',
     );
+    await bookmarks.saveLastReadQuran(
+      surahId: 2,
+      ayah: 255,
+      surahName: 'Al-Baqarah',
+    );
+    for (final ayah in [7, 3]) {
+      await bookmarks.toggleBookmark(
+        Bookmark.quran(surahId: 1, ayah: ayah, surahName: 'Al-Fatihah'),
+      );
+    }
 
     await tester.pumpWidget(
       BookmarkScope(
@@ -111,8 +116,20 @@ void main() {
 
     expect(find.text('Continue where you left off'), findsOneWidget);
     expect(find.textContaining('2:255'), findsOneWidget);
-    expect(find.text('5'), findsWidgets);
-    expect(find.byIcon(Icons.push_pin_rounded), findsWidgets);
+    expect(find.text('Ayah 5 / 7'), findsOneWidget);
+    expect(find.text('Ayah 255 / 286'), findsOneWidget);
+    expect(find.byKey(const Key('surah-progress-1')), findsOneWidget);
+    expect(find.byKey(const Key('surah-bookmarks-2')), findsNothing);
+    expect(find.byIcon(Icons.push_pin_rounded), findsNothing);
+
+    await tester.tap(find.byKey(const Key('surah-bookmarks-1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Al-Fatihah · 2 bookmarks'), findsOneWidget);
+    final first = tester.getTopLeft(find.text('Ayah 3'));
+    final second = tester.getTopLeft(find.text('Ayah 7'));
+    expect(first.dy, lessThan(second.dy));
   });
 
   testWidgets('about the Quran sheet opens from the app bar', (tester) async {

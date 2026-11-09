@@ -159,14 +159,19 @@ void main() {
     expect(find.text('Meccan'), findsOneWidget);
   });
 
-  testWidgets('pinning an ayah stores a per-surah resume marker', (
+  testWidgets('opens where this surah was left, with no pin button', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(400, 900);
+    tester.view.physicalSize = const Size(400, 600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     final bookmarks = BookmarkService();
+    await bookmarks.saveLastReadQuran(
+      surahId: 1,
+      ayah: 6,
+      surahName: 'Al-Fatihah',
+    );
     await tester.pumpWidget(
       SettingsScope(
         controller: SettingsController(),
@@ -180,12 +185,10 @@ void main() {
       ),
     );
     await _pumpUntilReaderLoaded(tester);
-
-    final pinFinder = find.byKey(const Key('ayah-pin-1-1'));
-    await tester.ensureVisible(pinFinder);
-    await tester.tap(pinFinder);
     await tester.pump();
-    expect(find.text('Pinned 1:1'), findsOneWidget);
-    expect(bookmarks.isAyahPinned(1, 1), isTrue);
+
+    expect(find.text('1:6'), findsWidgets);
+    expect(find.text('1:1'), findsNothing);
+    expect(find.byTooltip('Pin this ayah to resume here'), findsNothing);
   });
 }
