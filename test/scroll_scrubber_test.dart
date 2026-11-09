@@ -51,13 +51,7 @@ void main() {
     expect(overlay.left, greaterThan(stack.center.dx));
     expect(overlay.width, ScrollScrubber.overlayWidth);
 
-    final ignore = tester.widget<IgnorePointer>(
-      find.descendant(
-        of: find.byKey(const Key('scroll-scrubber-overlay')),
-        matching: find.byType(IgnorePointer),
-      ),
-    );
-    expect(ignore.ignoring, isTrue);
+    expect(_gate(tester).ignoring, isTrue);
   });
 
   testWidgets('appears after the list is scrolled', (tester) async {
@@ -91,28 +85,109 @@ void main() {
     await tester.pump();
 
     expect(controller.isAttached, isTrue);
-    expect(
-      tester
-          .widget<IgnorePointer>(
-            find.descendant(
-              of: find.byKey(const Key('scroll-scrubber-overlay')),
-              matching: find.byType(IgnorePointer),
-            ),
-          )
-          .ignoring,
-      isTrue,
-    );
+    expect(_gate(tester).ignoring, isTrue);
 
     controller.jumpTo(index: 8);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    final ignore = tester.widget<IgnorePointer>(
-      find.descendant(
-        of: find.byKey(const Key('scroll-scrubber-overlay')),
-        matching: find.byType(IgnorePointer),
-      ),
-    );
-    expect(ignore.ignoring, isFalse);
+    expect(_gate(tester).ignoring, isFalse);
+  });
+
+  group('while shown', () {
+    late ItemScrollController controller;
+    late ItemPositionsListener listener;
+
+    int topIndex() =>
+        (listener.itemPositions.value.toList()
+              ..sort((a, b) => a.itemLeadingEdge.compareTo(b.itemLeadingEdge)))
+            .first
+            .index;
+
+    Future<void> pumpShown(WidgetTester tester) async {
+      controller = ItemScrollController();
+      listener = ItemPositionsListener.create();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                ScrollablePositionedList.builder(
+                  itemScrollController: controller,
+                  itemPositionsListener: listener,
+                  itemCount: 100,
+                  itemBuilder: (_, i) =>
+                      SizedBox(height: 80, child: Text('item $i')),
+                ),
+                ScrollScrubber(
+                  itemCount: 100,
+                  labelBuilder: (i) => 'Ayah ${i + 1}',
+                  scrollController: controller,
+                  positionsListener: listener,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      controller.jumpTo(index: 2);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_gate(tester).ignoring, isFalse);
+    }
+
+    testWidgets('a tap on the edge away from the handle does not jump', (
+      tester,
+    ) async {
+      await pumpShown(tester);
+      final overlay = tester.getRect(
+        find.byKey(const Key('scroll-scrubber-overlay')),
+      );
+
+      await tester.tapAt(Offset(overlay.center.dx, overlay.bottom - 40));
+      await tester.pump();
+
+      expect(topIndex(), 2);
+    });
+
+    testWidgets('a swipe on the edge scrolls the list instead of jumping', (
+      tester,
+    ) async {
+      await pumpShown(tester);
+      final overlay = tester.getRect(
+        find.byKey(const Key('scroll-scrubber-overlay')),
+      );
+
+      // Swipe up by two items from low on the edge, where the old track
+      // would have jumped to the end of the list.
+      await tester.dragFrom(
+        Offset(overlay.center.dx, overlay.bottom - 40),
+        const Offset(0, -160),
+      );
+      await tester.pumpAndSettle();
+
+      expect(topIndex(), inInclusiveRange(3, 6));
+    });
+
+    testWidgets('dragging the handle moves through the list', (tester) async {
+      await pumpShown(tester);
+      final handle = find.byKey(const Key('scroll-scrubber-handle'));
+      final overlay = tester.getRect(
+        find.byKey(const Key('scroll-scrubber-overlay')),
+      );
+
+      await tester.dragFrom(
+        tester.getCenter(handle),
+        Offset(0, overlay.height),
+      );
+      await tester.pump();
+
+      expect(topIndex(), greaterThan(80));
+      expect(find.text('Ayah 100'), findsOneWidget);
+    });
   });
 }
+
+IgnorePointer _gate(WidgetTester tester) =>
+    tester.widget<IgnorePointer>(find.byKey(const Key('scroll-scrubber-gate')));
