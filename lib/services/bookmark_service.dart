@@ -144,6 +144,52 @@ class Bookmark {
   );
 }
 
+// ────────────────────────────────────────────────────────────────
+//  Reading note
+// ────────────────────────────────────────────────────────────────
+
+/// The reader's own note on an ayah or a hadith. One note per passage.
+///
+/// [target] says which passage, in the same shape as a [Bookmark], so a
+/// note opens and is titled the same way a bookmark is.
+@immutable
+class ReadingNote {
+  const ReadingNote({
+    required this.target,
+    required this.text,
+    required this.updatedAt,
+  });
+
+  final Bookmark target;
+  final String text;
+  final DateTime updatedAt;
+
+  /// The passage id, the same as [Bookmark.id].
+  String get id => target.id;
+
+  Map<String, dynamic> toJson() => {
+    ...target.toJson()..remove('snippet'),
+    'text': text,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  /// Parses [json] or returns null when the row is corrupt.
+  static ReadingNote? tryFromJson(Map<String, dynamic> json) {
+    final target = Bookmark.tryFromJson(json);
+    final text = json['text'];
+    final updatedAt = DateTime.tryParse('${json['updatedAt']}');
+    if (target == null || text is! String || text.trim().isEmpty) return null;
+    if (updatedAt == null) return null;
+    final complete = target.type == 'quran'
+        ? target.surahId != null && target.ayah != null
+        : target.collectionId != null &&
+              target.bookFile != null &&
+              target.hadithIndex != null;
+    if (!complete) return null;
+    return ReadingNote(target: target, text: text, updatedAt: updatedAt);
+  }
+}
+
 /// Ayah to open in a surah. An explicit request (search, continue, a
 /// bookmark) wins; otherwise where the reader last stopped in it.
 int? quranOpenAyah({int? requestedAyah, int? savedAyah}) {
@@ -156,8 +202,8 @@ int? quranOpenAyah({int? requestedAyah, int? savedAyah}) {
 //  Bookmark service
 // ────────────────────────────────────────────────────────────────
 
-/// Manages bookmarks, last-read positions, and where the reader stopped
-/// in each surah.
+/// Manages bookmarks, reading notes, last-read positions, and where the
+/// reader stopped in each surah.
 ///
 /// Persists all data as JSON strings in [SharedPreferences].
 /// Call [load] once at startup to restore saved state.
@@ -167,6 +213,7 @@ class BookmarkService extends ChangeNotifier {
   static const _kLastReadQuran = 'last_read_quran';
   static const _kLastReadHadith = 'last_read_hadith';
   static const _kQuranPositions = 'quran_positions';
+  static const _kNotes = 'reading_notes';
 
   /// Per-surah pins from 1.0.6 and earlier. Read once to migrate them.
   static const _kLegacyQuranPins = 'quran_pins';
@@ -176,6 +223,7 @@ class BookmarkService extends ChangeNotifier {
   Map<String, dynamic>? _lastReadQuran;
   Map<String, dynamic>? _lastReadHadith;
   final Map<int, int> _positions = {};
+  final Map<String, ReadingNote> _notes = {};
 
   /// An unmodifiable view of the current bookmarks list.
   List<Bookmark> get bookmarks => List.unmodifiable(_bookmarks);
@@ -197,6 +245,47 @@ class BookmarkService extends ChangeNotifier {
           .toList()
         ..sort((a, b) => (a.ayah ?? 0).compareTo(b.ayah ?? 0));
 
+  /// Notes on ayahs and hadiths, most recently edited first.
+  List<ReadingNote> get notes =>
+      _notes.values.toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+  /// The note on the passage with this [Bookmark.id], if any.
+  ReadingNote? noteFor(String id) => _notes[id];
+
+  /// Saves the note on [target]. Blank [text] deletes it.
+  Future<void> saveNote({
+    required Bookmark target,
+    required String text,
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      if (_notes.remove(target.id) == null) return;
+    } else {
+      _notes[target.id] = ReadingNote(
+        target: target,
+        text: trimmed,
+        updatedAt: DateTime.now(),
+      );
+    }
+    await _persistNotes();
+    notifyListeners();
+  }
+
+  /// Deletes the note with [id], if any.
+  Future<void> deleteNote(String id) async {
+    if (_notes.remove(id) == null) return;
+    await _persistNotes();
+    notifyListeners();
+  }
+
+  /// Puts back [note] after an accidental delete.
+  Future<void> restoreNote(ReadingNote note) async {
+    _notes[note.id] = note;
+    await _persistNotes();
+    notifyListeners();
+  }
+
   /// Restores bookmarks, last-read, and per-surah positions from disk.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -217,6 +306,9 @@ class BookmarkService extends ChangeNotifier {
       ..clear()
       ..addAll(_decodeQuranPositions(prefs.getString(_kQuranPositions)));
     await _migrateLegacyPins(prefs);
+    _notes
+      ..clear()
+      ..addAll(_decodeNotes(prefs.getString(_kNotes)));
 
     notifyListeners();
   }
@@ -362,6 +454,14 @@ class BookmarkService extends ChangeNotifier {
       ..addAll(_bookmarks.map((b) => b.id));
   }
 
+  Future<void> _persistNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kNotes,
+      json.encode(_notes.values.map((note) => note.toJson()).toList()),
+    );
+  }
+
   Future<void> _persistPositions() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -397,6 +497,24 @@ Map<String, dynamic>? _decodeLastReadMap(String? raw) {
     return Map<String, dynamic>.from(decoded);
   } catch (_) {
     return null;
+  }
+}
+
+/// Reads the note list, skipping corrupt rows.
+Map<String, ReadingNote> _decodeNotes(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is! List) return {};
+    final notes = <String, ReadingNote>{};
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final note = ReadingNote.tryFromJson(Map<String, dynamic>.from(item));
+      if (note != null) notes[note.id] = note;
+    }
+    return notes;
+  } catch (_) {
+    return {};
   }
 }
 

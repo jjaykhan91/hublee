@@ -191,4 +191,46 @@ void main() {
     expect(find.text('1:1'), findsNothing);
     expect(find.byTooltip('Pin this ayah to resume here'), findsNothing);
   });
+
+  testWidgets('writes a note on an ayah and shows it on the card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final bookmarks = BookmarkService();
+    await tester.pumpWidget(
+      SettingsScope(
+        controller: SettingsController(),
+        child: BookmarkScope(
+          service: bookmarks,
+          child: VocabScope(
+            service: VocabService(),
+            child: const MaterialApp(home: SurahReaderPage(surahId: 1)),
+          ),
+        ),
+      ),
+    );
+    await _pumpUntilReaderLoaded(tester);
+
+    expect(find.byKey(const Key('ayah-share-1-1')), findsOneWidget);
+
+    final noteButton = find.byKey(const Key('ayah-note-1-1'));
+    await tester.ensureVisible(noteButton);
+    await tester.tap(noteButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Add a note · Al-Fatihah 1:1'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('note-field')), 'Bismillah');
+    await tester.tap(find.byKey(const Key('note-save')));
+    await tester.pumpAndSettle();
+
+    expect(bookmarks.noteFor('quran:1:1')?.text, 'Bismillah');
+    // The positioned list keeps a second, offstage copy of its items.
+    expect(
+      find.byKey(const Key('ayah-note-preview-1-1'), skipOffstage: false),
+      findsWidgets,
+    );
+  });
 }

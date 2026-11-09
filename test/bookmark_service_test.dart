@@ -140,4 +140,75 @@ void main() {
     expect(quranOpenAyah(), isNull);
     expect(quranOpenAyah(requestedAyah: 0, savedAyah: 3), 3);
   });
+
+  group('reading notes', () {
+    final ayah = Bookmark.quran(
+      surahId: 2,
+      ayah: 255,
+      surahName: 'Al-Baqarah',
+      snippet: 'Allah—there is no god except Him',
+    );
+    final hadith = Bookmark.hadith(
+      collectionId: 'forties',
+      bookFile: 'nawawi40.json',
+      bookTitle: 'Nawawi 40',
+      hadithIndex: 0,
+      idInBook: 1,
+    );
+
+    test('saves, trims, reloads, and lists newest first', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = BookmarkService();
+      await service.load();
+      await service.saveNote(target: ayah, text: '  Before sleep  ');
+      await Future<void>.delayed(const Duration(milliseconds: 2));
+      await service.saveNote(target: hadith, text: 'Intentions first');
+
+      final reloaded = BookmarkService();
+      await reloaded.load();
+      expect(reloaded.noteFor('quran:2:255')?.text, 'Before sleep');
+      expect(reloaded.noteFor(hadith.id)?.target.bookTitle, 'Nawawi 40');
+      expect(reloaded.notes.map((n) => n.id), [hadith.id, 'quran:2:255']);
+      expect(
+        reloaded.noteFor('quran:2:255')?.target.snippet,
+        isNull,
+        reason: 'the ayah text is not copied into the note',
+      );
+    });
+
+    test('blank text deletes; restore puts it back', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = BookmarkService();
+      await service.load();
+      await service.saveNote(target: ayah, text: 'Keep');
+      final note = service.noteFor(ayah.id)!;
+
+      await service.saveNote(target: ayah, text: '   ');
+      expect(service.noteFor(ayah.id), isNull);
+
+      await service.restoreNote(note);
+      expect(service.noteFor(ayah.id)?.text, 'Keep');
+      await service.deleteNote(ayah.id);
+      expect(service.notes, isEmpty);
+    });
+
+    test('skips corrupt note rows', () async {
+      SharedPreferences.setMockInitialValues({
+        'reading_notes':
+            '[{"type":"quran","surahId":1,"ayah":1,"surahName":"Al-Fatihah",'
+            '"createdAt":"2024-01-01T00:00:00.000","text":"ok",'
+            '"updatedAt":"2024-01-02T00:00:00.000"},'
+            '{"type":"quran","surahId":1,"ayah":2,"surahName":"Al-Fatihah",'
+            '"createdAt":"2024-01-01T00:00:00.000","text":"  ",'
+            '"updatedAt":"2024-01-02T00:00:00.000"},'
+            '{"type":"hadith","collectionId":"x","bookTitle":"X",'
+            '"createdAt":"2024-01-01T00:00:00.000","text":"no book",'
+            '"updatedAt":"2024-01-02T00:00:00.000"},'
+            '"oops"]',
+      });
+      final service = BookmarkService();
+      await service.load();
+      expect(service.notes.map((n) => n.id), ['quran:1:1']);
+    });
+  });
 }

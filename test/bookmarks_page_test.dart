@@ -70,4 +70,55 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Al-Fatihah'), findsOneWidget);
   });
+
+  testWidgets('Notes lists ayah and hadith notes and edits one', (
+    tester,
+  ) async {
+    final service = BookmarkService();
+    await service.saveNote(
+      target: Bookmark.quran(surahId: 2, ayah: 255, surahName: 'Al-Baqarah'),
+      text: 'Ayat al-Kursi before sleep',
+    );
+    await service.saveNote(
+      target: Bookmark.hadith(
+        collectionId: 'forties',
+        bookFile: 'nawawi40.json',
+        bookTitle: 'Nawawi 40',
+        hadithIndex: 0,
+        idInBook: 1,
+      ),
+      text: 'Intentions first',
+    );
+
+    await tester.pumpWidget(harness(bookmarks: service));
+    await tester.tap(find.text('Notes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Al-Baqarah 2:255'), findsOneWidget);
+    expect(find.text('Ayat al-Kursi before sleep'), findsOneWidget);
+    expect(find.text('Nawawi 40 · #1'), findsOneWidget);
+    expect(find.text('Intentions first'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('saved-hadith:forties:nawawi40.json:0')),
+        matching: find.byTooltip('Edit note'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('note-field')), 'Niyyah');
+    await tester.tap(find.byKey(const Key('note-save')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Niyyah'), findsOneWidget);
+    expect(find.text('Intentions first'), findsNothing);
+  });
+
+  testWidgets('Notes empty state points to the note icon', (tester) async {
+    await tester.pumpWidget(harness());
+    await tester.tap(find.text('Notes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No notes yet'), findsOneWidget);
+  });
 }

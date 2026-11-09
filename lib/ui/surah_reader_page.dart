@@ -36,6 +36,7 @@ import '../services/recitation_service.dart';
 import '../theme/app_tokens.dart';
 
 import 'widgets/arabic_text.dart';
+import 'widgets/note_sheet.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
@@ -833,6 +834,19 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   arabicZoom: settings.arabicZoom,
                   englishZoom: settings.englishZoom,
                   isBookmarked: isBookmarked,
+                  note: bookmarkService.noteFor(bookmarkId)?.text,
+                  onNoteTap: () => showNoteSheet(
+                    context,
+                    service: bookmarkService,
+                    target: Bookmark.quran(
+                      surahId: widget.surahId,
+                      ayah: ayahNumber,
+                      surahName: chapterMeta.nameSimple,
+                      snippet: englishText,
+                    ),
+                    title:
+                        '${chapterMeta.nameSimple} ${widget.surahId}:$ayahNumber',
+                  ),
                   tajweedEnabled: settings.tajweedEnabled,
                   // Search results stay plain: the gloss card belongs to the
                   // reading view, and tapping words while filtering competes
@@ -1002,6 +1016,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             arabicZoom: settings.arabicZoom,
             englishZoom: settings.englishZoom,
             isBookmarked: isBookmarked,
+            note: bookmarkService.noteFor(bookmarkId)?.text,
+            onNoteTap: () => showNoteSheet(
+              context,
+              service: bookmarkService,
+              target: Bookmark.quran(
+                surahId: widget.surahId,
+                ayah: ayahNumber,
+                surahName: chapterMeta.nameSimple,
+                snippet: englishText,
+              ),
+              title: '${chapterMeta.nameSimple} ${widget.surahId}:$ayahNumber',
+            ),
             tajweedEnabled: settings.tajweedEnabled,
             glosses: wordByWord ? wordGlosses[ayahNumber] : null,
             selection: _wordSelectionAyah == ayahNumber ? _wordSelection : null,
@@ -1109,6 +1135,12 @@ class _AyahCard extends StatelessWidget {
   final bool isBookmarked;
   final bool tajweedEnabled;
   final VoidCallback onBookmarkToggle;
+
+  /// The reader's note on this ayah, shown under the translation.
+  final String? note;
+
+  /// Opens the note editor for this ayah.
+  final VoidCallback onNoteTap;
   final VoidCallback? onPlay;
   final int surahId;
   final String surahName;
@@ -1133,6 +1165,8 @@ class _AyahCard extends StatelessWidget {
     required this.isBookmarked,
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
+    this.note,
+    required this.onNoteTap,
     this.onPlay,
     required this.surahId,
     required this.surahName,
@@ -1203,10 +1237,23 @@ class _AyahCard extends StatelessWidget {
                       height: 36,
                     ),
                   ),
+                  NoteButton(
+                    key: Key('ayah-note-$surahId-$ayahNumber'),
+                    hasNote: note != null,
+                    onTap: onNoteTap,
+                  ),
                   if (isSajdah) ...[
                     const SizedBox(width: 4),
                     const SajdahChip(),
                   ],
+                  const Spacer(),
+                  PassageActionsButton(
+                    key: Key('ayah-share-$surahId-$ayahNumber'),
+                    reference: _reference,
+                    arabic: arabic,
+                    english: english,
+                    compact: true,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -1250,6 +1297,14 @@ class _AyahCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
+                ),
+              ],
+              if (note case final text?) ...[
+                const SizedBox(height: 12),
+                NotePreview(
+                  key: Key('ayah-note-preview-$surahId-$ayahNumber'),
+                  text: text,
+                  onTap: onNoteTap,
                 ),
               ],
             ],
