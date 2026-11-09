@@ -1,5 +1,5 @@
 /// Lists all 114 surahs with grouping views: Surah (default),
-/// Juz, Makki/Madani, and Revelation Order.
+/// a 30-day lunar month plan, Makki/Madani, and Revelation Order.
 ///
 /// Each surah card shows its number, English name, verse count,
 /// Arabic name, and a Makki/Madani badge.
@@ -11,48 +11,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../quran/quran_chapters_repository.dart';
+import '../quran/lunar_month_schedule.dart';
 import '../quran/models.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/hublee_card.dart';
+import 'widgets/lunar_month_sheet.dart';
 import 'widgets/quran_overview_sheet.dart';
 import 'widgets/surah_bookmarks_sheet.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
-
-/// Juz names (commonly used Arabic names for the 30 parts).
-const _juzNames = <int, String>{
-  1: 'Alif Lam Mim',
-  2: 'Sayaqool',
-  3: 'Tilkal Rusul',
-  4: 'Lan Tanaloo',
-  5: 'Wal Muhsanat',
-  6: 'La Yuhibbullah',
-  7: 'Wa Iza Samiu',
-  8: 'Wa Lau Annana',
-  9: 'Qalal Malau',
-  10: 'Wa A\'lamu',
-  11: 'Yatazeroon',
-  12: 'Wa Mamin Daabbah',
-  13: 'Wa Ma Ubarri\'u',
-  14: 'Rubama',
-  15: 'Subhanallazi',
-  16: 'Qal Alam',
-  17: 'Iqtaraba',
-  18: 'Qad Aflaha',
-  19: 'Wa Qalallazina',
-  20: 'Amman Khalaq',
-  21: 'Utlu Ma Uhiya',
-  22: 'Wa Manyaqnut',
-  23: 'Wa Mali',
-  24: 'Faman Azlamu',
-  25: 'Ilaihi Yuraddu',
-  26: 'Ha Mim',
-  27: 'Qala Fama Khatbukum',
-  28: 'Qad Sami Allah',
-  29: 'Tabarakallazi',
-  30: 'Amma',
-};
 
 /// Quran tab: segmented views of all 114 surahs.
 class QuranPage extends StatefulWidget {
@@ -67,7 +35,7 @@ class _QuranPageState extends State<QuranPage>
   late final Future<List<ChapterMeta>> _chaptersFuture;
   late final TabController _tabController;
 
-  static const _tabs = ['Surah', 'Juz', 'Type', 'Revelation'];
+  static const _tabs = ['Surah', '30 Days', 'Type', 'Revelation'];
 
   @override
   void initState() {
@@ -143,7 +111,10 @@ class _QuranPageState extends State<QuranPage>
                       chapters: chapters,
                       colorScheme: colorScheme,
                     ),
-                    _JuzGroupView(chapters: chapters, colorScheme: colorScheme),
+                    _LunarMonthView(
+                      chapters: chapters,
+                      colorScheme: colorScheme,
+                    ),
                     _MakkiMadaniView(
                       chapters: chapters,
                       colorScheme: colorScheme,
@@ -228,23 +199,22 @@ class _SurahListViewState extends State<_SurahListView>
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Tab 2: Grouped by Juz
+//  Tab 2: The Quran over a lunar month, in whole surahs
 // ────────────────────────────────────────────────────────────────
 
-class _JuzGroupView extends StatefulWidget {
+class _LunarMonthView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
-  const _JuzGroupView({required this.chapters, required this.colorScheme});
+  const _LunarMonthView({required this.chapters, required this.colorScheme});
 
   @override
-  State<_JuzGroupView> createState() => _JuzGroupViewState();
+  State<_LunarMonthView> createState() => _LunarMonthViewState();
 }
 
-class _JuzGroupViewState extends State<_JuzGroupView>
+class _LunarMonthViewState extends State<_LunarMonthView>
     with AutomaticKeepAliveClientMixin {
-  /// Flattened header + card rows so a juz with many surahs is not one
-  /// giant [Column] that builds every card at once.
+  /// Flattened header + card rows, after the intro row at index 0.
   late List<_TypeRow> _rows;
 
   @override
@@ -253,54 +223,60 @@ class _JuzGroupViewState extends State<_JuzGroupView>
   @override
   void initState() {
     super.initState();
-    _rows = _juzRows(widget.chapters, widget.colorScheme);
+    _rows = _monthRows(widget.chapters, widget.colorScheme);
   }
 
   @override
-  void didUpdateWidget(_JuzGroupView oldWidget) {
+  void didUpdateWidget(_LunarMonthView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.chapters, widget.chapters) ||
         oldWidget.colorScheme != widget.colorScheme) {
-      _rows = _juzRows(widget.chapters, widget.colorScheme);
+      _rows = _monthRows(widget.chapters, widget.colorScheme);
     }
   }
 
-  static List<_TypeRow> _juzRows(
+  static List<_TypeRow> _monthRows(
     List<ChapterMeta> chapters,
     ColorScheme colorScheme,
   ) {
-    final groups = _groupByJuz(chapters);
+    final byId = {for (final chapter in chapters) chapter.id: chapter};
+    final opening = byId[lunarOpeningSurah];
     return [
-      for (var i = 0; i < groups.length; i++) ...[
-        if (i > 0) const _TypeSpacerRow(),
+      if (opening != null) ...[
         _TypeHeaderRow(
-          icon: Icons.auto_stories_rounded,
-          title: 'Juz ${groups[i].number}',
-          subtitle: _juzNames[groups[i].number] ?? 'Juz ${groups[i].number}',
+          icon: Icons.auto_awesome_rounded,
+          title: 'Al-Fatihah',
+          subtitle: 'The opening, before Day 1',
           color: colorScheme.primary,
         ),
-        for (final chapter in groups[i].chapters) _TypeCardRow(chapter),
+        _TypeCardRow(opening),
+      ],
+      for (final day in lunarMonthSchedule) ...[
+        const _TypeSpacerRow(),
+        _TypeHeaderRow(
+          icon: day.day == 15
+              ? Icons.brightness_1_rounded
+              : Icons.nightlight_round,
+          title: 'Day ${day.day}',
+          subtitle: _daySubtitle(day, byId),
+          color: colorScheme.primary,
+        ),
+        ...day.surahs.map((id) => byId[id]).nonNulls.map(_TypeCardRow.new),
       ],
     ];
   }
 
-  static List<({int number, List<ChapterMeta> chapters})> _groupByJuz(
-    List<ChapterMeta> chapters,
-  ) {
-    final juzMap = <int, List<ChapterMeta>>{};
-    for (final chapter in chapters) {
-      for (var juz = chapter.startJuz; juz <= chapter.endJuz; juz++) {
-        final bucket = juzMap.putIfAbsent(juz, () => []);
-        // A surah spanning multiple juz must not appear twice within one.
-        if (!bucket.any((c) => c.id == chapter.id)) {
-          bucket.add(chapter);
-        }
-      }
-    }
-    final numbers = juzMap.keys.toList()..sort();
+  /// "286 ayahs", or "3 surahs · 233 ayahs", then the day's note.
+  static String _daySubtitle(LunarReadingDay day, Map<int, ChapterMeta> byId) {
+    final ayahs = day.surahs.fold<int>(
+      0,
+      (sum, id) => sum + (byId[id]?.versesCount ?? 0),
+    );
     return [
-      for (final number in numbers) (number: number, chapters: juzMap[number]!),
-    ];
+      if (day.surahs.length > 1) '${day.surahs.length} surahs',
+      '$ayahs ayahs',
+      ?day.note,
+    ].join(' · ');
   }
 
   @override
@@ -312,9 +288,10 @@ class _JuzGroupViewState extends State<_JuzGroupView>
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       scrollCacheExtent: AppSpacing.listCache,
       addAutomaticKeepAlives: false,
-      itemCount: _rows.length,
+      itemCount: _rows.length + 1,
       itemBuilder: (context, index) {
-        return switch (_rows[index]) {
+        if (index == 0) return const _LunarMonthIntro();
+        return switch (_rows[index - 1]) {
           _TypeHeaderRow(
             :final icon,
             :final title,
@@ -337,6 +314,48 @@ class _JuzGroupViewState extends State<_JuzGroupView>
           _TypeSpacerRow() => const SizedBox(height: 16),
         };
       },
+    );
+  }
+}
+
+/// Heading for the 30-day plan, with an info button that explains it.
+class _LunarMonthIntro extends StatelessWidget {
+  const _LunarMonthIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 0, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'The Quran in a lunar month',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Whole surahs each day, from the new crescent',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: const Key('lunar-month-info'),
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'How the 30-day plan works',
+            onPressed: () => showLunarMonthSheet(context),
+          ),
+        ],
+      ),
     );
   }
 }

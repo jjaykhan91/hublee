@@ -55,7 +55,7 @@ void main() {
     await _settleQuranPage(tester);
     expect(find.text('Al-Fatihah'), findsNothing);
 
-    await tester.tap(find.text('Juz'));
+    await tester.tap(find.text('30 Days'));
     await _settleQuranPage(tester);
     await tester.tap(find.text('Surah'));
     await _settleQuranPage(tester);
@@ -73,7 +73,7 @@ void main() {
     await tester.pumpWidget(harness());
     await _settleQuranPage(tester);
 
-    for (final tab in ['Juz', 'Type', 'Revelation', 'Surah']) {
+    for (final tab in ['30 Days', 'Type', 'Revelation', 'Surah']) {
       await tester.tap(find.text(tab));
       await _settleQuranPage(tester);
       expect(tester.takeException(), isNull, reason: '$tab tab threw');
@@ -130,6 +130,28 @@ void main() {
     final first = tester.getTopLeft(find.text('Ayah 3'));
     final second = tester.getTopLeft(find.text('Ayah 7'));
     expect(first.dy, lessThan(second.dy));
+  });
+
+  testWidgets('30 Days lists whole surahs by day and explains itself', (
+    tester,
+  ) async {
+    await tester.pumpWidget(harness());
+    await _settleQuranPage(tester);
+
+    await tester.tap(find.text('30 Days'));
+    await _settleQuranPage(tester);
+
+    expect(find.text('The Quran in a lunar month'), findsOneWidget);
+    expect(find.text('The opening, before Day 1'), findsOneWidget);
+    expect(find.text('Day 1'), findsOneWidget);
+    expect(find.textContaining('286 ayahs'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('lunar-month-info')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Reading the Quran in a lunar month'), findsOneWidget);
+    expect(find.text('Why whole surahs'), findsOneWidget);
   });
 
   testWidgets('about the Quran sheet opens from the app bar', (tester) async {
