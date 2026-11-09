@@ -16,6 +16,7 @@ import '../quran/models.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/app_haptics.dart';
 import 'widgets/hublee_card.dart';
 import 'widgets/lunar_month_sheet.dart';
 import 'widgets/quran_overview_sheet.dart';
@@ -35,7 +36,7 @@ class _QuranPageState extends State<QuranPage>
   late final Future<List<ChapterMeta>> _chaptersFuture;
   late final TabController _tabController;
 
-  static const _tabs = ['Surah', '30 Days', 'Type', 'Revelation'];
+  static const _tabs = ['Surah', '30 Days', 'City', 'Revelation'];
 
   @override
   void initState() {
@@ -361,7 +362,7 @@ class _LunarMonthIntro extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Tab 3: Makki / Madani
+//  Tab 3: By city of revelation, Makki / Madani
 // ────────────────────────────────────────────────────────────────
 
 class _MakkiMadaniView extends StatefulWidget {
@@ -376,7 +377,10 @@ class _MakkiMadaniView extends StatefulWidget {
 
 class _MakkiMadaniViewState extends State<_MakkiMadaniView>
     with AutomaticKeepAliveClientMixin {
-  late List<_TypeRow> _rows;
+  late List<_CitySection> _sections;
+
+  /// Cities the reader has folded away. Both start open.
+  final Set<String> _collapsed = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -396,63 +400,96 @@ class _MakkiMadaniViewState extends State<_MakkiMadaniView>
   }
 
   void _partition() {
-    final meccan = widget.chapters.where((c) => c.isMeccan).toList();
-    final medinan = widget.chapters.where((c) => c.isMedinan).toList();
-    _rows = [
-      _TypeHeaderRow(
+    _sections = [
+      _CitySection(
+        id: 'meccan',
         icon: Icons.mosque_rounded,
-        title: 'Meccan (${meccan.length})',
+        name: 'Meccan',
         subtitle: 'Revealed in Mecca',
         color: const Color(0xFFD97706),
+        chapters: widget.chapters.where((c) => c.isMeccan).toList(),
       ),
-      for (final chapter in meccan) _TypeCardRow(chapter),
-      const _TypeSpacerRow(),
-      _TypeHeaderRow(
+      _CitySection(
+        id: 'medinan',
         icon: Icons.account_balance_rounded,
-        title: 'Medinan (${medinan.length})',
+        name: 'Medinan',
         subtitle: 'Revealed in Medina',
         color: const Color(0xFF0D9488),
+        chapters: widget.chapters.where((c) => c.isMedinan).toList(),
       ),
-      for (final chapter in medinan) _TypeCardRow(chapter),
     ];
+  }
+
+  void _toggle(String id) {
+    AppHaptics.selection();
+    setState(() {
+      if (!_collapsed.remove(id)) _collapsed.add(id);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
+    // Rebuilt per build so a folded city drops its cards from the list.
+    final rows = <Widget>[];
+    for (final section in _sections) {
+      final expanded = !_collapsed.contains(section.id);
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 20));
+      rows.add(
+        _SectionHeader(
+          key: Key('city-${section.id}'),
+          icon: section.icon,
+          title: '${section.name} (${section.chapters.length})',
+          subtitle: section.subtitle,
+          color: section.color,
+          expanded: expanded,
+          onToggle: () => _toggle(section.id),
+        ),
+      );
+      if (!expanded) continue;
+      for (final chapter in section.chapters) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: _SurahCard(
+              key: ValueKey('city-card-${chapter.id}'),
+              chapter: chapter,
+              colorScheme: widget.colorScheme,
+            ),
+          ),
+        );
+      }
+    }
+
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       scrollCacheExtent: AppSpacing.listCache,
       addAutomaticKeepAlives: false,
-      itemCount: _rows.length,
-      itemBuilder: (context, index) {
-        return switch (_rows[index]) {
-          _TypeHeaderRow(
-            :final icon,
-            :final title,
-            :final subtitle,
-            :final color,
-          ) =>
-            _SectionHeader(
-              icon: icon,
-              title: title,
-              subtitle: subtitle,
-              color: color,
-            ),
-          _TypeCardRow(:final chapter) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _SurahCard(
-              chapter: chapter,
-              colorScheme: widget.colorScheme,
-            ),
-          ),
-          _TypeSpacerRow() => const SizedBox(height: 20),
-        };
-      },
+      itemCount: rows.length,
+      itemBuilder: (context, index) => rows[index],
     );
   }
+}
+
+/// One city's surahs in the City tab.
+class _CitySection {
+  const _CitySection({
+    required this.id,
+    required this.icon,
+    required this.name,
+    required this.subtitle,
+    required this.color,
+    required this.chapters,
+  });
+
+  final String id;
+  final IconData icon;
+  final String name;
+  final String subtitle;
+  final Color color;
+  final List<ChapterMeta> chapters;
 }
 
 sealed class _TypeRow {
@@ -558,16 +595,25 @@ class _SectionHeader extends StatelessWidget {
   final String subtitle;
   final Color color;
 
+  /// Whether the section's cards show. Null for a header that can't fold.
+  final bool? expanded;
+
+  /// Folds or unfolds the section; set together with [expanded].
+  final VoidCallback? onToggle;
+
   const _SectionHeader({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
+    this.expanded,
+    this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final header = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         children: [
@@ -606,7 +652,35 @@ class _SectionHeader extends StatelessWidget {
               ),
             ],
           ),
+          if (expanded case final isOpen?) ...[
+            const Spacer(),
+            AnimatedRotation(
+              turns: isOpen ? 0 : -0.25,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(Icons.expand_more_rounded, color: color),
+            ),
+          ],
         ],
+      ),
+    );
+    final isOpen = expanded;
+    if (isOpen == null) return header;
+    return Semantics(
+      button: true,
+      expanded: isOpen,
+      label: '$title, $subtitle',
+      hint: isOpen ? 'Collapse' : 'Expand',
+      excludeSemantics: true,
+      onTap: onToggle,
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
+          ),
+          child: header,
+        ),
       ),
     );
   }
@@ -621,6 +695,7 @@ class _SurahCard extends StatelessWidget {
   final bool showRevelationOrder;
 
   const _SurahCard({
+    super.key,
     required this.chapter,
     required this.colorScheme,
     this.showRevelationOrder = false,

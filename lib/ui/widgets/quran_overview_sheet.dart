@@ -212,8 +212,9 @@ class _QuranOverviewBody extends StatelessWidget {
                 _sectionTitle(context, 'On this page'),
                 const SizedBox(height: 8),
                 Text(
-                  'Surah is the full list. Juz groups by the 30 parts. Type '
-                  'splits Meccan and Medinan. Revelation sorts by the order '
+                  'Surah is the full list. 30 Days reads the Quran over a '
+                  'lunar month in whole surahs. City splits Meccan and '
+                  'Medinan; tap a city to fold it. Revelation sorts by the order '
                   'the surahs were revealed, not mushaf order.\n\n'
                   'Each surah opens where you stopped in it, and its card '
                   'shows how far you have read. Continue where you left off '
