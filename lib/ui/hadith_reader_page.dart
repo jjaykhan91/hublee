@@ -21,6 +21,7 @@ import 'widgets/app_haptics.dart';
 import 'widgets/hadith_chapter_sheet.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
+import 'widgets/note_sheet.dart';
 import 'widgets/passage_actions.dart';
 import 'widgets/reading_width.dart';
 
@@ -498,18 +499,20 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                 onBookmarkToggle: () {
                   AppHaptics.lightImpact();
                   bookmarkService.toggleBookmark(
-                    Bookmark.hadith(
-                      collectionId: widget.collectionId,
-                      bookFile: widget.bookFile,
-                      bookTitle: book.title.isNotEmpty
-                          ? book.title
-                          : widget.title,
-                      hadithIndex: hadithIndex,
-                      idInBook: hadith.idInBook,
-                      snippet: hadith.english,
-                    ),
+                    _hadithTarget(book, hadithIndex, hadith),
                   );
                 },
+                note: bookmarkService.noteFor(bookmarkId)?.text,
+                onNoteTap: () => showNoteSheet(
+                  context,
+                  service: bookmarkService,
+                  target: _hadithTarget(book, hadithIndex, hadith),
+                  title: hadithNoteTitle(
+                    book.title.isNotEmpty ? book.title : widget.title,
+                    hadithIndex,
+                    hadith.idInBook,
+                  ),
+                ),
                 bookTitle: book.title.isNotEmpty ? book.title : widget.title,
                 showTranslation: settings.showTranslation,
               );
@@ -517,6 +520,18 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
           ),
         ),
       ],
+    );
+  }
+
+  /// The bookmark and note target for the hadith at [index] in [book].
+  Bookmark _hadithTarget(HadithBook book, int index, Hadith hadith) {
+    return Bookmark.hadith(
+      collectionId: widget.collectionId,
+      bookFile: widget.bookFile,
+      bookTitle: book.title.isNotEmpty ? book.title : widget.title,
+      hadithIndex: index,
+      idInBook: hadith.idInBook,
+      snippet: hadith.english,
     );
   }
 
@@ -600,18 +615,20 @@ class _HadithReaderPageState extends State<HadithReaderPage> {
                 onBookmarkToggle: () {
                   AppHaptics.lightImpact();
                   bookmarkService.toggleBookmark(
-                    Bookmark.hadith(
-                      collectionId: widget.collectionId,
-                      bookFile: widget.bookFile,
-                      bookTitle: book.title.isNotEmpty
-                          ? book.title
-                          : widget.title,
-                      hadithIndex: bookIndex,
-                      idInBook: hadith.idInBook,
-                      snippet: hadith.english,
-                    ),
+                    _hadithTarget(book, bookIndex, hadith),
                   );
                 },
+                note: bookmarkService.noteFor(bookmarkId)?.text,
+                onNoteTap: () => showNoteSheet(
+                  context,
+                  service: bookmarkService,
+                  target: _hadithTarget(book, bookIndex, hadith),
+                  title: hadithNoteTitle(
+                    book.title.isNotEmpty ? book.title : widget.title,
+                    bookIndex,
+                    hadith.idInBook,
+                  ),
+                ),
                 bookTitle: book.title.isNotEmpty ? book.title : widget.title,
                 showTranslation: settings.showTranslation,
               ),
@@ -680,6 +697,12 @@ class _HadithCard extends StatelessWidget {
   final String bookTitle;
   final bool showTranslation;
 
+  /// The reader's note on this hadith, shown under the translation.
+  final String? note;
+
+  /// Opens the note editor for this hadith.
+  final VoidCallback onNoteTap;
+
   const _HadithCard({
     required this.hadith,
     required this.displayIndex,
@@ -690,6 +713,8 @@ class _HadithCard extends StatelessWidget {
     required this.onBookmarkToggle,
     required this.bookTitle,
     required this.showTranslation,
+    this.note,
+    required this.onNoteTap,
   });
 
   String get _reference {
@@ -754,6 +779,11 @@ class _HadithCard extends StatelessWidget {
                     onPressed: onBookmarkToggle,
                     tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
                   ),
+                  NoteButton(
+                    key: Key('hadith-note-$displayIndex'),
+                    hasNote: note != null,
+                    onTap: onNoteTap,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -796,6 +826,14 @@ class _HadithCard extends StatelessWidget {
                     color: colorScheme.onSurface.withValues(alpha: 0.85),
                   ),
                 ),
+              if (note case final text?) ...[
+                const SizedBox(height: 12),
+                NotePreview(
+                  key: Key('hadith-note-preview-$displayIndex'),
+                  text: text,
+                  onTap: onNoteTap,
+                ),
+              ],
             ],
           ),
         ),

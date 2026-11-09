@@ -55,7 +55,7 @@ void main() {
     await _settleQuranPage(tester);
     expect(find.text('Al-Fatihah'), findsNothing);
 
-    await tester.tap(find.text('Juz'));
+    await tester.tap(find.text('30 Days'));
     await _settleQuranPage(tester);
     await tester.tap(find.text('Surah'));
     await _settleQuranPage(tester);
@@ -73,33 +73,63 @@ void main() {
     await tester.pumpWidget(harness());
     await _settleQuranPage(tester);
 
-    for (final tab in ['Juz', 'Type', 'Revelation', 'Surah']) {
+    for (final tab in ['30 Days', 'City', 'Revelation', 'Surah']) {
       await tester.tap(find.text(tab));
       await _settleQuranPage(tester);
       expect(tester.takeException(), isNull, reason: '$tab tab threw');
     }
 
     // Sections that only the grouped views draw.
-    await tester.tap(find.text('Type'));
+    await tester.tap(find.text('City'));
     await _settleQuranPage(tester);
     expect(find.textContaining('Meccan ('), findsOneWidget);
   });
 
-  testWidgets('continue banner and pin marker use last-read and pins', (
+  testWidgets('City sections fold and unfold', (tester) async {
+    await tester.pumpWidget(harness());
+    await _settleQuranPage(tester);
+    await tester.tap(find.text('City'));
+    await _settleQuranPage(tester);
+
+    const fatihah = Key('city-card-1');
+    expect(find.byKey(fatihah), findsOneWidget);
+    expect(find.textContaining('Medinan ('), findsNothing);
+
+    await tester.tap(find.byKey(const Key('city-meccan')));
+    await _settleQuranPage(tester);
+    expect(find.byKey(fatihah), findsNothing);
+    expect(find.textContaining('Medinan ('), findsOneWidget);
+    expect(find.byKey(const Key('city-card-2')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('city-medinan')));
+    await _settleQuranPage(tester);
+    expect(find.byKey(const Key('city-card-2')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('city-meccan')));
+    await _settleQuranPage(tester);
+    expect(find.byKey(fatihah), findsOneWidget);
+  });
+
+  testWidgets('surah cards show reading position and bookmarks', (
     tester,
   ) async {
     final bookmarks = BookmarkService();
     await bookmarks.load();
     await bookmarks.saveLastReadQuran(
-      surahId: 2,
-      ayah: 255,
-      surahName: 'Al-Baqarah',
-    );
-    await bookmarks.toggleQuranPin(
       surahId: 1,
       ayah: 5,
       surahName: 'Al-Fatihah',
     );
+    await bookmarks.saveLastReadQuran(
+      surahId: 2,
+      ayah: 255,
+      surahName: 'Al-Baqarah',
+    );
+    for (final ayah in [7, 3]) {
+      await bookmarks.toggleBookmark(
+        Bookmark.quran(surahId: 1, ayah: ayah, surahName: 'Al-Fatihah'),
+      );
+    }
 
     await tester.pumpWidget(
       BookmarkScope(
@@ -111,8 +141,42 @@ void main() {
 
     expect(find.text('Continue where you left off'), findsOneWidget);
     expect(find.textContaining('2:255'), findsOneWidget);
-    expect(find.text('5'), findsWidgets);
-    expect(find.byIcon(Icons.push_pin_rounded), findsWidgets);
+    expect(find.text('Ayah 5 / 7'), findsOneWidget);
+    expect(find.text('Ayah 255 / 286'), findsOneWidget);
+    expect(find.byKey(const Key('surah-progress-1')), findsOneWidget);
+    expect(find.byKey(const Key('surah-bookmarks-2')), findsNothing);
+    expect(find.byIcon(Icons.push_pin_rounded), findsNothing);
+
+    await tester.tap(find.byKey(const Key('surah-bookmarks-1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Al-Fatihah · 2 bookmarks'), findsOneWidget);
+    final first = tester.getTopLeft(find.text('Ayah 3'));
+    final second = tester.getTopLeft(find.text('Ayah 7'));
+    expect(first.dy, lessThan(second.dy));
+  });
+
+  testWidgets('30 Days lists whole surahs by day and explains itself', (
+    tester,
+  ) async {
+    await tester.pumpWidget(harness());
+    await _settleQuranPage(tester);
+
+    await tester.tap(find.text('30 Days'));
+    await _settleQuranPage(tester);
+
+    expect(find.text('The Quran in a lunar month'), findsOneWidget);
+    expect(find.text('The opening, before Day 1'), findsOneWidget);
+    expect(find.text('Day 1'), findsOneWidget);
+    expect(find.textContaining('286 ayahs'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('lunar-month-info')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Reading the Quran in a lunar month'), findsOneWidget);
+    expect(find.text('Why whole surahs'), findsOneWidget);
   });
 
   testWidgets('about the Quran sheet opens from the app bar', (tester) async {

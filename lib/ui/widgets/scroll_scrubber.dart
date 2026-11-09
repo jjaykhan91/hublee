@@ -4,6 +4,10 @@
 /// Wrap your [ScrollablePositionedList] and this widget in a [Stack].
 /// The overlay floats on the physical right edge; it is not visible
 /// until the list moves or the user drags the thumb.
+///
+/// Only a drag that starts on the thumb moves the reader. The rest of
+/// the edge passes touches through to the list, so a thumb resting on
+/// the edge while reading scrolls instead of jumping.
 library;
 
 import 'dart:async';
@@ -17,6 +21,9 @@ import 'app_haptics.dart';
 const _kThumbSize = 36.0;
 const _kTrackWidth = 20.0;
 const _kHideAfter = Duration(milliseconds: 1400);
+
+/// Height of the touch box around the thumb. Its width is the overlay's.
+const _kHandleHitHeight = AppSpacing.minTouchTarget;
 
 /// Overlay scrubber that sits on the right edge of the reader.
 class ScrollScrubber extends StatefulWidget {
@@ -63,6 +70,10 @@ class _ScrollScrubberState extends State<ScrollScrubber>
   var _shown = false;
   double? _lastLeading;
   int? _lastIndex;
+
+  /// Finger offset from the thumb's top when the drag began, so the
+  /// thumb stays under the finger instead of snapping to it.
+  double _grabOffset = _kThumbSize / 2;
 
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
@@ -145,19 +156,27 @@ class _ScrollScrubberState extends State<ScrollScrubber>
 
   void _onDragStart(DragStartDetails details) {
     _hideTimer?.cancel();
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final local = renderBox.globalToLocal(details.globalPosition);
+      final thumbTop = _position * _trackHeight(renderBox.size.height);
+      _grabOffset = (local.dy - thumbTop).clamp(0.0, _kThumbSize);
+    }
     setState(() {
       _isDragging = true;
       _shown = true;
     });
     _fadeController.forward();
-    _updatePositionFromGlobal(details.globalPosition);
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
     _updatePositionFromGlobal(details.globalPosition);
   }
 
-  void _onDragEnd(DragEndDetails details) {
+  void _onDragEnd(DragEndDetails details) => _onDragCancel();
+
+  void _onDragCancel() {
+    if (!mounted) return;
     setState(() => _isDragging = false);
     _scheduleHide();
   }
@@ -167,10 +186,10 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     if (renderBox == null) return;
 
     final localPosition = renderBox.globalToLocal(globalPosition);
-    final trackHeight = renderBox.size.height - _kThumbSize;
+    final trackHeight = _trackHeight(renderBox.size.height);
     if (trackHeight <= 0) return;
 
-    final fraction = ((localPosition.dy - _kThumbSize / 2) / trackHeight).clamp(
+    final fraction = ((localPosition.dy - _grabOffset) / trackHeight).clamp(
       0.0,
       1.0,
     );
@@ -205,20 +224,15 @@ class _ScrollScrubberState extends State<ScrollScrubber>
     });
   }
 
-  void _onTapDown(TapDownDetails details) {
-    _hideTimer?.cancel();
-    _fadeController.forward();
-    _updatePositionFromGlobal(details.globalPosition);
-    _scheduleHide();
-  }
+  /// Distance the thumb's top can travel within an overlay of [height].
+  static double _trackHeight(double height) =>
+      (height - _kThumbSize).clamp(0.0, double.infinity);
 
   @override
   Widget build(BuildContext context) {
     if (widget.itemCount <= 1) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
-    final trackHeight = MediaQuery.of(context).size.height - _kThumbSize - 120;
-    final thumbTop = _position * trackHeight.clamp(0.0, double.infinity);
 
     return Positioned(
       key: const Key('scroll-scrubber-overlay'),
@@ -231,6 +245,7 @@ class _ScrollScrubberState extends State<ScrollScrubber>
         builder: (context, child) {
           final visible = _shown || _isDragging;
           return IgnorePointer(
+            key: const Key('scroll-scrubber-gate'),
             ignoring: !visible,
             child: Opacity(
               opacity: _isDragging ? 1 : _fadeAnimation.value,
@@ -238,81 +253,113 @@ class _ScrollScrubberState extends State<ScrollScrubber>
             ),
           );
         },
-        child: Semantics(
-          slider: true,
-          label: 'Reading position',
-          value: widget.labelBuilder(_currentIndex),
-          child: GestureDetector(
-            onVerticalDragStart: _onDragStart,
-            onVerticalDragUpdate: _onDragUpdate,
-            onVerticalDragEnd: _onDragEnd,
-            onTapDown: _onTapDown,
-            behavior: HitTestBehavior.translucent,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  right: _kTrackWidth / 2 - 1.5,
-                  top: _kThumbSize / 2,
-                  bottom: _kThumbSize / 2,
-                  child: Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(
-                        alpha: _isDragging ? 0.2 : 0.12,
-                      ),
-                      borderRadius: BorderRadius.circular(2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final height = constraints.maxHeight;
+            final thumbTop = _position * _trackHeight(height);
+            final hitTop = (thumbTop - (_kHandleHitHeight - _kThumbSize) / 2)
+                .clamp(0.0, (height - _kHandleHitHeight).clamp(0.0, height));
+            return _buildScrubber(colorScheme, thumbTop, hitTop);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrubber(
+    ColorScheme colorScheme,
+    double thumbTop,
+    double hitTop,
+  ) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Track, thumb, and label are drawn only; touches on them fall
+        // through to the list. The handle box below is the one target.
+        IgnorePointer(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                right: _kTrackWidth / 2 - 1.5,
+                top: _kThumbSize / 2,
+                bottom: _kThumbSize / 2,
+                child: Container(
+                  width: 3,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(
+                      alpha: _isDragging ? 0.2 : 0.12,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                top: thumbTop,
+                child: Container(
+                  width: _kTrackWidth,
+                  height: _kThumbSize,
+                  decoration: BoxDecoration(
+                    color: _isDragging
+                        ? colorScheme.primary
+                        : colorScheme.primary.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    size: 18,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+              Positioned(
+                right: _kTrackWidth + 8,
+                top: thumbTop + (_kThumbSize - 36) / 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.inverseSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: AppShadows.scrubber,
+                  ),
+                  child: Text(
+                    widget.labelBuilder(_currentIndex),
+                    style: TextStyle(
+                      color: colorScheme.onInverseSurface,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Positioned(
-                  right: 0,
-                  top: thumbTop,
-                  child: Container(
-                    width: _kTrackWidth,
-                    height: _kThumbSize,
-                    decoration: BoxDecoration(
-                      color: _isDragging
-                          ? colorScheme.primary
-                          : colorScheme.primary.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.drag_handle_rounded,
-                      size: 18,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: _kTrackWidth + 8,
-                  top: thumbTop + (_kThumbSize - 36) / 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.inverseSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: AppShadows.scrubber,
-                    ),
-                    child: Text(
-                      widget.labelBuilder(_currentIndex),
-                      style: TextStyle(
-                        color: colorScheme.onInverseSurface,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          key: const Key('scroll-scrubber-handle'),
+          right: 0,
+          left: 0,
+          top: hitTop,
+          height: _kHandleHitHeight,
+          child: Semantics(
+            slider: true,
+            label: 'Reading position',
+            value: widget.labelBuilder(_currentIndex),
+            child: GestureDetector(
+              onVerticalDragStart: _onDragStart,
+              onVerticalDragUpdate: _onDragUpdate,
+              onVerticalDragEnd: _onDragEnd,
+              onVerticalDragCancel: _onDragCancel,
+              behavior: HitTestBehavior.opaque,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -1,56 +1,27 @@
 /// Lists all 114 surahs with grouping views: Surah (default),
-/// Juz, Makki/Madani, and Revelation Order.
+/// a 30-day lunar month plan, Makki/Madani, and Revelation Order.
 ///
 /// Each surah card shows its number, English name, verse count,
 /// Arabic name, and a Makki/Madani badge.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../quran/quran_chapters_repository.dart';
+import '../quran/lunar_month_schedule.dart';
 import '../quran/models.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/app_haptics.dart';
 import 'widgets/hublee_card.dart';
+import 'widgets/lunar_month_sheet.dart';
 import 'widgets/quran_overview_sheet.dart';
+import 'widgets/surah_bookmarks_sheet.dart';
 import 'widgets/quran_reading_guide_sheet.dart';
-
-/// Juz names (commonly used Arabic names for the 30 parts).
-const _juzNames = <int, String>{
-  1: 'Alif Lam Mim',
-  2: 'Sayaqool',
-  3: 'Tilkal Rusul',
-  4: 'Lan Tanaloo',
-  5: 'Wal Muhsanat',
-  6: 'La Yuhibbullah',
-  7: 'Wa Iza Samiu',
-  8: 'Wa Lau Annana',
-  9: 'Qalal Malau',
-  10: 'Wa A\'lamu',
-  11: 'Yatazeroon',
-  12: 'Wa Mamin Daabbah',
-  13: 'Wa Ma Ubarri\'u',
-  14: 'Rubama',
-  15: 'Subhanallazi',
-  16: 'Qal Alam',
-  17: 'Iqtaraba',
-  18: 'Qad Aflaha',
-  19: 'Wa Qalallazina',
-  20: 'Amman Khalaq',
-  21: 'Utlu Ma Uhiya',
-  22: 'Wa Manyaqnut',
-  23: 'Wa Mali',
-  24: 'Faman Azlamu',
-  25: 'Ilaihi Yuraddu',
-  26: 'Ha Mim',
-  27: 'Qala Fama Khatbukum',
-  28: 'Qad Sami Allah',
-  29: 'Tabarakallazi',
-  30: 'Amma',
-};
 
 /// Quran tab: segmented views of all 114 surahs.
 class QuranPage extends StatefulWidget {
@@ -65,7 +36,7 @@ class _QuranPageState extends State<QuranPage>
   late final Future<List<ChapterMeta>> _chaptersFuture;
   late final TabController _tabController;
 
-  static const _tabs = ['Surah', 'Juz', 'Type', 'Revelation'];
+  static const _tabs = ['Surah', '30 Days', 'City', 'Revelation'];
 
   @override
   void initState() {
@@ -141,7 +112,10 @@ class _QuranPageState extends State<QuranPage>
                       chapters: chapters,
                       colorScheme: colorScheme,
                     ),
-                    _JuzGroupView(chapters: chapters, colorScheme: colorScheme),
+                    _LunarMonthView(
+                      chapters: chapters,
+                      colorScheme: colorScheme,
+                    ),
                     _MakkiMadaniView(
                       chapters: chapters,
                       colorScheme: colorScheme,
@@ -226,23 +200,22 @@ class _SurahListViewState extends State<_SurahListView>
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Tab 2: Grouped by Juz
+//  Tab 2: The Quran over a lunar month, in whole surahs
 // ────────────────────────────────────────────────────────────────
 
-class _JuzGroupView extends StatefulWidget {
+class _LunarMonthView extends StatefulWidget {
   final List<ChapterMeta> chapters;
   final ColorScheme colorScheme;
 
-  const _JuzGroupView({required this.chapters, required this.colorScheme});
+  const _LunarMonthView({required this.chapters, required this.colorScheme});
 
   @override
-  State<_JuzGroupView> createState() => _JuzGroupViewState();
+  State<_LunarMonthView> createState() => _LunarMonthViewState();
 }
 
-class _JuzGroupViewState extends State<_JuzGroupView>
+class _LunarMonthViewState extends State<_LunarMonthView>
     with AutomaticKeepAliveClientMixin {
-  /// Flattened header + card rows so a juz with many surahs is not one
-  /// giant [Column] that builds every card at once.
+  /// Flattened header + card rows, after the intro row at index 0.
   late List<_TypeRow> _rows;
 
   @override
@@ -251,54 +224,60 @@ class _JuzGroupViewState extends State<_JuzGroupView>
   @override
   void initState() {
     super.initState();
-    _rows = _juzRows(widget.chapters, widget.colorScheme);
+    _rows = _monthRows(widget.chapters, widget.colorScheme);
   }
 
   @override
-  void didUpdateWidget(_JuzGroupView oldWidget) {
+  void didUpdateWidget(_LunarMonthView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.chapters, widget.chapters) ||
         oldWidget.colorScheme != widget.colorScheme) {
-      _rows = _juzRows(widget.chapters, widget.colorScheme);
+      _rows = _monthRows(widget.chapters, widget.colorScheme);
     }
   }
 
-  static List<_TypeRow> _juzRows(
+  static List<_TypeRow> _monthRows(
     List<ChapterMeta> chapters,
     ColorScheme colorScheme,
   ) {
-    final groups = _groupByJuz(chapters);
+    final byId = {for (final chapter in chapters) chapter.id: chapter};
+    final opening = byId[lunarOpeningSurah];
     return [
-      for (var i = 0; i < groups.length; i++) ...[
-        if (i > 0) const _TypeSpacerRow(),
+      if (opening != null) ...[
         _TypeHeaderRow(
-          icon: Icons.auto_stories_rounded,
-          title: 'Juz ${groups[i].number}',
-          subtitle: _juzNames[groups[i].number] ?? 'Juz ${groups[i].number}',
+          icon: Icons.auto_awesome_rounded,
+          title: 'Al-Fatihah',
+          subtitle: 'The opening, before Day 1',
           color: colorScheme.primary,
         ),
-        for (final chapter in groups[i].chapters) _TypeCardRow(chapter),
+        _TypeCardRow(opening),
+      ],
+      for (final day in lunarMonthSchedule) ...[
+        const _TypeSpacerRow(),
+        _TypeHeaderRow(
+          icon: day.day == 15
+              ? Icons.brightness_1_rounded
+              : Icons.nightlight_round,
+          title: 'Day ${day.day}',
+          subtitle: _daySubtitle(day, byId),
+          color: colorScheme.primary,
+        ),
+        ...day.surahs.map((id) => byId[id]).nonNulls.map(_TypeCardRow.new),
       ],
     ];
   }
 
-  static List<({int number, List<ChapterMeta> chapters})> _groupByJuz(
-    List<ChapterMeta> chapters,
-  ) {
-    final juzMap = <int, List<ChapterMeta>>{};
-    for (final chapter in chapters) {
-      for (var juz = chapter.startJuz; juz <= chapter.endJuz; juz++) {
-        final bucket = juzMap.putIfAbsent(juz, () => []);
-        // A surah spanning multiple juz must not appear twice within one.
-        if (!bucket.any((c) => c.id == chapter.id)) {
-          bucket.add(chapter);
-        }
-      }
-    }
-    final numbers = juzMap.keys.toList()..sort();
+  /// "286 ayahs", or "3 surahs · 233 ayahs", then the day's note.
+  static String _daySubtitle(LunarReadingDay day, Map<int, ChapterMeta> byId) {
+    final ayahs = day.surahs.fold<int>(
+      0,
+      (sum, id) => sum + (byId[id]?.versesCount ?? 0),
+    );
     return [
-      for (final number in numbers) (number: number, chapters: juzMap[number]!),
-    ];
+      if (day.surahs.length > 1) '${day.surahs.length} surahs',
+      '$ayahs ayahs',
+      ?day.note,
+    ].join(' · ');
   }
 
   @override
@@ -310,9 +289,10 @@ class _JuzGroupViewState extends State<_JuzGroupView>
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       scrollCacheExtent: AppSpacing.listCache,
       addAutomaticKeepAlives: false,
-      itemCount: _rows.length,
+      itemCount: _rows.length + 1,
       itemBuilder: (context, index) {
-        return switch (_rows[index]) {
+        if (index == 0) return const _LunarMonthIntro();
+        return switch (_rows[index - 1]) {
           _TypeHeaderRow(
             :final icon,
             :final title,
@@ -339,8 +319,50 @@ class _JuzGroupViewState extends State<_JuzGroupView>
   }
 }
 
+/// Heading for the 30-day plan, with an info button that explains it.
+class _LunarMonthIntro extends StatelessWidget {
+  const _LunarMonthIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 0, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'The Quran in a lunar month',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Whole surahs each day, from the new crescent',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: const Key('lunar-month-info'),
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'How the 30-day plan works',
+            onPressed: () => showLunarMonthSheet(context),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ────────────────────────────────────────────────────────────────
-//  Tab 3: Makki / Madani
+//  Tab 3: By city of revelation, Makki / Madani
 // ────────────────────────────────────────────────────────────────
 
 class _MakkiMadaniView extends StatefulWidget {
@@ -355,7 +377,10 @@ class _MakkiMadaniView extends StatefulWidget {
 
 class _MakkiMadaniViewState extends State<_MakkiMadaniView>
     with AutomaticKeepAliveClientMixin {
-  late List<_TypeRow> _rows;
+  late List<_CitySection> _sections;
+
+  /// Cities the reader has folded away. Both start open.
+  final Set<String> _collapsed = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -375,63 +400,96 @@ class _MakkiMadaniViewState extends State<_MakkiMadaniView>
   }
 
   void _partition() {
-    final meccan = widget.chapters.where((c) => c.isMeccan).toList();
-    final medinan = widget.chapters.where((c) => c.isMedinan).toList();
-    _rows = [
-      _TypeHeaderRow(
+    _sections = [
+      _CitySection(
+        id: 'meccan',
         icon: Icons.mosque_rounded,
-        title: 'Meccan (${meccan.length})',
+        name: 'Meccan',
         subtitle: 'Revealed in Mecca',
         color: const Color(0xFFD97706),
+        chapters: widget.chapters.where((c) => c.isMeccan).toList(),
       ),
-      for (final chapter in meccan) _TypeCardRow(chapter),
-      const _TypeSpacerRow(),
-      _TypeHeaderRow(
+      _CitySection(
+        id: 'medinan',
         icon: Icons.account_balance_rounded,
-        title: 'Medinan (${medinan.length})',
+        name: 'Medinan',
         subtitle: 'Revealed in Medina',
         color: const Color(0xFF0D9488),
+        chapters: widget.chapters.where((c) => c.isMedinan).toList(),
       ),
-      for (final chapter in medinan) _TypeCardRow(chapter),
     ];
+  }
+
+  void _toggle(String id) {
+    AppHaptics.selection();
+    setState(() {
+      if (!_collapsed.remove(id)) _collapsed.add(id);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
+    // Rebuilt per build so a folded city drops its cards from the list.
+    final rows = <Widget>[];
+    for (final section in _sections) {
+      final expanded = !_collapsed.contains(section.id);
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 20));
+      rows.add(
+        _SectionHeader(
+          key: Key('city-${section.id}'),
+          icon: section.icon,
+          title: '${section.name} (${section.chapters.length})',
+          subtitle: section.subtitle,
+          color: section.color,
+          expanded: expanded,
+          onToggle: () => _toggle(section.id),
+        ),
+      );
+      if (!expanded) continue;
+      for (final chapter in section.chapters) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: _SurahCard(
+              key: ValueKey('city-card-${chapter.id}'),
+              chapter: chapter,
+              colorScheme: widget.colorScheme,
+            ),
+          ),
+        );
+      }
+    }
+
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       scrollCacheExtent: AppSpacing.listCache,
       addAutomaticKeepAlives: false,
-      itemCount: _rows.length,
-      itemBuilder: (context, index) {
-        return switch (_rows[index]) {
-          _TypeHeaderRow(
-            :final icon,
-            :final title,
-            :final subtitle,
-            :final color,
-          ) =>
-            _SectionHeader(
-              icon: icon,
-              title: title,
-              subtitle: subtitle,
-              color: color,
-            ),
-          _TypeCardRow(:final chapter) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _SurahCard(
-              chapter: chapter,
-              colorScheme: widget.colorScheme,
-            ),
-          ),
-          _TypeSpacerRow() => const SizedBox(height: 20),
-        };
-      },
+      itemCount: rows.length,
+      itemBuilder: (context, index) => rows[index],
     );
   }
+}
+
+/// One city's surahs in the City tab.
+class _CitySection {
+  const _CitySection({
+    required this.id,
+    required this.icon,
+    required this.name,
+    required this.subtitle,
+    required this.color,
+    required this.chapters,
+  });
+
+  final String id;
+  final IconData icon;
+  final String name;
+  final String subtitle;
+  final Color color;
+  final List<ChapterMeta> chapters;
 }
 
 sealed class _TypeRow {
@@ -537,16 +595,25 @@ class _SectionHeader extends StatelessWidget {
   final String subtitle;
   final Color color;
 
+  /// Whether the section's cards show. Null for a header that can't fold.
+  final bool? expanded;
+
+  /// Folds or unfolds the section; set together with [expanded].
+  final VoidCallback? onToggle;
+
   const _SectionHeader({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
+    this.expanded,
+    this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final header = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         children: [
@@ -585,7 +652,35 @@ class _SectionHeader extends StatelessWidget {
               ),
             ],
           ),
+          if (expanded case final isOpen?) ...[
+            const Spacer(),
+            AnimatedRotation(
+              turns: isOpen ? 0 : -0.25,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(Icons.expand_more_rounded, color: color),
+            ),
+          ],
         ],
+      ),
+    );
+    final isOpen = expanded;
+    if (isOpen == null) return header;
+    return Semantics(
+      button: true,
+      expanded: isOpen,
+      label: '$title, $subtitle',
+      hint: isOpen ? 'Collapse' : 'Expand',
+      excludeSemantics: true,
+      onTap: onToggle,
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpacing.minTouchTarget,
+          ),
+          child: header,
+        ),
       ),
     );
   }
@@ -600,6 +695,7 @@ class _SurahCard extends StatelessWidget {
   final bool showRevelationOrder;
 
   const _SurahCard({
+    super.key,
     required this.chapter,
     required this.colorScheme,
     this.showRevelationOrder = false,
@@ -621,19 +717,28 @@ class _SurahCard extends StatelessWidget {
         : 'assets/images/masjid_nabawi_madani.png';
     const textColor = AppColors.surahCardOnImage;
 
-    final pin = BookmarkScope.maybeOf(context)?.pinFor(chapter.id);
+    final bookmarks = BookmarkScope.maybeOf(context);
+    final position = bookmarks?.positionFor(chapter.id);
+    final hasProgress = position != null && position > 1;
+    final saved = bookmarks?.quranBookmarksIn(chapter.id) ?? const [];
     final semanticsLabel = [
       'Surah ${chapter.id}',
       chapter.nameSimple,
       if (chapter.nameTranslated != null) chapter.nameTranslated!,
       '${chapter.versesCount} ayahs',
       if (isMeccan) 'Meccan' else 'Medinan',
-      if (pin != null) 'pinned at ayah ${pin.ayah}',
+      if (hasProgress) 'stopped at ayah $position',
+      if (saved.isNotEmpty) bookmarkCountLabel(saved.length),
     ].join(', ');
+    void showSaved() => showSurahBookmarksSheet(context, chapter, saved);
 
     return Semantics(
       button: true,
       label: semanticsLabel,
+      customSemanticsActions: {
+        if (saved.isNotEmpty)
+          const CustomSemanticsAction(label: 'Show bookmarks'): showSaved,
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: AppRadius.card,
@@ -644,8 +749,8 @@ class _SurahCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () =>
-                  context.push(AppRoute.surah(chapter.id, ayah: pin?.ayah)),
+              // The reader opens where this surah was left.
+              onTap: () => context.push(AppRoute.surah(chapter.id)),
               child: ExcludeSemantics(
                 child: Container(
                   height: showRevelationOrder
@@ -669,6 +774,20 @@ class _SurahCard extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                      if (hasProgress)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: LinearProgressIndicator(
+                            key: Key('surah-progress-${chapter.id}'),
+                            value: position / chapter.versesCount,
+                            minHeight: 3,
+                            color: accentColor,
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
 
                       // Content row.
                       Padding(
@@ -708,16 +827,6 @@ class _SurahCard extends StatelessWidget {
                                         ),
                                   ),
                                 ),
-                                if (pin != null)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: Icon(
-                                      Icons.push_pin_rounded,
-                                      size: 14,
-                                      color: accentColor,
-                                    ),
-                                  ),
                               ],
                             ),
                             const SizedBox(width: 14),
@@ -789,35 +898,22 @@ class _SurahCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            // Ayah count, and pin ayah when one is set.
+                            // Bookmarks, and where reading stopped.
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                if (pin != null)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.push_pin_rounded,
-                                        size: 12,
-                                        color: accentColor,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        '${pin.ayah}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: accentColor,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                    ],
+                                if (saved.isNotEmpty)
+                                  _SurahBookmarkChip(
+                                    key: Key('surah-bookmarks-${chapter.id}'),
+                                    count: saved.length,
+                                    color: accentColor,
+                                    onTap: showSaved,
                                   ),
                                 Text(
-                                  '${chapter.versesCount} Ayahs',
+                                  hasProgress
+                                      ? 'Ayah $position / ${chapter.versesCount}'
+                                      : '${chapter.versesCount} Ayahs',
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: textColor.withValues(alpha: 0.6),
@@ -834,6 +930,45 @@ class _SurahCard extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bookmark count on a surah card; tap to list them.
+class _SurahBookmarkChip extends StatelessWidget {
+  const _SurahBookmarkChip({
+    super.key,
+    required this.count,
+    required this.color,
+    required this.onTap,
+  });
+
+  final int count;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppRadius.chip,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bookmark_rounded, size: 14, color: color),
+            const SizedBox(width: 3),
+            Text(
+              '$count',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );

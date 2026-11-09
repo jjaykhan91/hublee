@@ -36,6 +36,7 @@ import '../services/recitation_service.dart';
 import '../theme/app_tokens.dart';
 
 import 'widgets/arabic_text.dart';
+import 'widgets/note_sheet.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/reader_settings_sheet.dart';
 import 'widgets/scroll_scrubber.dart';
@@ -393,30 +394,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       _searchQuery = '';
       _searchController.clear();
     });
-  }
-
-  Future<void> _togglePin({
-    required int ayah,
-    required String surahName,
-  }) async {
-    final bookmarks = _bookmarks;
-    if (bookmarks == null) return;
-    AppHaptics.lightImpact();
-    final change = await bookmarks.toggleQuranPin(
-      surahId: widget.surahId,
-      ayah: ayah,
-      surahName: surahName,
-    );
-    if (!mounted) return;
-    final label = '${widget.surahId}:$ayah';
-    final text = switch (change) {
-      QuranPinChange.pinned => 'Pinned $label',
-      QuranPinChange.moved => 'Pin moved to $label',
-      QuranPinChange.cleared => 'Pin removed',
-    };
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
-    );
   }
 
   /// Shows a modal bottom sheet with surah background information.
@@ -857,9 +834,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                   arabicZoom: settings.arabicZoom,
                   englishZoom: settings.englishZoom,
                   isBookmarked: isBookmarked,
-                  isPinned: bookmarkService.isAyahPinned(
-                    widget.surahId,
-                    ayahNumber,
+                  note: bookmarkService.noteFor(bookmarkId)?.text,
+                  onNoteTap: () => showNoteSheet(
+                    context,
+                    service: bookmarkService,
+                    target: Bookmark.quran(
+                      surahId: widget.surahId,
+                      ayah: ayahNumber,
+                      surahName: chapterMeta.nameSimple,
+                      snippet: englishText,
+                    ),
+                    title:
+                        '${chapterMeta.nameSimple} ${widget.surahId}:$ayahNumber',
                   ),
                   tajweedEnabled: settings.tajweedEnabled,
                   // Search results stay plain: the gloss card belongs to the
@@ -877,12 +863,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                       ),
                     );
                   },
-                  onPinToggle: () => unawaited(
-                    _togglePin(
-                      ayah: ayahNumber,
-                      surahName: chapterMeta.nameSimple,
-                    ),
-                  ),
                   surahId: widget.surahId,
                   surahName: chapterMeta.nameSimple,
                   verseCount: chapterMeta.versesCount,
@@ -918,7 +898,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     _bookmarks = BookmarkScope.of(context);
     final resumeAyah = quranOpenAyah(
       requestedAyah: widget.scrollToAyah,
-      pinnedAyah: _bookmarks?.pinFor(widget.surahId)?.ayah,
+      savedAyah: _bookmarks?.positionFor(widget.surahId),
     );
     _visibleAyah ??= resumeAyah ?? 1;
 
@@ -935,7 +915,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
       });
     }
 
-    // Auto-scroll to the requested ayah or this surah's pin, once.
+    // Auto-scroll to the requested ayah or where this surah was left, once.
     if (!_hasScrolledToAyah && resumeAyah != null) {
       _hasScrolledToAyah = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1036,7 +1016,18 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             arabicZoom: settings.arabicZoom,
             englishZoom: settings.englishZoom,
             isBookmarked: isBookmarked,
-            isPinned: bookmarkService.isAyahPinned(widget.surahId, ayahNumber),
+            note: bookmarkService.noteFor(bookmarkId)?.text,
+            onNoteTap: () => showNoteSheet(
+              context,
+              service: bookmarkService,
+              target: Bookmark.quran(
+                surahId: widget.surahId,
+                ayah: ayahNumber,
+                surahName: chapterMeta.nameSimple,
+                snippet: englishText,
+              ),
+              title: '${chapterMeta.nameSimple} ${widget.surahId}:$ayahNumber',
+            ),
             tajweedEnabled: settings.tajweedEnabled,
             glosses: wordByWord ? wordGlosses[ayahNumber] : null,
             selection: _wordSelectionAyah == ayahNumber ? _wordSelection : null,
@@ -1052,9 +1043,6 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
                 ),
               );
             },
-            onPinToggle: () => unawaited(
-              _togglePin(ayah: ayahNumber, surahName: chapterMeta.nameSimple),
-            ),
             onPlay: () {
               _followPlayback = true;
               _followedAyah = null;
@@ -1145,11 +1133,15 @@ class _AyahCard extends StatelessWidget {
   final double arabicZoom;
   final double englishZoom;
   final bool isBookmarked;
-  final bool isPinned;
   final bool tajweedEnabled;
   final VoidCallback onBookmarkToggle;
+
+  /// The reader's note on this ayah, shown under the translation.
+  final String? note;
+
+  /// Opens the note editor for this ayah.
+  final VoidCallback onNoteTap;
   final VoidCallback? onPlay;
-  final VoidCallback onPinToggle;
   final int surahId;
   final String surahName;
   final int verseCount;
@@ -1171,10 +1163,10 @@ class _AyahCard extends StatelessWidget {
     required this.arabicZoom,
     required this.englishZoom,
     required this.isBookmarked,
-    required this.isPinned,
     this.tajweedEnabled = true,
     required this.onBookmarkToggle,
-    required this.onPinToggle,
+    this.note,
+    required this.onNoteTap,
     this.onPlay,
     required this.surahId,
     required this.surahName,
@@ -1196,9 +1188,7 @@ class _AyahCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: isPinned
-          ? colorScheme.primary.withValues(alpha: 0.06)
-          : colorScheme.surface,
+      color: colorScheme.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onLongPress: () => showPassageActionsSheet(
@@ -1247,32 +1237,30 @@ class _AyahCard extends StatelessWidget {
                       height: 36,
                     ),
                   ),
-                  IconButton(
-                    key: Key('ayah-pin-$surahId-$ayahNumber'),
-                    icon: Icon(
-                      isPinned
-                          ? Icons.push_pin_rounded
-                          : Icons.push_pin_outlined,
-                      color: isPinned
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withValues(alpha: 0.3),
-                      size: 22,
-                    ),
-                    onPressed: onPinToggle,
-                    tooltip: isPinned
-                        ? 'Remove pin'
-                        : 'Pin this ayah to resume here',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 36,
-                    ),
+                  NoteButton(
+                    key: Key('ayah-note-$surahId-$ayahNumber'),
+                    hasNote: note != null,
+                    onTap: onNoteTap,
                   ),
                   if (isSajdah) ...[
                     const SizedBox(width: 4),
-                    const SajdahChip(),
+                    // Shrinks rather than overflowing a narrow row.
+                    const Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: SajdahChip(),
+                      ),
+                    ),
                   ],
+                  const Spacer(),
+                  PassageActionsButton(
+                    key: Key('ayah-share-$surahId-$ayahNumber'),
+                    reference: _reference,
+                    arabic: arabic,
+                    english: english,
+                    compact: true,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -1316,6 +1304,14 @@ class _AyahCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
+                ),
+              ],
+              if (note case final text?) ...[
+                const SizedBox(height: 12),
+                NotePreview(
+                  key: Key('ayah-note-preview-$surahId-$ayahNumber'),
+                  text: text,
+                  onTap: onNoteTap,
                 ),
               ],
             ],

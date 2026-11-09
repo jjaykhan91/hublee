@@ -13,6 +13,7 @@ import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
+import 'widgets/hadith_book_cover.dart';
 import 'widgets/hadith_overview_sheet.dart';
 import 'widgets/hublee_card.dart';
 
@@ -126,9 +127,7 @@ class _HadithPageState extends State<HadithPage> {
             hadithCount: hadithTotal == 0 ? null : hadithTotal,
           ),
         );
-        var bookIndex = 0;
         for (final book in books) {
-          bookIndex++;
           final fileBaseName = book.file.split('/').last.split('.').first;
           rows.add(
             _HadithBookRow(
@@ -139,7 +138,6 @@ class _HadithPageState extends State<HadithPage> {
                 title: book.title,
                 fileBaseName: fileBaseName,
               ),
-              indexInCollection: bookIndex,
               animIndex: animIndex,
             ),
           );
@@ -333,7 +331,6 @@ class _HadithPageState extends State<HadithPage> {
             :final collectionId,
             :final collectionTitle,
             :final summary,
-            :final indexInCollection,
             :final animIndex,
           ) =>
             _animateBookTile(
@@ -343,7 +340,6 @@ class _HadithPageState extends State<HadithPage> {
                 collectionId: collectionId,
                 collectionTitle: collectionTitle,
                 summary: summary,
-                indexInCollection: indexInCollection,
                 isSaved: savedKeys.contains('$collectionId|${book.file}'),
                 resumeIndex:
                     lastRead != null &&
@@ -397,7 +393,6 @@ class _HadithBookRow extends _HadithRow {
   final String collectionId;
   final String collectionTitle;
   final String? summary;
-  final int indexInCollection;
   final int animIndex;
 
   const _HadithBookRow({
@@ -405,7 +400,6 @@ class _HadithBookRow extends _HadithRow {
     required this.collectionId,
     required this.collectionTitle,
     required this.summary,
-    required this.indexInCollection,
     required this.animIndex,
   });
 }
@@ -572,7 +566,8 @@ class _StartHereRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 140,
+            // Cover and padding are fixed; the three text lines scale.
+            height: 110 + MediaQuery.textScalerOf(context).scale(62),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: books.length,
@@ -597,7 +592,6 @@ class _FeaturedBookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accent = _accentFor(colorScheme, row.collectionId);
     final blurb = _featuredBlurb(row.book);
     final count = row.book.length;
 
@@ -619,16 +613,13 @@ class _FeaturedBookCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.14),
-                borderRadius: AppRadius.badge,
-              ),
-              child: Icon(_iconFor(row.collectionId), color: accent, size: 20),
+            HadithBookCover(
+              file: row.book.file,
+              width: 124,
+              height: 76,
+              fullTitle: true,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               _shortLabel(row.book),
               maxLines: 1,
@@ -722,7 +713,6 @@ class _BookTile extends StatelessWidget {
   final String collectionId;
   final String collectionTitle;
   final String? summary;
-  final int indexInCollection;
   final bool isSaved;
   final int? resumeIndex;
 
@@ -731,7 +721,6 @@ class _BookTile extends StatelessWidget {
     required this.collectionId,
     required this.collectionTitle,
     this.summary,
-    required this.indexInCollection,
     required this.isSaved,
     this.resumeIndex,
   });
@@ -769,22 +758,7 @@ class _BookTile extends StatelessWidget {
               ),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.14),
-                borderRadius: AppRadius.badge,
-              ),
-              child: Text(
-                '$indexInCollection',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: accent,
-                ),
-              ),
-            ),
+            HadithBookCover(file: book.file, width: 44, height: 60),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

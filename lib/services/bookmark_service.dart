@@ -145,62 +145,56 @@ class Bookmark {
 }
 
 // ────────────────────────────────────────────────────────────────
-//  Per-surah reading pin
+//  Reading note
 // ────────────────────────────────────────────────────────────────
 
-/// One intentional resume marker in a surah. Distinct from a favorite
-/// [Bookmark] and from automatic [BookmarkService.lastReadQuran].
+/// The reader's own note on an ayah or a hadith. One note per passage.
+///
+/// [target] says which passage, in the same shape as a [Bookmark], so a
+/// note opens and is titled the same way a bookmark is.
 @immutable
-class QuranPin {
-  const QuranPin({
-    required this.surahId,
-    required this.ayah,
-    required this.surahName,
+class ReadingNote {
+  const ReadingNote({
+    required this.target,
+    required this.text,
     required this.updatedAt,
   });
 
-  final int surahId;
-  final int ayah;
-  final String surahName;
+  final Bookmark target;
+  final String text;
   final DateTime updatedAt;
 
+  /// The passage id, the same as [Bookmark.id].
+  String get id => target.id;
+
   Map<String, dynamic> toJson() => {
-    'surahId': surahId,
-    'ayah': ayah,
-    'surahName': surahName,
+    ...target.toJson()..remove('snippet'),
+    'text': text,
     'updatedAt': updatedAt.toIso8601String(),
   };
 
   /// Parses [json] or returns null when the row is corrupt.
-  static QuranPin? tryFromJson(Map<String, dynamic> json) {
-    try {
-      final surahId = json['surahId'];
-      final ayah = json['ayah'];
-      final name = json['surahName'];
-      if (surahId is! int || ayah is! int || name is! String) {
-        return null;
-      }
-      if (surahId < 1 || surahId > 114 || ayah < 1) return null;
-      return QuranPin(
-        surahId: surahId,
-        ayah: ayah,
-        surahName: name,
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
-    } catch (_) {
-      return null;
-    }
+  static ReadingNote? tryFromJson(Map<String, dynamic> json) {
+    final target = Bookmark.tryFromJson(json);
+    final text = json['text'];
+    final updatedAt = DateTime.tryParse('${json['updatedAt']}');
+    if (target == null || text is! String || text.trim().isEmpty) return null;
+    if (updatedAt == null) return null;
+    final complete = target.type == 'quran'
+        ? target.surahId != null && target.ayah != null
+        : target.collectionId != null &&
+              target.bookFile != null &&
+              target.hadithIndex != null;
+    if (!complete) return null;
+    return ReadingNote(target: target, text: text, updatedAt: updatedAt);
   }
 }
 
-/// Result of [BookmarkService.toggleQuranPin].
-enum QuranPinChange { pinned, moved, cleared }
-
-/// Ayah to open in a surah. An explicit request (search, last-read
-/// continue, a bookmark) wins; otherwise the per-surah pin.
-int? quranOpenAyah({int? requestedAyah, int? pinnedAyah}) {
+/// Ayah to open in a surah. An explicit request (search, continue, a
+/// bookmark) wins; otherwise where the reader last stopped in it.
+int? quranOpenAyah({int? requestedAyah, int? savedAyah}) {
   if (requestedAyah != null && requestedAyah >= 1) return requestedAyah;
-  if (pinnedAyah != null && pinnedAyah >= 1) return pinnedAyah;
+  if (savedAyah != null && savedAyah >= 1) return savedAyah;
   return null;
 }
 
@@ -208,7 +202,8 @@ int? quranOpenAyah({int? requestedAyah, int? pinnedAyah}) {
 //  Bookmark service
 // ────────────────────────────────────────────────────────────────
 
-/// Manages bookmarks, last-read positions, and per-surah Quran pins.
+/// Manages bookmarks, reading notes, last-read positions, and where the
+/// reader stopped in each surah.
 ///
 /// Persists all data as JSON strings in [SharedPreferences].
 /// Call [load] once at startup to restore saved state.
@@ -217,13 +212,18 @@ class BookmarkService extends ChangeNotifier {
   static const _kBookmarks = 'bookmarks';
   static const _kLastReadQuran = 'last_read_quran';
   static const _kLastReadHadith = 'last_read_hadith';
-  static const _kQuranPins = 'quran_pins';
+  static const _kQuranPositions = 'quran_positions';
+  static const _kNotes = 'reading_notes';
+
+  /// Per-surah pins from 1.0.6 and earlier. Read once to migrate them.
+  static const _kLegacyQuranPins = 'quran_pins';
 
   List<Bookmark> _bookmarks = [];
   final Set<String> _bookmarkIds = {};
   Map<String, dynamic>? _lastReadQuran;
   Map<String, dynamic>? _lastReadHadith;
-  final Map<int, QuranPin> _pins = {};
+  final Map<int, int> _positions = {};
+  final Map<String, ReadingNote> _notes = {};
 
   /// An unmodifiable view of the current bookmarks list.
   List<Bookmark> get bookmarks => List.unmodifiable(_bookmarks);
@@ -235,19 +235,58 @@ class BookmarkService extends ChangeNotifier {
   /// `{collectionId, bookFile, bookTitle, hadithIndex, timestamp}`.
   Map<String, dynamic>? get lastReadHadith => _lastReadHadith;
 
-  /// Unmodifiable view of per-surah pins, keyed by surah id.
-  Map<int, QuranPin> get quranPins => Map.unmodifiable(_pins);
+  /// Ayah the reader last stopped at in [surahId], if it has been opened.
+  int? positionFor(int surahId) => _positions[surahId];
 
-  /// Pin for [surahId], if the user set one.
-  QuranPin? pinFor(int surahId) => _pins[surahId];
+  /// Quran bookmarks in [surahId], in ayah order.
+  List<Bookmark> quranBookmarksIn(int surahId) =>
+      _bookmarks
+          .where((b) => b.type == 'quran' && b.surahId == surahId)
+          .toList()
+        ..sort((a, b) => (a.ayah ?? 0).compareTo(b.ayah ?? 0));
 
-  /// Whether [surahId]:[ayah] is this surah's pin.
-  bool isAyahPinned(int surahId, int ayah) {
-    final pin = _pins[surahId];
-    return pin != null && pin.ayah == ayah;
+  /// Notes on ayahs and hadiths, most recently edited first.
+  List<ReadingNote> get notes =>
+      _notes.values.toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+  /// The note on the passage with this [Bookmark.id], if any.
+  ReadingNote? noteFor(String id) => _notes[id];
+
+  /// Saves the note on [target]. Blank [text] deletes it.
+  Future<void> saveNote({
+    required Bookmark target,
+    required String text,
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      if (_notes.remove(target.id) == null) return;
+    } else {
+      _notes[target.id] = ReadingNote(
+        target: target,
+        text: trimmed,
+        updatedAt: DateTime.now(),
+      );
+    }
+    await _persistNotes();
+    notifyListeners();
   }
 
-  /// Restores bookmarks, last-read, and per-surah pins from disk.
+  /// Deletes the note with [id], if any.
+  Future<void> deleteNote(String id) async {
+    if (_notes.remove(id) == null) return;
+    await _persistNotes();
+    notifyListeners();
+  }
+
+  /// Puts back [note] after an accidental delete.
+  Future<void> restoreNote(ReadingNote note) async {
+    _notes[note.id] = note;
+    await _persistNotes();
+    notifyListeners();
+  }
+
+  /// Restores bookmarks, last-read, and per-surah positions from disk.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -263,11 +302,36 @@ class BookmarkService extends ChangeNotifier {
 
     _lastReadQuran = _decodeLastReadMap(prefs.getString(_kLastReadQuran));
     _lastReadHadith = _decodeLastReadMap(prefs.getString(_kLastReadHadith));
-    _pins
+    _positions
       ..clear()
-      ..addAll(_decodeQuranPins(prefs.getString(_kQuranPins)));
+      ..addAll(_decodeQuranPositions(prefs.getString(_kQuranPositions)));
+    await _migrateLegacyPins(prefs);
+    _notes
+      ..clear()
+      ..addAll(_decodeNotes(prefs.getString(_kNotes)));
 
     notifyListeners();
+  }
+
+  /// Turns each old per-surah pin into a bookmark, and into that surah's
+  /// position when it has none, then drops the pins.
+  Future<void> _migrateLegacyPins(SharedPreferences prefs) async {
+    final raw = prefs.getString(_kLegacyQuranPins);
+    if (raw == null) return;
+    for (final pin in _decodeLegacyPins(raw)) {
+      _positions.putIfAbsent(pin.surahId, () => pin.ayah);
+      final bookmark = Bookmark(
+        type: 'quran',
+        surahId: pin.surahId,
+        ayah: pin.ayah,
+        surahName: pin.surahName,
+        createdAt: pin.updatedAt,
+      );
+      if (_bookmarkIds.add(bookmark.id)) _bookmarks.insert(0, bookmark);
+    }
+    await _persistBookmarks();
+    await _persistPositions();
+    await prefs.remove(_kLegacyQuranPins);
   }
 
   /// Returns `true` if a bookmark with the given [id] exists.
@@ -325,7 +389,8 @@ class BookmarkService extends ChangeNotifier {
     final unchanged =
         _lastReadQuran != null &&
         _lastReadQuran!['surahId'] == surahId &&
-        _lastReadQuran!['ayah'] == ayah;
+        _lastReadQuran!['ayah'] == ayah &&
+        _positions[surahId] == ayah;
     if (!unchanged) {
       _lastReadQuran = {
         'surahId': surahId,
@@ -333,8 +398,10 @@ class BookmarkService extends ChangeNotifier {
         'surahName': surahName,
         'timestamp': DateTime.now().toIso8601String(),
       };
+      _positions[surahId] = ayah;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kLastReadQuran, json.encode(_lastReadQuran));
+      await _persistPositions();
     }
     if (notify) notifyListeners();
   }
@@ -372,43 +439,6 @@ class BookmarkService extends ChangeNotifier {
   /// has changed, such as the Quran tab's continue banner.
   void notifyLastReadChanged() => notifyListeners();
 
-  /// Sets or moves the pin in [surahId]. One pin per surah.
-  ///
-  /// Tapping the already-pinned ayah clears it. Tapping another ayah
-  /// in the same surah replaces the pin (quran.com reading-bookmark).
-  Future<QuranPinChange> toggleQuranPin({
-    required int surahId,
-    required int ayah,
-    required String surahName,
-  }) async {
-    final existing = _pins[surahId];
-    if (existing != null && existing.ayah == ayah) {
-      _pins.remove(surahId);
-      await _persistPins();
-      notifyListeners();
-      return QuranPinChange.cleared;
-    }
-    final change = existing == null
-        ? QuranPinChange.pinned
-        : QuranPinChange.moved;
-    _pins[surahId] = QuranPin(
-      surahId: surahId,
-      ayah: ayah,
-      surahName: surahName,
-      updatedAt: DateTime.now(),
-    );
-    await _persistPins();
-    notifyListeners();
-    return change;
-  }
-
-  /// Removes the pin for [surahId], if any.
-  Future<void> clearQuranPin(int surahId) async {
-    if (_pins.remove(surahId) == null) return;
-    await _persistPins();
-    notifyListeners();
-  }
-
   /// Writes the current bookmarks list to SharedPreferences.
   Future<void> _persistBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
@@ -424,11 +454,21 @@ class BookmarkService extends ChangeNotifier {
       ..addAll(_bookmarks.map((b) => b.id));
   }
 
-  Future<void> _persistPins() async {
+  Future<void> _persistNotes() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      _kQuranPins,
-      json.encode(_pins.values.map((pin) => pin.toJson()).toList()),
+      _kNotes,
+      json.encode(_notes.values.map((note) => note.toJson()).toList()),
+    );
+  }
+
+  Future<void> _persistPositions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kQuranPositions,
+      json.encode({
+        for (final entry in _positions.entries) '${entry.key}': entry.value,
+      }),
     );
   }
 }
@@ -460,19 +500,75 @@ Map<String, dynamic>? _decodeLastReadMap(String? raw) {
   }
 }
 
-Map<int, QuranPin> _decodeQuranPins(String? raw) {
+/// Reads the note list, skipping corrupt rows.
+Map<String, ReadingNote> _decodeNotes(String? raw) {
   if (raw == null || raw.isEmpty) return {};
   try {
     final decoded = json.decode(raw);
     if (decoded is! List) return {};
-    final pins = <int, QuranPin>{};
+    final notes = <String, ReadingNote>{};
     for (final item in decoded) {
       if (item is! Map) continue;
-      final pin = QuranPin.tryFromJson(Map<String, dynamic>.from(item));
-      if (pin != null) pins[pin.surahId] = pin;
+      final note = ReadingNote.tryFromJson(Map<String, dynamic>.from(item));
+      if (note != null) notes[note.id] = note;
+    }
+    return notes;
+  } catch (_) {
+    return {};
+  }
+}
+
+/// Reads `{"surahId": ayah}`, skipping rows outside the Quran.
+Map<int, int> _decodeQuranPositions(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is! Map) return {};
+    final positions = <int, int>{};
+    for (final entry in decoded.entries) {
+      final surahId = int.tryParse('${entry.key}');
+      final ayah = entry.value;
+      if (surahId == null || surahId < 1 || surahId > 114) continue;
+      if (ayah is! int || ayah < 1) continue;
+      positions[surahId] = ayah;
+    }
+    return positions;
+  } catch (_) {
+    return {};
+  }
+}
+
+typedef _LegacyPin = ({
+  int surahId,
+  int ayah,
+  String surahName,
+  DateTime updatedAt,
+});
+
+/// Reads the 1.0.6 pin list, skipping corrupt rows.
+List<_LegacyPin> _decodeLegacyPins(String raw) {
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is! List) return [];
+    final pins = <_LegacyPin>[];
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final surahId = item['surahId'];
+      final ayah = item['ayah'];
+      final name = item['surahName'];
+      if (surahId is! int || ayah is! int || name is! String) continue;
+      if (surahId < 1 || surahId > 114 || ayah < 1) continue;
+      final updatedAt =
+          DateTime.tryParse('${item['updatedAt']}') ?? DateTime.now();
+      pins.add((
+        surahId: surahId,
+        ayah: ayah,
+        surahName: name,
+        updatedAt: updatedAt,
+      ));
     }
     return pins;
   } catch (_) {
-    return {};
+    return [];
   }
 }

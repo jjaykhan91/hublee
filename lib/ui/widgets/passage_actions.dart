@@ -14,6 +14,7 @@ class PassageActionsButton extends StatelessWidget {
     required this.reference,
     this.arabic,
     this.english,
+    this.compact = false,
   });
 
   /// Citation shown after the text, e.g. `Al-Baqarah 2:255`.
@@ -21,11 +22,19 @@ class PassageActionsButton extends StatelessWidget {
   final String? arabic;
   final String? english;
 
+  /// A 36dp button that fits a tight action row, like the ayah card's.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'Copy or share',
       icon: const Icon(Icons.more_vert_rounded, size: 22),
+      visualDensity: compact ? VisualDensity.compact : null,
+      padding: compact ? EdgeInsets.zero : null,
+      constraints: compact
+          ? const BoxConstraints.tightFor(width: 36, height: 36)
+          : null,
       onPressed: () => showPassageActionsSheet(
         context,
         reference: reference,

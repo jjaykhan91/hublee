@@ -1,4 +1,4 @@
-/// Displays saved ayahs, hadiths, and Quranic words for learning.
+/// Displays saved ayahs, notes, hadiths, and Quranic words.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,6 +12,7 @@ import '../services/vocab_scope.dart';
 import '../services/vocab_service.dart';
 import '../theme/app_tokens.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/note_sheet.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
 class BookmarksPage extends StatelessWidget {
@@ -24,16 +25,18 @@ class BookmarksPage extends StatelessWidget {
     final bookmarks = bookmarkService.bookmarks;
     final ayahs = bookmarks.where((b) => b.type == 'quran').toList();
     final hadiths = bookmarks.where((b) => b.type == 'hadith').toList();
+    final notes = bookmarkService.notes;
     final colorScheme = Theme.of(context).colorScheme;
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Saved'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Ayahs'),
+              Tab(text: 'Notes'),
               Tab(text: 'Hadith'),
               Tab(text: 'Words'),
             ],
@@ -56,6 +59,16 @@ class BookmarksPage extends StatelessWidget {
                     ayahs,
                     colorScheme,
                   ),
+            notes.isEmpty
+                ? _empty(
+                    context,
+                    colorScheme,
+                    icon: Icons.sticky_note_2_outlined,
+                    title: 'No notes yet',
+                    subtitle:
+                        'Tap the note icon on an ayah or hadith to write one',
+                  )
+                : _noteList(context, bookmarkService, notes, colorScheme),
             hadiths.isEmpty
                 ? _empty(
                     context,
@@ -234,6 +247,94 @@ class BookmarksPage extends StatelessWidget {
     );
   }
 
+  Widget _noteList(
+    BuildContext context,
+    BookmarkService bookmarkService,
+    List<ReadingNote> notes,
+    ColorScheme colorScheme,
+  ) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      scrollCacheExtent: AppSpacing.listCache,
+      addAutomaticKeepAlives: false,
+      itemCount: notes.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final note = notes[index];
+        final target = note.target;
+        final isQuran = target.type == 'quran';
+        final title = isQuran
+            ? '${target.surahName} ${target.surahId}:${target.ayah}'
+            : _hadithTitle(target);
+        return Dismissible(
+          key: ValueKey('note-${note.id}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: colorScheme.error.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(Icons.delete_outline, color: colorScheme.error),
+          ),
+          onDismissed: (_) =>
+              _removeNoteWithUndo(context, bookmarkService, note),
+          child: Card(
+            child: ListTile(
+              key: Key('saved-${note.id}'),
+              leading: Icon(
+                isQuran ? Icons.menu_book_rounded : Icons.library_books_rounded,
+                color: colorScheme.primary,
+              ),
+              title: Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                note.text,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: IconButton(
+                tooltip: 'Edit note',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => showNoteSheet(
+                  context,
+                  service: bookmarkService,
+                  target: target,
+                  title: title,
+                ),
+              ),
+              onTap: () => _navigateToBookmark(context, target, isQuran),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _removeNoteWithUndo(
+    BuildContext context,
+    BookmarkService bookmarkService,
+    ReadingNote note,
+  ) {
+    bookmarkService.deleteNote(note.id);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Note deleted'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => bookmarkService.restoreNote(note),
+        ),
+      ),
+    );
+  }
+
   Widget _wordList(
     BuildContext context,
     VocabService vocab,
@@ -332,10 +433,9 @@ class BookmarksPage extends StatelessWidget {
 
   String _hadithTitle(Bookmark bookmark) {
     final book = bookmark.bookTitle ?? 'Hadith';
+    final index = bookmark.hadithIndex;
+    if (index != null) return hadithNoteTitle(book, index, bookmark.idInBook);
     if (bookmark.idInBook != null) return '$book · #${bookmark.idInBook}';
-    if (bookmark.hadithIndex != null) {
-      return '$book · Hadith ${bookmark.hadithIndex! + 1}';
-    }
     return book;
   }
 
