@@ -500,8 +500,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// A card containing a font-size slider with a percentage badge
-/// and a live text preview that scales in real time.
+/// A card containing a font-size slider and a live text preview that
+/// scales in real time. The size is not printed; TalkBack reads it.
 class _FontSizeCard extends StatelessWidget {
   final String label;
   final double value;
@@ -519,46 +519,17 @@ class _FontSizeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Label + percentage badge
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  // The slider already speaks its value.
-                  child: ExcludeSemantics(
-                    child: Text(
-                      '${(value * 100).round()}%',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             MergeSemantics(
               child: Semantics(
@@ -570,7 +541,6 @@ class _FontSizeCard extends StatelessWidget {
                   min: 0.8,
                   max: 1.8,
                   divisions: 10,
-                  label: '${(value * 100).round()}%',
                   onChanged: onChanged,
                 ),
               ),

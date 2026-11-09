@@ -247,7 +247,7 @@ class _FontPicker extends StatelessWidget {
   }
 }
 
-/// Compact slider for font zoom with label and percentage badge.
+/// Compact slider for font zoom. The size is not printed; TalkBack reads it.
 class _ZoomSlider extends StatelessWidget {
   final String label;
   final double value;
@@ -286,27 +286,7 @@ class _ZoomSlider extends StatelessWidget {
                 min: 0.8,
                 max: 1.8,
                 divisions: 10,
-                label: '${(value * 100).round()}%',
                 onChanged: onChanged,
-              ),
-            ),
-          ),
-        ),
-        Container(
-          width: 44,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          // The slider already speaks its value.
-          child: ExcludeSemantics(
-            child: Text(
-              '${(value * 100).round()}%',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
               ),
             ),
           ),
