@@ -4,8 +4,40 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../hadith/hadith_book_art.dart';
 import '../router_paths.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/hadith_book_cover.dart';
+
+/// Covers for the Learn tools, in the style of the hadith books.
+const _dictionaryArt = BookArt(
+  arabicName: 'المعجم',
+  arabicTitle: 'معجم القرآن',
+  dark: Color(0xFF0C4547),
+  light: Color(0xFF17777A),
+  pattern: BookPattern.lattice,
+);
+const _flashcardsArt = BookArt(
+  arabicName: 'بطاقات',
+  arabicTitle: 'بطاقات الكلمات',
+  dark: Color(0xFF503B10),
+  light: Color(0xFF8C6A22),
+  pattern: BookPattern.stars,
+);
+const _msaDictionaryArt = BookArt(
+  arabicName: 'قاموس',
+  arabicTitle: 'قاموس الفصحى',
+  dark: Color(0xFF1B253D),
+  light: Color(0xFF34466E),
+  pattern: BookPattern.diamonds,
+);
+const _grammarArt = BookArt(
+  arabicName: 'النحو',
+  arabicTitle: 'النحو والصرف',
+  dark: Color(0xFF55172A),
+  light: Color(0xFF8A2E45),
+  pattern: BookPattern.lattice,
+);
 
 /// Bottom-nav Learn page. Detail tools push full-screen above the shell.
 class LearnHubPage extends StatelessWidget {
@@ -24,13 +56,13 @@ class LearnHubPage extends StatelessWidget {
             subtitle: 'From the word-by-word glossary',
           ),
           _LearnTile(
-            icon: Icons.translate_rounded,
+            art: _dictionaryArt,
             title: 'English → Arabic',
             subtitle: 'Type an English word and see the Quranic Arabic',
             onTap: () => context.push(AppRoute.dictionary),
           ),
           _LearnTile(
-            icon: Icons.school_rounded,
+            art: _flashcardsArt,
             title: 'Flashcards',
             subtitle: 'Star words while reading, then review them here',
             onTap: () => context.push(AppRoute.learnQuranic),
@@ -42,13 +74,13 @@ class LearnHubPage extends StatelessWidget {
             subtitle: 'Newspaper MSA — separate from the Quran glossary',
           ),
           _LearnTile(
-            icon: Icons.translate_rounded,
+            art: _msaDictionaryArt,
             title: 'MSA dictionary',
             subtitle: 'Type English — water, government, computer',
             onTap: () => context.push(AppRoute.msaDictionary),
           ),
           _LearnTile(
-            icon: Icons.menu_book_outlined,
+            art: _grammarArt,
             title: 'Grammar course',
             subtitle: 'Roots, verb forms I–X, article, pronouns',
             onTap: () => context.push(AppRoute.grammar),
@@ -121,33 +153,25 @@ class _SectionHeader extends StatelessWidget {
 
 class _LearnTile extends StatelessWidget {
   const _LearnTile({
-    required this.icon,
+    required this.art,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
-  final IconData icon;
+  final BookArt art;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
         child: ListTile(
-          leading: Container(
-            width: AppSpacing.minTouchTarget,
-            height: AppSpacing.minTouchTarget,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: colorScheme.primary),
-          ),
+          contentPadding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+          leading: BookCover(art: art, width: 44, height: 60),
           title: Text(title),
           subtitle: Text(subtitle),
           trailing: const Icon(Icons.chevron_right_rounded),
