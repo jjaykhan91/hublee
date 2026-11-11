@@ -22,7 +22,7 @@ void main() {
       test('cards are flat with a hairline border', () {
         final card = theme.cardTheme;
         expect(card.elevation, 0);
-        expect(card.margin, EdgeInsets.zero);
+        expect(card.margin, const EdgeInsets.all(AppSpacing.xs));
         expect(card.color, palette.surface);
         final shape = card.shape! as RoundedRectangleBorder;
         expect(shape.borderRadius, AppRadius.card);
@@ -147,6 +147,30 @@ void main() {
         expect(familyOf('Settings'), body);
         expect(familyOf('Paper'), body);
         expect(familyOf('Save'), body);
+      });
+
+      testWidgets('cards in a column keep a gap between them', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: const Scaffold(
+              body: Column(
+                children: [
+                  Card(child: SizedBox(height: 40, width: 200)),
+                  Card(child: SizedBox(height: 40, width: 200)),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final first = tester.getRect(find.byType(Card).first);
+        final second = tester.getRect(find.byType(Card).last);
+        expect(second.top - first.bottom, 0);
+        final gap =
+            tester.getRect(find.byType(SizedBox).last).top -
+            tester.getRect(find.byType(SizedBox).first).bottom;
+        expect(gap, greaterThanOrEqualTo(AppSpacing.sm));
       });
 
       test('buttons are flat and at least 48dp tall', () {

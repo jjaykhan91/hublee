@@ -126,7 +126,9 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       elevation: AppElevation.flat,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      margin: EdgeInsets.zero,
+      // Cards placed one after another keep a small gap without each page
+      // adding its own.
+      margin: const EdgeInsets.all(AppSpacing.xs),
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.card,
         side: hairline,
