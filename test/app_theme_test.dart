@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hublee/theme/app_theme.dart';
@@ -81,6 +82,71 @@ void main() {
           expect(style.fontFamilyFallback, AppFonts.arabicFallback);
           expect(style.color, palette.ink);
         }
+      });
+
+      test('component text styles carry the platform font family', () {
+        final family = theme.textTheme.bodyMedium!.fontFamily;
+        expect(family, isNotNull);
+
+        final nav = theme.navigationBarTheme.labelTextStyle!;
+        for (final style in [
+          theme.appBarTheme.titleTextStyle,
+          theme.searchBarTheme.textStyle!.resolve({}),
+          theme.searchBarTheme.hintStyle!.resolve({}),
+          theme.filledButtonTheme.style!.textStyle!.resolve({}),
+          theme.elevatedButtonTheme.style!.textStyle!.resolve({}),
+          theme.outlinedButtonTheme.style!.textStyle!.resolve({}),
+          theme.textButtonTheme.style!.textStyle!.resolve({}),
+          theme.chipTheme.labelStyle,
+          theme.tabBarTheme.labelStyle,
+          theme.tabBarTheme.unselectedLabelStyle,
+          nav.resolve({}),
+          nav.resolve({WidgetState.selected}),
+          theme.navigationRailTheme.selectedLabelTextStyle,
+          theme.navigationRailTheme.unselectedLabelTextStyle,
+          theme.snackBarTheme.contentTextStyle,
+          theme.dialogTheme.titleTextStyle,
+          theme.dialogTheme.contentTextStyle,
+        ]) {
+          expect(style!.fontFamily, family);
+          expect(style.fontFamilyFallback, AppFonts.arabicFallback);
+        }
+      });
+
+      testWidgets('titles, chips and buttons draw in the body font', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              appBar: AppBar(title: const Text('Settings')),
+              body: Column(
+                children: [
+                  const Text('Body'),
+                  ChoiceChip(
+                    label: const Text('Paper'),
+                    selected: false,
+                    onSelected: (_) {},
+                  ),
+                  FilledButton(onPressed: () {}, child: const Text('Save')),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        String? familyOf(String text) => tester
+            .renderObject<RenderParagraph>(find.text(text))
+            .text
+            .style!
+            .fontFamily;
+
+        final body = familyOf('Body');
+        expect(body, isNotNull);
+        expect(familyOf('Settings'), body);
+        expect(familyOf('Paper'), body);
+        expect(familyOf('Save'), body);
       });
 
       test('buttons are flat and at least 48dp tall', () {

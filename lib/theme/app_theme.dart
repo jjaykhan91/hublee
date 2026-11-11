@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -97,6 +98,16 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
   final hairline = BorderSide(color: p.hairline, width: AppStroke.hairline);
   final controlEdge = BorderSide(color: p.outline, width: AppStroke.hairline);
 
+  // Buttons, chips, app bars and the like use the style they are given as it
+  // is; only `textTheme` styles are merged with the platform typography. A
+  // token on its own has no family, so Latin text would fall through to the
+  // Arabic fallback fonts. Give those styles the same family the text theme
+  // gets.
+  final family = Typography.material2021(
+    platform: defaultTargetPlatform,
+  ).black.bodyMedium?.fontFamily;
+  TextStyle type(TextStyle token) => token.copyWith(fontFamily: family);
+
   OutlineInputBorder inputBorder(BorderSide side) =>
       OutlineInputBorder(borderRadius: AppRadius.input, borderSide: side);
 
@@ -128,7 +139,7 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       scrolledUnderElevation: AppElevation.flat,
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
-      titleTextStyle: AppType.headline.copyWith(color: p.ink),
+      titleTextStyle: type(AppType.headline).copyWith(color: p.ink),
       systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : null,
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -167,16 +178,18 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
         minHeight: AppSpacing.minTouchTarget,
         maxHeight: 56,
       ),
-      textStyle: WidgetStatePropertyAll(AppType.body.copyWith(color: p.ink)),
+      textStyle: WidgetStatePropertyAll(
+        type(AppType.body).copyWith(color: p.ink),
+      ),
       hintStyle: WidgetStatePropertyAll(
-        AppType.body.copyWith(color: p.inkMuted),
+        type(AppType.body).copyWith(color: p.inkMuted),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         elevation: AppElevation.flat,
         minimumSize: buttonMinimumSize,
-        textStyle: AppType.label,
+        textStyle: type(AppType.label),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -186,18 +199,18 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
         foregroundColor: p.onPrimaryTint,
         shadowColor: Colors.transparent,
         minimumSize: buttonMinimumSize,
-        textStyle: AppType.label,
+        textStyle: type(AppType.label),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         side: controlEdge,
         minimumSize: buttonMinimumSize,
-        textStyle: AppType.label,
+        textStyle: type(AppType.label),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(textStyle: AppType.label),
+      style: TextButton.styleFrom(textStyle: type(AppType.label)),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: p.surface,
@@ -212,7 +225,7 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
             ? BorderSide(color: p.primaryTint, width: AppStroke.hairline)
             : controlEdge,
       ),
-      labelStyle: AppType.label.copyWith(
+      labelStyle: type(AppType.label).copyWith(
         color: WidgetStateColor.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
             return p.inkMuted;
@@ -229,8 +242,8 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       labelColor: p.primary,
       unselectedLabelColor: p.inkMuted,
       dividerColor: p.hairline,
-      labelStyle: AppType.label.copyWith(fontWeight: FontWeight.w600),
-      unselectedLabelStyle: AppType.label,
+      labelStyle: type(AppType.label).copyWith(fontWeight: FontWeight.w600),
+      unselectedLabelStyle: type(AppType.label),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.canvas,
@@ -248,11 +261,10 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       ),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? AppType.captionStrong.copyWith(
-                color: p.ink,
-                fontWeight: FontWeight.w600,
-              )
-            : AppType.captionStrong.copyWith(color: p.inkMuted),
+            ? type(
+                AppType.captionStrong,
+              ).copyWith(color: p.ink, fontWeight: FontWeight.w600)
+            : type(AppType.captionStrong).copyWith(color: p.inkMuted),
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
@@ -261,18 +273,19 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       indicatorColor: p.primaryTint,
       selectedIconTheme: IconThemeData(color: p.onPrimaryTint),
       unselectedIconTheme: IconThemeData(color: p.inkMuted),
-      selectedLabelTextStyle: AppType.captionStrong.copyWith(
-        color: p.ink,
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelTextStyle: AppType.captionStrong.copyWith(
-        color: p.inkMuted,
-      ),
+      selectedLabelTextStyle: type(
+        AppType.captionStrong,
+      ).copyWith(color: p.ink, fontWeight: FontWeight.w600),
+      unselectedLabelTextStyle: type(
+        AppType.captionStrong,
+      ).copyWith(color: p.inkMuted),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: p.inverseSurface,
-      contentTextStyle: AppType.bodyCompact.copyWith(color: p.onInverseSurface),
+      contentTextStyle: type(
+        AppType.bodyCompact,
+      ).copyWith(color: p.onInverseSurface),
       actionTextColor: p.inversePrimary,
       closeIconColor: p.onInverseSurface,
       elevation: AppElevation.overlay,
@@ -294,8 +307,8 @@ ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
       surfaceTintColor: Colors.transparent,
       elevation: AppElevation.overlay,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.featureCard),
-      titleTextStyle: AppType.headline.copyWith(color: p.ink),
-      contentTextStyle: AppType.bodyCompact.copyWith(color: p.inkMuted),
+      titleTextStyle: type(AppType.headline).copyWith(color: p.ink),
+      contentTextStyle: type(AppType.bodyCompact).copyWith(color: p.inkMuted),
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: p.surface,
