@@ -1,9 +1,10 @@
-/// Builds the Material 3 light and dark [ThemeData] for Hublee.
+/// Builds the Material 3 [ThemeData] for each appearance from the tokens in
+/// `app_tokens.dart`.
 ///
-/// Palette colours are hand-tuned for AMOLED-friendly dark mode
-/// and a clean, accessible light mode. Reading styles use a generous line
-/// height, and every style carries a bundled Arabic fallback family so
-/// Qur'anic symbols render inside Latin text.
+/// Nothing here picks a colour, size, or radius of its own: light, dark, and
+/// paper all go through [_buildTheme] with a different [AppPalette], so the
+/// three appearances share one set of component rules. Surfaces are flat and
+/// separated by a hairline border instead of a shadow.
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -12,19 +13,6 @@ import 'package:flutter/services.dart';
 
 import 'app_tokens.dart';
 import 'tajweed_extension.dart';
-
-// ── Dark-mode palette ────────────────────────────────────────────
-const _darkCanvas = Color(0xFF0B0F14);
-const _darkSurface = Color(0xFF11161C);
-const _darkSurfaceElevated = Color(0xFF151B22);
-const _darkOutline = Color(0xFF233042);
-const _darkOnSurface = Color(0xFFE7ECF2);
-const _darkOnSurfaceSecondary = Color(0xFFB8C2CF);
-const _darkMuted = Color(0xFF97A6B5);
-const _darkPrimary = Color(0xFF8AB4FF);
-const _darkOnPrimary = Color(0xFF0A1220);
-const _darkSecondary = Color(0xFF7DD3FC);
-const _darkError = Color(0xFFFF6B6B);
 
 const _pageTransitionsTheme = PageTransitionsTheme(
   builders: {
@@ -37,291 +25,301 @@ const _pageTransitionsTheme = PageTransitionsTheme(
   },
 );
 
-/// Light colour scheme seeded from a vivid blue with richer
-/// secondary and tertiary tones.
-final _lightScheme = ColorScheme.fromSeed(
-  seedColor: const Color(0xFF2563EB),
-  secondary: const Color(0xFF0891B2),
-  tertiary: const Color(0xFF7C3AED),
+/// The [AppType] scale mapped onto Material's text slots.
+///
+/// No style sets a `fontFamily`: Arabic is always rendered through the
+/// `ArabicText` widget, which resolves the reader's chosen font and its own
+/// line height. Colours are filled in by the theme from the colour scheme.
+const _textTheme = TextTheme(
+  displayLarge: AppType.display,
+  displayMedium: AppType.display,
+  displaySmall: AppType.display,
+  headlineLarge: AppType.display,
+  headlineMedium: AppType.display,
+  headlineSmall: AppType.title,
+  titleLarge: AppType.title,
+  titleMedium: AppType.subtitle,
+  titleSmall: AppType.label,
+  bodyLarge: AppType.body,
+  bodyMedium: AppType.bodyCompact,
+  bodySmall: AppType.caption,
+  labelLarge: AppType.label,
+  labelMedium: AppType.captionStrong,
+  labelSmall: AppType.captionStrong,
 );
 
-/// Custom dark colour scheme with precise hand-picked values.
-const _darkScheme = ColorScheme(
-  brightness: Brightness.dark,
-  primary: _darkPrimary,
-  onPrimary: _darkOnPrimary,
-  primaryContainer: Color(0xFF2B3B55),
-  onPrimaryContainer: _darkOnSurface,
-  secondary: _darkSecondary,
-  onSecondary: _darkOnSurface,
-  secondaryContainer: Color(0xFF1D2A36),
-  onSecondaryContainer: _darkOnSurface,
-  tertiary: Color(0xFFB5A7F5),
-  onTertiary: _darkOnSurface,
-  tertiaryContainer: Color(0xFF292342),
-  onTertiaryContainer: _darkOnSurface,
-  error: _darkError,
-  onError: _darkOnSurface,
-  errorContainer: Color(0xFF3A1E1E),
-  onErrorContainer: _darkOnSurface,
-  surface: _darkSurface,
-  onSurface: _darkOnSurface,
-  surfaceContainerHighest: _darkSurfaceElevated,
-  onSurfaceVariant: _darkOnSurfaceSecondary,
-  outline: _darkOutline,
-  outlineVariant: Color(0xFF1C2532),
+/// Maps palette roles onto every [ColorScheme] slot, so Material widgets
+/// and `Theme.of(context).colorScheme` agree with [AppPalette].
+ColorScheme _schemeFor(AppPalette p) => ColorScheme(
+  brightness: p.brightness,
+  primary: p.primary,
+  onPrimary: p.onPrimary,
+  primaryContainer: p.primaryTint,
+  onPrimaryContainer: p.onPrimaryTint,
+  secondary: p.secondary,
+  onSecondary: p.onSecondary,
+  secondaryContainer: p.secondaryTint,
+  onSecondaryContainer: p.onSecondaryTint,
+  tertiary: p.accent,
+  onTertiary: p.onAccent,
+  tertiaryContainer: p.accentTint,
+  onTertiaryContainer: p.onAccentTint,
+  error: p.error,
+  onError: p.onError,
+  errorContainer: p.errorTint,
+  onErrorContainer: p.onErrorTint,
+  surface: p.surface,
+  onSurface: p.ink,
+  surfaceDim: p.surfaceHighest,
+  surfaceBright: p.surface,
+  surfaceContainerLowest: p.surface,
+  surfaceContainerLow: p.surfaceLow,
+  surfaceContainer: p.surfaceMid,
+  surfaceContainerHigh: p.surfaceHigh,
+  surfaceContainerHighest: p.surfaceHighest,
+  onSurfaceVariant: p.inkMuted,
+  outline: p.outline,
+  outlineVariant: p.hairline,
   shadow: Colors.black,
   scrim: Colors.black,
-  inverseSurface: Color(0xFFE9EEF5),
-  onInverseSurface: Color(0xFF0E1420),
-  inversePrimary: Color(0xFF2E6BEA),
+  inverseSurface: p.inverseSurface,
+  onInverseSurface: p.onInverseSurface,
+  inversePrimary: p.inversePrimary,
+  // Elevation never tints a surface; depth comes from the tonal steps.
+  surfaceTint: Colors.transparent,
 );
 
-// ── Arabic text helpers ──────────────────────────────────────────
+ThemeData _buildTheme(AppPalette p, TajweedTheme tajweed) {
+  final scheme = _schemeFor(p);
+  final isDark = p.brightness == Brightness.dark;
 
-/// Applies a generous line height to the text styles commonly used for
-/// long-form reading.
-///
-/// This deliberately sets no `fontFamily`. Arabic is always rendered through
-/// the `ArabicText` widget, which resolves the user's selected font itself —
-/// forcing an Arabic family here would also restyle every English body
-/// string in the app.
-TextTheme _applyReadingLineHeightToTextTheme(TextTheme base) {
-  return base.copyWith(
-    bodyLarge: base.bodyLarge?.copyWith(height: 2.0),
-    bodyMedium: base.bodyMedium?.copyWith(height: 2.0),
-    titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-  );
-}
+  const buttonMinimumSize = Size(64, AppSpacing.minTouchTarget);
+  final hairline = BorderSide(color: p.hairline, width: AppStroke.hairline);
+  final controlEdge = BorderSide(color: p.outline, width: AppStroke.hairline);
 
-/// Adds a bundled Arabic face as a fallback family so that any style can
-/// render Qur'anic symbols and honorifics (ﷺ, ۩) even when its primary font
-/// is a Latin typeface.
-///
-/// A fallback is only consulted for codepoints the primary family lacks, so
-/// Latin text is unaffected.
-TextTheme _addArabicFontFallback(TextTheme base) {
-  TextStyle? withFallback(TextStyle? style) =>
-      style?.copyWith(fontFamilyFallback: AppFonts.arabicFallback);
+  OutlineInputBorder inputBorder(BorderSide side) =>
+      OutlineInputBorder(borderRadius: AppRadius.input, borderSide: side);
 
-  return base.copyWith(
-    displayLarge: withFallback(base.displayLarge),
-    displayMedium: withFallback(base.displayMedium),
-    displaySmall: withFallback(base.displaySmall),
-    headlineLarge: withFallback(base.headlineLarge),
-    headlineMedium: withFallback(base.headlineMedium),
-    headlineSmall: withFallback(base.headlineSmall),
-    titleLarge: withFallback(base.titleLarge),
-    titleMedium: withFallback(base.titleMedium),
-    titleSmall: withFallback(base.titleSmall),
-    bodyLarge: withFallback(base.bodyLarge),
-    bodyMedium: withFallback(base.bodyMedium),
-    bodySmall: withFallback(base.bodySmall),
-    labelLarge: withFallback(base.labelLarge),
-    labelMedium: withFallback(base.labelMedium),
-    labelSmall: withFallback(base.labelSmall),
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    textTheme: _textTheme,
+    scaffoldBackgroundColor: p.canvas,
+    iconTheme: IconThemeData(color: p.ink),
+    dividerTheme: DividerThemeData(
+      color: p.hairline,
+      thickness: AppStroke.hairline,
+    ),
+    cardTheme: CardThemeData(
+      color: p.surface,
+      elevation: AppElevation.flat,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: hairline,
+      ),
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: p.canvas,
+      foregroundColor: p.ink,
+      elevation: AppElevation.flat,
+      scrolledUnderElevation: AppElevation.flat,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: true,
+      titleTextStyle: AppType.headline.copyWith(color: p.ink),
+      systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : null,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: p.surface,
+      hintStyle: TextStyle(color: p.inkMuted),
+      labelStyle: TextStyle(color: p.inkMuted),
+      prefixIconColor: p.inkMuted,
+      suffixIconColor: p.inkMuted,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: inputBorder(controlEdge),
+      enabledBorder: inputBorder(controlEdge),
+      disabledBorder: inputBorder(hairline),
+      focusedBorder: inputBorder(
+        BorderSide(color: p.primary, width: AppStroke.focus),
+      ),
+      errorBorder: inputBorder(BorderSide(color: p.error)),
+      focusedErrorBorder: inputBorder(
+        BorderSide(color: p.error, width: AppStroke.focus),
+      ),
+    ),
+    searchBarTheme: SearchBarThemeData(
+      elevation: const WidgetStatePropertyAll(AppElevation.flat),
+      backgroundColor: WidgetStatePropertyAll(p.surface),
+      surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      side: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.focused)
+            ? BorderSide(color: p.primary, width: AppStroke.focus)
+            : controlEdge,
+      ),
+      shape: const WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: AppRadius.input),
+      ),
+      constraints: const BoxConstraints(
+        minHeight: AppSpacing.minTouchTarget,
+        maxHeight: 56,
+      ),
+      textStyle: WidgetStatePropertyAll(AppType.body.copyWith(color: p.ink)),
+      hintStyle: WidgetStatePropertyAll(
+        AppType.body.copyWith(color: p.inkMuted),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        elevation: AppElevation.flat,
+        minimumSize: buttonMinimumSize,
+        textStyle: AppType.label,
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: AppElevation.flat,
+        backgroundColor: p.primaryTint,
+        foregroundColor: p.onPrimaryTint,
+        shadowColor: Colors.transparent,
+        minimumSize: buttonMinimumSize,
+        textStyle: AppType.label,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        side: controlEdge,
+        minimumSize: buttonMinimumSize,
+        textStyle: AppType.label,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(textStyle: AppType.label),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: p.surface,
+      selectedColor: p.primaryTint,
+      checkmarkColor: p.onPrimaryTint,
+      surfaceTintColor: Colors.transparent,
+      elevation: AppElevation.flat,
+      pressElevation: AppElevation.flat,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.chip),
+      side: WidgetStateBorderSide.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? BorderSide(color: p.primaryTint, width: AppStroke.hairline)
+            : controlEdge,
+      ),
+      labelStyle: AppType.label.copyWith(
+        color: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return p.inkMuted;
+          }
+          return states.contains(WidgetState.selected)
+              ? p.onPrimaryTint
+              : p.ink;
+        }),
+      ),
+    ),
+    listTileTheme: ListTileThemeData(iconColor: p.inkMuted),
+    tabBarTheme: TabBarThemeData(
+      indicatorColor: p.primary,
+      labelColor: p.primary,
+      unselectedLabelColor: p.inkMuted,
+      dividerColor: p.hairline,
+      labelStyle: AppType.label.copyWith(fontWeight: FontWeight.w600),
+      unselectedLabelStyle: AppType.label,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: p.canvas,
+      elevation: AppElevation.flat,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: p.primaryTint,
+      height: 68,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? p.onPrimaryTint
+              : p.inkMuted,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? AppType.captionStrong.copyWith(
+                color: p.ink,
+                fontWeight: FontWeight.w600,
+              )
+            : AppType.captionStrong.copyWith(color: p.inkMuted),
+      ),
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: p.canvas,
+      elevation: AppElevation.flat,
+      indicatorColor: p.primaryTint,
+      selectedIconTheme: IconThemeData(color: p.onPrimaryTint),
+      unselectedIconTheme: IconThemeData(color: p.inkMuted),
+      selectedLabelTextStyle: AppType.captionStrong.copyWith(
+        color: p.ink,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelTextStyle: AppType.captionStrong.copyWith(
+        color: p.inkMuted,
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: p.inverseSurface,
+      contentTextStyle: AppType.bodyCompact.copyWith(color: p.onInverseSurface),
+      actionTextColor: p.inversePrimary,
+      closeIconColor: p.onInverseSurface,
+      elevation: AppElevation.overlay,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.chip),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: p.surface,
+      modalBackgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: AppElevation.flat,
+      modalElevation: AppElevation.flat,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTop),
+      clipBehavior: Clip.antiAlias,
+      dragHandleColor: p.outline,
+      dragHandleSize: AppSheetHandle.size,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: p.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: AppElevation.overlay,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.featureCard),
+      titleTextStyle: AppType.headline.copyWith(color: p.ink),
+      contentTextStyle: AppType.bodyCompact.copyWith(color: p.inkMuted),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: p.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: AppElevation.overlay,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.chip,
+        side: hairline,
+      ),
+    ),
+    pageTransitionsTheme: _pageTransitionsTheme,
+    extensions: <ThemeExtension<dynamic>>[p, tajweed],
   );
 }
 
 // ── Public theme builders ────────────────────────────────────────
 
-/// Builds the light [ThemeData] with Material 3 colour scheme,
-/// Arabic text tweaks, and the [TajweedTheme] extension.
-ThemeData buildLightTheme() {
-  final base = ThemeData.light(useMaterial3: true);
-  final textTheme = _addArabicFontFallback(
-    _applyReadingLineHeightToTextTheme(base.textTheme),
-  );
+/// The light appearance: brand teal on warm off-white.
+ThemeData buildLightTheme() =>
+    _buildTheme(AppPalette.light, TajweedTheme.light);
 
-  return base.copyWith(
-    colorScheme: _lightScheme,
-    textTheme: textTheme,
-    scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-    cardTheme: CardThemeData(
-      surfaceTintColor: Colors.transparent,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: _lightScheme.surface,
-      foregroundColor: _lightScheme.onSurface,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        color: _lightScheme.onSurface,
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      // Was the dark palette's muted grey, about 1.8:1 on the light fill.
-      hintStyle: TextStyle(color: _lightScheme.onSurfaceVariant),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide.none,
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        elevation: 3,
-        shadowColor: Colors.black.withValues(alpha: 0.2),
-      ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        elevation: 3,
-        shadowColor: Colors.black.withValues(alpha: 0.2),
-      ),
-    ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(
-        elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.15),
-      ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.15),
-      height: 68,
-    ),
-    pageTransitionsTheme: _pageTransitionsTheme,
-    extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
-  );
-}
+/// The dark appearance: near-black surfaces with a lifted teal.
+ThemeData buildDarkTheme() => _buildTheme(AppPalette.dark, TajweedTheme.dark);
 
-/// Builds the dark [ThemeData] with an AMOLED-friendly palette,
-/// Arabic text tweaks, and the [TajweedTheme] extension.
-ThemeData buildDarkTheme() {
-  final base = ThemeData.dark(useMaterial3: true);
-  final textTheme = _addArabicFontFallback(
-    _applyReadingLineHeightToTextTheme(base.textTheme),
-  ).apply(bodyColor: _darkOnSurface, displayColor: _darkOnSurface);
-
-  return base.copyWith(
-    colorScheme: _darkScheme,
-    textTheme: textTheme,
-    scaffoldBackgroundColor: _darkCanvas,
-    canvasColor: _darkCanvas,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: _darkCanvas,
-      foregroundColor: _darkOnSurface,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: Colors.black26,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        color: _darkOnSurface,
-      ),
-      systemOverlayStyle: SystemUiOverlayStyle.light,
-    ),
-    cardTheme: const CardThemeData(
-      color: _darkSurfaceElevated,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        side: BorderSide(color: _darkOutline, width: 1),
-      ),
-      margin: EdgeInsets.zero,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        elevation: 3,
-        shadowColor: Colors.black.withValues(alpha: 0.4),
-      ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        elevation: 3,
-        shadowColor: Colors.black.withValues(alpha: 0.4),
-      ),
-    ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(
-        elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.3),
-      ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.4),
-      height: 68,
-    ),
-    inputDecorationTheme: const InputDecorationTheme(
-      filled: true,
-      fillColor: _darkSurfaceElevated,
-      hintStyle: TextStyle(color: _darkMuted),
-      labelStyle: TextStyle(color: _darkOnSurfaceSecondary),
-      prefixIconColor: _darkOnSurfaceSecondary,
-      suffixIconColor: _darkOnSurfaceSecondary,
-      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide(color: _darkOutline),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide(color: _darkPrimary, width: 1.4),
-      ),
-    ),
-    pageTransitionsTheme: _pageTransitionsTheme,
-    extensions: <ThemeExtension<dynamic>>[TajweedTheme.dark],
-  );
-}
-
-/// Warm paper/sepia [ThemeData] for long reading sessions.
-ThemeData buildPaperTheme() {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF8B5E34),
-    brightness: Brightness.light,
-    surface: const Color(0xFFFBF6EC),
-  );
-  final base = ThemeData.light(useMaterial3: true);
-  final textTheme = _addArabicFontFallback(
-    _applyReadingLineHeightToTextTheme(base.textTheme),
-  );
-
-  return base.copyWith(
-    colorScheme: scheme,
-    textTheme: textTheme,
-    scaffoldBackgroundColor: const Color(0xFFF3E6C9),
-    cardTheme: CardThemeData(
-      color: const Color(0xFFFBF6EC),
-      surfaceTintColor: Colors.transparent,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: const Color(0xFFF3E6C9),
-      foregroundColor: scheme.onSurface,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        color: scheme.onSurface,
-      ),
-    ),
-    navigationBarTheme: const NavigationBarThemeData(
-      elevation: 8,
-      backgroundColor: Color(0xFFF3E6C9),
-      height: 68,
-    ),
-    pageTransitionsTheme: _pageTransitionsTheme,
-    extensions: <ThemeExtension<dynamic>>[TajweedTheme.light],
-  );
-}
+/// Warm paper/sepia appearance for long reading sessions.
+ThemeData buildPaperTheme() =>
+    _buildTheme(AppPalette.paper, TajweedTheme.light);
