@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_tokens.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/hublee_nav_icons.dart';
 import 'widgets/reading_width.dart';
@@ -65,8 +66,6 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.sizeOf(context);
     final wide = ReadingLayout.useRail(
       size,
@@ -84,9 +83,6 @@ class AppShell extends StatelessWidget {
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: _select,
               labelType: NavigationRailLabelType.all,
-              backgroundColor: isDark
-                  ? const Color(0xFF0B0F14)
-                  : colorScheme.surface,
               destinations: [
                 for (final dest in _destinations)
                   NavigationRailDestination(
@@ -96,7 +92,7 @@ class AppShell extends StatelessWidget {
                   ),
               ],
             ),
-            const VerticalDivider(width: 1),
+            const VerticalDivider(width: AppStroke.hairline),
             Expanded(
               child: ConstrainedReadingBody(
                 child: SafeArea(top: false, child: navigationShell),
@@ -109,22 +105,27 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(top: false, child: navigationShell),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: _select,
-        backgroundColor: isDark ? const Color(0xFF0B0F14) : colorScheme.surface,
-        indicatorColor: colorScheme.primary.withValues(alpha: 0.15),
-        labelBehavior: compactBar
-            ? NavigationDestinationLabelBehavior.onlyShowSelected
-            : NavigationDestinationLabelBehavior.alwaysShow,
-        height: 68,
-        destinations: [
-          for (final dest in _destinations)
-            NavigationDestination(
-              icon: dest.icon,
-              selectedIcon: dest.selected,
-              label: dest.label,
-            ),
+      // Colours, indicator and height come from the theme; the hairline
+      // is what separates the flat bar from the page.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Divider(height: AppStroke.hairline),
+          NavigationBar(
+            selectedIndex: navigationShell.currentIndex,
+            onDestinationSelected: _select,
+            labelBehavior: compactBar
+                ? NavigationDestinationLabelBehavior.onlyShowSelected
+                : NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: [
+              for (final dest in _destinations)
+                NavigationDestination(
+                  icon: dest.icon,
+                  selectedIcon: dest.selected,
+                  label: dest.label,
+                ),
+            ],
+          ),
         ],
       ),
     );
