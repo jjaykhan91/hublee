@@ -43,9 +43,8 @@ class _SurahAppBarTitleState extends State<SurahAppBarTitle> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final chapter = widget.chapter;
-    final accent = chapter.isMeccan
-        ? AppColors.meccanAccent
-        : AppColors.medinanAccent;
+    final palette = AppPalette.of(context);
+    final accent = chapter.isMeccan ? palette.meccan : palette.medinan;
     final latin = _cycle.displayText(chapter);
     final style = theme.textTheme.titleLarge?.copyWith(
       fontFamily: latin == null ? AppFonts.surahName : null,

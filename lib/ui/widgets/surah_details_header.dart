@@ -29,9 +29,8 @@ class SurahDetailsHeader extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
     final meaning = chapter.nameTranslated;
-    final accent = chapter.isMeccan
-        ? AppColors.meccanAccent
-        : AppColors.medinanAccent;
+    final palette = AppPalette.of(context);
+    final accent = chapter.isMeccan ? palette.meccan : palette.medinan;
     final juz = chapter.startJuz == chapter.endJuz
         ? 'Juz ${chapter.startJuz}'
         : 'Juz ${chapter.startJuz}–${chapter.endJuz}';
