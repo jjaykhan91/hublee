@@ -31,13 +31,13 @@ The `ColorScheme` is a direct mapping of these roles (`primaryContainer` = `prim
 
 ## Type (`AppType`)
 
-`display` 28/34, `title` 22/28, `headline` 18/24, `subtitle` 16/24, `body` 16/24, `bodyCompact` 14/21, `label` 14/20, `caption` 12/16. Nothing is smaller than 12. Every style carries the Arabic font fallback. Use `Theme.of(context).textTheme` slots; do not set a raw `fontSize` in UI chrome.
+`display` 28/34, `title` 22/28, `headline` 18/24, `subtitle` 16/24, `body` 16/24, `bodyCompact` 14/21, `label` 14/20, `caption` 12/16. Nothing is smaller than 12. Every style carries the Arabic font fallback. The tokens set no font family: component themes in `app_theme.dart` add the platform family with `type(...)`, because without it Latin text falls through to the Arabic fonts. Use `Theme.of(context).textTheme` slots; do not set a raw `fontSize` in UI chrome.
 
 Arabic source text is separate: `lib/ui/widgets/arabic_text.dart` sets its own font, line height and strut and must not change.
 
 ## Surfaces and components
 
-- Cards: flat, `surface` fill, 1 px `hairline` border, `AppRadius.card`, zero margin. Same in every appearance.
+- Cards: flat, `surface` fill, 1 px `hairline` border, `AppRadius.card`, and an `AppSpacing.xs` margin so stacked cards keep a gap. Same in every appearance. `HubleeCard` has no margin and fills the slot it is given.
 - App bar, navigation bar and rail: flat, on `canvas`, no scrolled-under shadow.
 - Buttons: flat, at least 48 dp tall (`AppSpacing.minTouchTarget`).
 - Text fields and the search bar: `surface` fill, `outline` border, `primary` 1.5 px when focused, `AppRadius.input`.
