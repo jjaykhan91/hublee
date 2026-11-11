@@ -8,6 +8,7 @@ import '../../hadith/hadith_repository.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 import 'arabic_text.dart';
+import 'sheet_handle.dart';
 
 /// Shows a scrollable chapter list. Tapping a row calls [onJump]
 /// with the first hadith index of that chapter.
@@ -60,14 +61,7 @@ class HadithChapterSheet extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.onSurface.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          const SheetHandle(),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(

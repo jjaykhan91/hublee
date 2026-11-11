@@ -11,6 +11,7 @@ import '../../services/settings_controller.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 import 'arabic_text.dart';
+import 'sheet_handle.dart';
 
 /// Kinds of hadith a new reader will meet in these books.
 const _kHadithTypes = <({String arabic, String english, String meaning})>[
@@ -116,17 +117,7 @@ class _HadithOverviewBody extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
+        const SheetHandle(padding: EdgeInsets.only(bottom: AppSpacing.lg)),
         const ArabicText(
           '\u0627\u0644\u0652\u062D\u064E\u062F\u0650\u064A\u062B',
           fontOverride: ArabicFontOption.amiri,

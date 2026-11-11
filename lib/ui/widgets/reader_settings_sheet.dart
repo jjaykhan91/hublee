@@ -15,6 +15,7 @@ import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 import 'appearance_chips.dart';
 import 'arabic_font_list.dart';
+import 'sheet_handle.dart';
 
 /// Shows the reader settings bottom sheet.
 ///
@@ -62,16 +63,7 @@ class _ReaderSettingsSheet extends StatelessWidget {
         key: const Key('reader-settings-list'),
         padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPad),
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const SheetHandle(),
           const SizedBox(height: 16),
 
           // Title

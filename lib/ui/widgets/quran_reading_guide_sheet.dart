@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hublee/router_paths.dart';
 import 'package:hublee/ui/widgets/sajdah_guide.dart';
 import 'package:hublee/ui/widgets/tajweed.dart';
+import 'sheet_handle.dart';
+import '../../theme/app_tokens.dart';
 
 /// Shows a draggable modal bottom sheet with Quran reading rules
 /// (sajdah, waqf/stop signs) and Tajweed colour legend.
@@ -237,18 +239,7 @@ class _QuranReadingGuideContent extends StatelessWidget {
   }
 
   Widget _buildDragHandle(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Container(
-        width: 40,
-        height: 4,
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
+    return const SheetHandle(padding: EdgeInsets.only(bottom: AppSpacing.md));
   }
 }
 
