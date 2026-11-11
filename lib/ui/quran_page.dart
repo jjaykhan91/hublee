@@ -7,7 +7,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../quran/quran_chapters_repository.dart';
@@ -16,6 +15,7 @@ import '../quran/models.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/fade_slide_in.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/hublee_card.dart';
 import 'widgets/lunar_month_sheet.dart';
@@ -142,8 +142,6 @@ class _QuranPageState extends State<QuranPage>
 /// sees.
 const _animatedCardLimit = 25;
 
-const _cardAnimationDuration = Duration(milliseconds: 300);
-
 // ────────────────────────────────────────────────────────────────
 //  Tab 1: Flat surah list (default)
 // ────────────────────────────────────────────────────────────────
@@ -183,17 +181,7 @@ class _SurahListViewState extends State<_SurahListView>
         );
         if (index >= _animatedCardLimit) return card;
 
-        final delay = (30 * index).clamp(0, 480).ms;
-        return card
-            .animate()
-            .fadeIn(duration: _cardAnimationDuration, delay: delay)
-            .slideX(
-              begin: 0.03,
-              end: 0,
-              duration: _cardAnimationDuration,
-              delay: delay,
-              curve: Curves.easeOut,
-            );
+        return card.entrance(index: index, axis: Axis.horizontal);
       },
     );
   }

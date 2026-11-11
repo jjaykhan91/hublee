@@ -7,13 +7,13 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../router_paths.dart';
 import '../services/settings_scope.dart';
 import '../services/app_scope.dart';
+import 'widgets/fade_slide_in.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/arabic_font_list.dart';
 import 'widgets/app_haptics.dart';
@@ -35,233 +35,209 @@ class SettingsPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           // ── Display section ──────────────────────────────
-          const _SectionHeader('Display', icon: Icons.text_fields_rounded)
-              .animate()
-              .fadeIn(duration: 400.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms),
+          const _SectionHeader(
+            'Display',
+            icon: Icons.text_fields_rounded,
+          ).entrance(),
           const SizedBox(height: 8),
 
           // Arabic font zoom with live preview
           _FontSizeCard(
-                label: 'Quran Arabic Size',
-                value: settings.arabicZoom,
-                onChanged: (value) => settings.arabicZoom = value,
-                preview: ArabicText(
-                  '\u0628\u0650\u0633\u0652\u0645\u0650 '
-                  '\u0627\u0644\u0644\u0651\u064E\u0647\u0650 '
-                  '\u0627\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 '
-                  '\u0627\u0644\u0631\u0651\u064E\u062D\u0650\u064A\u0645\u0650',
-                  tajweed: false,
-                  fontSize: 26 * settings.arabicZoom,
-                  weight: FontWeight.bold,
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 60.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 60.ms),
+            label: 'Quran Arabic Size',
+            value: settings.arabicZoom,
+            onChanged: (value) => settings.arabicZoom = value,
+            preview: ArabicText(
+              '\u0628\u0650\u0633\u0652\u0645\u0650 '
+              '\u0627\u0644\u0644\u0651\u064E\u0647\u0650 '
+              '\u0627\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 '
+              '\u0627\u0644\u0631\u0651\u064E\u062D\u0650\u064A\u0645\u0650',
+              tajweed: false,
+              fontSize: 26 * settings.arabicZoom,
+              weight: FontWeight.bold,
+            ),
+          ).entrance(index: 1),
           const SizedBox(height: 12),
 
           // English font zoom with live preview
           _FontSizeCard(
-                label: 'Translation Size',
-                value: settings.englishZoom,
-                onChanged: (value) => settings.englishZoom = value,
-                preview: Text(
-                  'In the name of God, the Most Gracious, '
-                  'the Most Merciful',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 16 * settings.englishZoom,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 120.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 120.ms),
+            label: 'Translation Size',
+            value: settings.englishZoom,
+            onChanged: (value) => settings.englishZoom = value,
+            preview: Text(
+              'In the name of God, the Most Gracious, '
+              'the Most Merciful',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontSize: 16 * settings.englishZoom,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ).entrance(index: 2),
           const SizedBox(height: 12),
 
           // Arabic font picker
           Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Arabic Font',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ArabicFontList(
-                        selected: settings.arabicFont,
-                        onChanged: (font) => settings.arabicFont = font,
-                      ),
-                    ],
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Arabic Font',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 150.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 150.ms),
+                  const SizedBox(height: 10),
+                  ArabicFontList(
+                    selected: settings.arabicFont,
+                    onChanged: (font) => settings.arabicFont = font,
+                  ),
+                ],
+              ),
+            ),
+          ).entrance(index: 3),
           const SizedBox(height: 12),
 
           // Tajweed toggle
           Card(
-                child: MergeSemantics(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    leading: Icon(
-                      Icons.color_lens_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    title: const Text('Tajweed Colours'),
-                    subtitle: Text(
-                      settings.tajweedEnabled
-                          ? 'Colour-coded tajweed rules shown'
-                          : 'Plain Arabic text displayed',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: Switch(
-                      value: settings.tajweedEnabled,
-                      onChanged: (v) {
-                        AppHaptics.selection();
-                        settings.tajweedEnabled = v;
-                      },
-                    ),
-                    onTap: () {
-                      AppHaptics.selection();
-                      settings.tajweedEnabled = !settings.tajweedEnabled;
-                    },
-                  ),
+            child: MergeSemantics(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 210.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 210.ms),
+                leading: Icon(
+                  Icons.color_lens_rounded,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Tajweed Colours'),
+                subtitle: Text(
+                  settings.tajweedEnabled
+                      ? 'Colour-coded tajweed rules shown'
+                      : 'Plain Arabic text displayed',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: Switch(
+                  value: settings.tajweedEnabled,
+                  onChanged: (v) {
+                    AppHaptics.selection();
+                    settings.tajweedEnabled = v;
+                  },
+                ),
+                onTap: () {
+                  AppHaptics.selection();
+                  settings.tajweedEnabled = !settings.tajweedEnabled;
+                },
+              ),
+            ),
+          ).entrance(index: 4),
 
           // Word-by-word toggle
           Card(
-                child: MergeSemantics(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    leading: Icon(
-                      Icons.touch_app_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    title: const Text('Word by Word'),
-                    subtitle: Text(
-                      settings.wordByWordEnabled
-                          ? 'Tap any word to see its meaning'
-                          : 'Tapping words is off',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: Switch(
-                      value: settings.wordByWordEnabled,
-                      onChanged: (v) {
-                        AppHaptics.selection();
-                        settings.wordByWordEnabled = v;
-                      },
-                    ),
-                    onTap: () {
-                      AppHaptics.selection();
-                      settings.wordByWordEnabled = !settings.wordByWordEnabled;
-                    },
-                  ),
+            child: MergeSemantics(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 240.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 240.ms),
+                leading: Icon(
+                  Icons.touch_app_rounded,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Word by Word'),
+                subtitle: Text(
+                  settings.wordByWordEnabled
+                      ? 'Tap any word to see its meaning'
+                      : 'Tapping words is off',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: Switch(
+                  value: settings.wordByWordEnabled,
+                  onChanged: (v) {
+                    AppHaptics.selection();
+                    settings.wordByWordEnabled = v;
+                  },
+                ),
+                onTap: () {
+                  AppHaptics.selection();
+                  settings.wordByWordEnabled = !settings.wordByWordEnabled;
+                },
+              ),
+            ),
+          ).entrance(index: 5),
 
           // Tajweed guide link
           Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  leading: Icon(
-                    Icons.info_outline_rounded,
-                    color: colorScheme.primary,
-                  ),
-                  title: const Text('Tajweed Guide'),
-                  subtitle: Text(
-                    'Learn tajweed rules and colour coding',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push(AppRoute.tajweedGuide),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 240.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 240.ms),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: Icon(
+                Icons.info_outline_rounded,
+                color: colorScheme.primary,
+              ),
+              title: const Text('Tajweed Guide'),
+              subtitle: Text(
+                'Learn tajweed rules and colour coding',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push(AppRoute.tajweedGuide),
+            ),
+          ).entrance(index: 6),
           const SizedBox(height: 24),
 
           // ── Appearance section ───────────────────────────
-          const _SectionHeader('Appearance', icon: Icons.palette_outlined)
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 300.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 300.ms),
+          const _SectionHeader(
+            'Appearance',
+            icon: Icons.palette_outlined,
+          ).entrance(index: 7),
           const SizedBox(height: 8),
 
           Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Theme',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      AppearanceChips(
-                        value: appearance,
-                        onChanged: (value) =>
-                            AppScope.of(context).setAppearance(value),
-                      ),
-                    ],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Theme',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 360.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 360.ms),
+                  const SizedBox(height: 10),
+                  AppearanceChips(
+                    value: appearance,
+                    onChanged: (value) =>
+                        AppScope.of(context).setAppearance(value),
+                  ),
+                ],
+              ),
+            ),
+          ).entrance(index: 8),
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
             const SizedBox(height: 12),
             Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    leading: Icon(
-                      Icons.widgets_outlined,
-                      color: colorScheme.primary,
-                    ),
-                    title: const Text('Home screen widgets'),
-                    subtitle: Text(
-                      'Ayah, hadith, and daily words on Android',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push(AppRoute.homeWidgets),
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 400.ms, delay: 390.ms)
-                .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 390.ms),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                leading: Icon(
+                  Icons.widgets_outlined,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Home screen widgets'),
+                subtitle: Text(
+                  'Ayah, hadith, and daily words on Android',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push(AppRoute.homeWidgets),
+              ),
+            ).entrance(index: 9),
           ],
           const SizedBox(height: 12),
           Card(
@@ -305,169 +281,156 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────
-          const _SectionHeader('About', icon: Icons.info_outline_rounded)
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 420.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 420.ms),
+          const _SectionHeader(
+            'About',
+            icon: Icons.info_outline_rounded,
+          ).entrance(index: 10),
           const SizedBox(height: 8),
 
           Card(
-                // Children keep their own nodes, so Privacy policy stays a
-                // separate button instead of merging into one giant card.
-                semanticContainer: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            // Children keep their own nodes, so Privacy policy stays a
+            // separate button instead of merging into one giant card.
+            semanticContainer: false,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hublee',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Quran & Hadith Reader',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    key: const Key('settings-sources'),
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(bottom: 4),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    title: Text(
+                      'Sources',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Where the text, translations, and audio come from',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     children: [
                       Text(
-                        'Hublee',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        'Word-by-word English from "The Glorious Qur\u2019an: '
+                        'Word-for-Word Translation to Facilitate Learning of '
+                        'Qur\u2019anic Arabic" by Dr. Shehnaz Shaikh and '
+                        'Ms. Kausar Khatri. The in-app dictionary and '
+                        'learning cards use that same glossary — it covers '
+                        'the Quran, not modern newspaper Arabic.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
-                        'Quran & Hadith Reader',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        'Modern Arabic dictionary: Wiktionary (English edition) '
+                        'via kaikki.org / wiktextract, CC BY-SA 3.0 and GFDL, '
+                        'plus a Hublee newspaper-Arabic core list. Grammar '
+                        'lessons are original Hublee notes; verb forms follow '
+                        'the classical I–X paradigm.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Divider(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.5,
+                      const SizedBox(height: 6),
+                      Text(
+                        'Allah\'s names: the widely taught list associated '
+                        'with Jami\' at-Tirmidhi (3507). The count of '
+                        'ninety-nine is in Sahih al-Bukhari 6410 and 7392 '
+                        'and Sahih Muslim 2677; that does not mean He has '
+                        'only ninety-nine names. English glosses from '
+                        'Aladhan\'s Asma al-Husna data, with spelling '
+                        'corrections. Seerah chronology follows Ibn Ishaq '
+                        'as transmitted by Ibn Hisham, with Quran citations '
+                        'where the text speaks.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      ExpansionTile(
-                        key: const Key('settings-sources'),
-                        tilePadding: EdgeInsets.zero,
-                        childrenPadding: const EdgeInsets.only(bottom: 4),
-                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                        shape: const Border(),
-                        collapsedShape: const Border(),
-                        title: Text(
-                          'Sources',
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.75,
-                                ),
-                              ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Duas: Quranic prayers use this app\'s Uthmani '
+                        'Arabic and ClearQuran English. Sunnah duas are '
+                        'from Hisn al-Muslim (Fortress of the Muslim) by '
+                        'Sa\'id ibn Ali ibn Wahf al-Qahtani; each entry '
+                        'keeps its book citation. Hublee does not add a '
+                        'hadith grade.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
-                        subtitle: Text(
-                          'Where the text, translations, and audio come from',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                        children: [
-                          Text(
-                            'Word-by-word English from "The Glorious Qur\u2019an: '
-                            'Word-for-Word Translation to Facilitate Learning of '
-                            'Qur\u2019anic Arabic" by Dr. Shehnaz Shaikh and '
-                            'Ms. Kausar Khatri. The in-app dictionary and '
-                            'learning cards use that same glossary — it covers '
-                            'the Quran, not modern newspaper Arabic.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Modern Arabic dictionary: Wiktionary (English edition) '
-                            'via kaikki.org / wiktextract, CC BY-SA 3.0 and GFDL, '
-                            'plus a Hublee newspaper-Arabic core list. Grammar '
-                            'lessons are original Hublee notes; verb forms follow '
-                            'the classical I–X paradigm.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Allah\'s names: the widely taught list associated '
-                            'with Jami\' at-Tirmidhi (3507). The count of '
-                            'ninety-nine is in Sahih al-Bukhari 6410 and 7392 '
-                            'and Sahih Muslim 2677; that does not mean He has '
-                            'only ninety-nine names. English glosses from '
-                            'Aladhan\'s Asma al-Husna data, with spelling '
-                            'corrections. Seerah chronology follows Ibn Ishaq '
-                            'as transmitted by Ibn Hisham, with Quran citations '
-                            'where the text speaks.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Duas: Quranic prayers use this app\'s Uthmani '
-                            'Arabic and ClearQuran English. Sunnah duas are '
-                            'from Hisn al-Muslim (Fortress of the Muslim) by '
-                            'Sa\'id ibn Ali ibn Wahf al-Qahtani; each entry '
-                            'keeps its book citation. Hublee does not add a '
-                            'hadith grade.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Dhikr of the Day: short phrases from the Quran, '
-                            'Sahih al-Bukhari, and Sahih Muslim. A few are from '
-                            'Jami at-Tirmidhi or Hisn al-Muslim; those are '
-                            'labelled on the card and are not presented as '
-                            'sahih. Hublee does not add a hadith grade.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Verse translation: ClearQuran. Arabic script: KFGQPC '
-                            'Hafs and Uthmani text. Recitation: Quran.com CDN and '
-                            'EveryAyah (Hafs). Choose a reciter from the play '
-                            'control on any ayah. Download a surah from the '
-                            'reader for offline play.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.5,
-                                ),
-                          ),
-                        ],
                       ),
-                      const SizedBox(height: 12),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          Icons.privacy_tip_outlined,
-                          color: colorScheme.primary,
+                      const SizedBox(height: 6),
+                      Text(
+                        'Dhikr of the Day: short phrases from the Quran, '
+                        'Sahih al-Bukhari, and Sahih Muslim. A few are from '
+                        'Jami at-Tirmidhi or Hisn al-Muslim; those are '
+                        'labelled on the card and are not presented as '
+                        'sahih. Hublee does not add a hadith grade.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
-                        title: const Text('Privacy policy'),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => context.push(AppRoute.privacy),
                       ),
-                      const SizedBox(height: 12),
-                      const _AppVersionLabel(),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Verse translation: ClearQuran. Arabic script: KFGQPC '
+                        'Hafs and Uthmani text. Recitation: Quran.com CDN and '
+                        'EveryAyah (Hafs). Choose a reciter from the play '
+                        'control on any ayah. Download a surah from the '
+                        'reader for offline play.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 480.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 480.ms),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.privacy_tip_outlined,
+                      color: colorScheme.primary,
+                    ),
+                    title: const Text('Privacy policy'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoute.privacy),
+                  ),
+                  const SizedBox(height: 12),
+                  const _AppVersionLabel(),
+                ],
+              ),
+            ),
+          ).entrance(index: 11),
         ],
       ),
     );
