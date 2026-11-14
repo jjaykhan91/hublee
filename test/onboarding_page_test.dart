@@ -132,6 +132,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Arabic typeface'), findsOneWidget);
     expect(find.byType(ArabicFontList), findsOneWidget);
+    // The font list scrolls; bring the row into view before tapping it.
+    await tester.ensureVisible(find.text('Noto Naskh'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Noto Naskh'));
     await tester.pump();
     expect(settings.arabicFont, ArabicFontOption.notoNaskh);

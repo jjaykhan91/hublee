@@ -123,10 +123,7 @@ class _SplashPageState extends State<SplashPage> {
               children: [
                 // Show full image without cropping; letterboxing uses
                 // scaffold background.
-                Image.asset(
-                  'assets/images/splash.webp',
-                  fit: BoxFit.contain,
-                ),
+                Image.asset('assets/images/splash.webp', fit: BoxFit.contain),
               ],
             ),
           ),

@@ -24,6 +24,7 @@ import 'widgets/hublee_card.dart';
 import 'widgets/search_highlight.dart';
 import 'widgets/reading_width.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/spot_art.dart';
 
 enum _SearchScope { all, quran, hadith }
 
@@ -186,11 +187,14 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              idle ? Icons.search_rounded : Icons.search_off_rounded,
-              size: 48,
-              color: cs.onSurface.withValues(alpha: 0.2),
-            ),
+            if (idle)
+              Icon(
+                Icons.search_rounded,
+                size: 48,
+                color: cs.onSurface.withValues(alpha: 0.2),
+              )
+            else
+              const SpotIllustration(SpotArt.noResults),
             const SizedBox(height: 12),
             Text(
               idle
