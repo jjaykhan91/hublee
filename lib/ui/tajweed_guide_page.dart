@@ -6,8 +6,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
+import 'widgets/fade_slide_in.dart';
 import 'widgets/tajweed.dart';
 
 /// Comprehensive tajweed rules reference page.
@@ -25,62 +25,59 @@ class TajweedGuidePage extends StatelessWidget {
         children: [
           // Introduction
           Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colorScheme.primary.withValues(alpha: 0.15),
-                                  colorScheme.tertiary.withValues(alpha: 0.06),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.auto_stories_rounded,
-                              color: colorScheme.primary,
-                              size: 22,
-                            ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.primary.withValues(alpha: 0.15),
+                              colorScheme.tertiary.withValues(alpha: 0.06),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'What is Tajweed?',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.primary,
-                                  ),
-                            ),
-                          ),
-                        ],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.auto_stories_rounded,
+                          color: colorScheme.primary,
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Tajweed (\u062A\u062C\u0648\u064A\u062F) is the set of '
-                        'rules governing the correct pronunciation of the '
-                        'Quran during recitation. The word means '
-                        '"to make better" or "to beautify". When enabled, '
-                        'Hublee colour-codes the Arabic text following the '
-                        'Madani mushaf colour scheme used by quran.com.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(height: 1.6),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'What is Tajweed?',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.primary,
+                              ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tajweed (\u062A\u062C\u0648\u064A\u062F) is the set of '
+                    'rules governing the correct pronunciation of the '
+                    'Quran during recitation. The word means '
+                    '"to make better" or "to beautify". When enabled, '
+                    'Hublee colour-codes the Arabic text following the '
+                    'Madani mushaf colour scheme used by quran.com.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.6),
+                  ),
+                ],
+              ),
+            ),
+          ).entrance(),
           const SizedBox(height: 16),
 
           // Section: Colour Legend
@@ -331,49 +328,46 @@ class TajweedGuidePage extends StatelessWidget {
           const SizedBox(height: 10),
 
           Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _tipRow(
-                        context,
-                        Icons.speed_rounded,
-                        'Start slow',
-                        'Begin with slow recitation (tarteel) to master '
-                            'pronunciation before increasing speed.',
-                      ),
-                      const SizedBox(height: 14),
-                      _tipRow(
-                        context,
-                        Icons.hearing_rounded,
-                        'Listen and repeat',
-                        'Listen to a skilled reciter and repeat after them, '
-                            'paying attention to where tajweed rules apply.',
-                      ),
-                      const SizedBox(height: 14),
-                      _tipRow(
-                        context,
-                        Icons.color_lens_rounded,
-                        'Use colour coding',
-                        'Enable tajweed colours in the reader to visualise '
-                            'where rules apply as you recite.',
-                      ),
-                      const SizedBox(height: 14),
-                      _tipRow(
-                        context,
-                        Icons.repeat_rounded,
-                        'Practice regularly',
-                        'Consistent practice with short passages is more '
-                            'effective than occasional long sessions.',
-                      ),
-                    ],
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _tipRow(
+                    context,
+                    Icons.speed_rounded,
+                    'Start slow',
+                    'Begin with slow recitation (tarteel) to master '
+                        'pronunciation before increasing speed.',
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 500.ms)
-              .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 500.ms),
+                  const SizedBox(height: 14),
+                  _tipRow(
+                    context,
+                    Icons.hearing_rounded,
+                    'Listen and repeat',
+                    'Listen to a skilled reciter and repeat after them, '
+                        'paying attention to where tajweed rules apply.',
+                  ),
+                  const SizedBox(height: 14),
+                  _tipRow(
+                    context,
+                    Icons.color_lens_rounded,
+                    'Use colour coding',
+                    'Enable tajweed colours in the reader to visualise '
+                        'where rules apply as you recite.',
+                  ),
+                  const SizedBox(height: 14),
+                  _tipRow(
+                    context,
+                    Icons.repeat_rounded,
+                    'Practice regularly',
+                    'Consistent practice with short passages is more '
+                        'effective than occasional long sessions.',
+                  ),
+                ],
+              ),
+            ),
+          ).entrance(index: 3),
         ],
       ),
     );
@@ -448,96 +442,81 @@ class _TajweedRuleCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child:
-          Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Rule header with colour badge
-                      Row(
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              rule,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: color,
-                                  ),
-                            ),
-                          ),
-                          Text(
-                            arabic,
-                            textDirection: TextDirection.rtl,
-                            style: TextStyle(
-                              fontFamily: 'KFGQPCQuranicFontHafsSmart',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: color,
-                            ),
-                          ),
-                        ],
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Rule header with colour badge
+              Row(
+                children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      rule,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
                       ),
-                      const SizedBox(height: 10),
+                    ),
+                  ),
+                  Text(
+                    arabic,
+                    textDirection: TextDirection.rtl,
+                    style: TextStyle(
+                      fontFamily: 'KFGQPCQuranicFontHafsSmart',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
 
-                      // Description
-                      Text(
-                        description,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(height: 1.6),
-                      ),
-                      const SizedBox(height: 8),
+              // Description
+              Text(
+                description,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(height: 1.6),
+              ),
+              const SizedBox(height: 8),
 
-                      // Example
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: color.withValues(alpha: 0.15),
-                          ),
-                        ),
-                        child: Text(
-                          example,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.8,
-                                ),
-                                fontStyle: FontStyle.italic,
-                                height: 1.5,
-                              ),
-                        ),
-                      ),
-                    ],
+              // Example
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color.withValues(alpha: 0.15)),
+                ),
+                child: Text(
+                  example,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
                   ),
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 400.ms, delay: (60 * index).clamp(0, 600).ms)
-              .slideY(
-                begin: 0.04,
-                end: 0,
-                duration: 400.ms,
-                delay: (60 * index).clamp(0, 600).ms,
               ),
+            ],
+          ),
+        ),
+      ).entrance(index: index),
     );
   }
 }

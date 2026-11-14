@@ -50,6 +50,7 @@ import 'widgets/reciter_picker.dart';
 import 'widgets/sajdah_guide.dart';
 import 'widgets/surah_app_bar_title.dart';
 import 'widgets/surah_details_header.dart';
+import 'widgets/sheet_handle.dart';
 
 /// PUA glyph column is only for plain KFGQPC reading. Tajweed and
 /// word-by-word need standard Uthmani, so the 4.3 MB mushaf decode
@@ -426,16 +427,8 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
               // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+              const SheetHandle(
+                padding: EdgeInsets.only(bottom: AppSpacing.lg),
               ),
 
               // Header card with Makki/Madani background image

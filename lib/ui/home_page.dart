@@ -5,13 +5,13 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
 import '../services/daily_content_service.dart';
 import '../services/settings_controller.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/fade_slide_in.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/dhikr_of_the_day_card.dart';
 import 'widgets/hublee_marks.dart';
@@ -161,15 +161,9 @@ class _HomePageState extends State<HomePage> {
                               label: 'Loading ayah of the day',
                             );
                           }
-                          return _VerseOfTheDayCard(verse: snapshot.data!)
-                              .animate()
-                              .fadeIn(duration: 600.ms, curve: Curves.easeOut)
-                              .slideY(
-                                begin: 0.05,
-                                end: 0,
-                                duration: 600.ms,
-                                curve: Curves.easeOut,
-                              );
+                          return _VerseOfTheDayCard(
+                            verse: snapshot.data!,
+                          ).entrance();
                         },
                       ),
                       const SizedBox(height: 14),
@@ -191,42 +185,18 @@ class _HomePageState extends State<HomePage> {
                               label: 'Loading hadith of the day',
                             );
                           }
-                          return _HadithOfTheDayCard(hadith: snapshot.data!)
-                              .animate()
-                              .fadeIn(
-                                duration: 600.ms,
-                                delay: 150.ms,
-                                curve: Curves.easeOut,
-                              )
-                              .slideY(
-                                begin: 0.05,
-                                end: 0,
-                                duration: 600.ms,
-                                delay: 150.ms,
-                                curve: Curves.easeOut,
-                              );
+                          return _HadithOfTheDayCard(
+                            hadith: snapshot.data!,
+                          ).entrance(index: 1);
                         },
                       ),
                       const SizedBox(height: 14),
 
                       // ── Dhikr of the Day ────────────────────────────
                       DhikrOfTheDayCard(
-                            key: const Key('dhikr-of-the-day-card'),
-                            dhikr: DailyContentService.dhikrOfTheDay(),
-                          )
-                          .animate()
-                          .fadeIn(
-                            duration: 600.ms,
-                            delay: 300.ms,
-                            curve: Curves.easeOut,
-                          )
-                          .slideY(
-                            begin: 0.05,
-                            end: 0,
-                            duration: 600.ms,
-                            delay: 300.ms,
-                            curve: Curves.easeOut,
-                          ),
+                        key: const Key('dhikr-of-the-day-card'),
+                        dhikr: DailyContentService.dhikrOfTheDay(),
+                      ).entrance(index: 2),
                     ],
                   ),
                 ),

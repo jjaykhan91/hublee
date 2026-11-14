@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../hadith/hadith_book_summaries.dart';
@@ -12,6 +11,7 @@ import '../hadith/hadith_repository.dart';
 import '../router_paths.dart';
 import '../services/bookmark_scope.dart';
 import '../theme/app_tokens.dart';
+import 'widgets/fade_slide_in.dart';
 import 'widgets/app_haptics.dart';
 import 'widgets/hadith_book_cover.dart';
 import 'widgets/hadith_overview_sheet.dart';
@@ -356,17 +356,7 @@ class _HadithPageState extends State<HadithPage> {
 
   Widget _animateBookTile(int animIndex, Widget tile) {
     if (animIndex >= 25) return tile;
-    final delay = (30 * animIndex).clamp(0, 600);
-    return tile
-        .animate()
-        .fadeIn(duration: 400.ms, delay: delay.ms)
-        .slideX(
-          begin: 0.03,
-          end: 0,
-          duration: 400.ms,
-          delay: delay.ms,
-          curve: Curves.easeOut,
-        );
+    return tile.entrance(index: animIndex, axis: Axis.horizontal);
   }
 }
 

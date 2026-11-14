@@ -5,6 +5,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_tokens.dart';
+
 /// A row with optional leading icon and bold title.
 class SectionHeader extends StatelessWidget {
   const SectionHeader(
@@ -49,7 +51,10 @@ class SectionHeader extends StatelessWidget {
       return Padding(padding: padding!, child: child);
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.xs,
+      ),
       child: child,
     );
   }

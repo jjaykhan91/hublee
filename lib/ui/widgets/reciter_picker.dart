@@ -13,6 +13,7 @@ import '../../services/recitation_service.dart';
 import '../../services/reciters.dart';
 import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
+import 'sheet_handle.dart';
 
 /// Opens a scrollable list of Hafs reciters.
 void showReciterPickerSheet(
@@ -122,14 +123,7 @@ class _ReciterPickerSheetState extends State<_ReciterPickerSheet> {
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const SheetHandle(),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
               child: Row(

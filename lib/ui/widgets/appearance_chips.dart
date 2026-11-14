@@ -19,7 +19,6 @@ class AppearanceChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final chips = AppAppearance.values.map((choice) {
       final selected = choice == value;
       return ChoiceChip(
@@ -31,12 +30,6 @@ class AppearanceChips extends StatelessWidget {
           onChanged(choice);
         },
         materialTapTargetSize: MaterialTapTargetSize.padded,
-        selectedColor: colorScheme.primary.withValues(alpha: 0.15),
-        labelStyle: TextStyle(
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? colorScheme.primary : colorScheme.onSurface,
-          fontSize: 13,
-        ),
       );
     }).toList();
 

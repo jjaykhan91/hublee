@@ -12,6 +12,7 @@ import '../../theme/app_tokens.dart';
 import 'app_haptics.dart';
 import 'arabic_text.dart';
 import 'quran_reading_guide_sheet.dart';
+import 'sheet_handle.dart';
 
 /// Names of the Quran that appear in the text itself.
 const _kQuranNames = <({String arabic, String english, String meaning})>[
@@ -91,17 +92,7 @@ class _QuranOverviewBody extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
+        const SheetHandle(padding: EdgeInsets.only(bottom: AppSpacing.lg)),
         const ArabicText(
           '\u0627\u0644\u0652\u0642\u064F\u0631\u0652\u0622\u0646',
           fontOverride: ArabicFontOption.amiri,

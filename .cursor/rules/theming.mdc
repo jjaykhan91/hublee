@@ -3,27 +3,52 @@ alwaysApply: true
 ---
 # Theming
 
-## Material 3
+## One source of truth
 
-- `useMaterial3: true` is enabled
-- Light theme seed color: `#2563EB`
-- Light background: `#F8FAFC`
+- Every colour, size, radius, elevation and duration comes from `lib/theme/app_tokens.dart`.
+- `lib/theme/app_theme.dart` builds the light, dark and paper `ThemeData` from one function, `_buildTheme(AppPalette, TajweedTheme)`. Do not add a second builder or per-appearance overrides.
+- Widgets read colour from `Theme.of(context).colorScheme` or `AppPalette.of(context)`. Do not write `Color(0x…)` or `Colors.*` in page or widget files; add a palette role instead.
+- `test/app_palette_test.dart` holds every text role to WCAG AA (4.5:1) on every surface step and borders to 3:1. A palette change that breaks contrast fails there.
+- `test/app_theme_test.dart` is the contract for the component themes below.
 
-## Dark Theme Palette
+## Palette (`AppPalette`)
 
-Custom GitHub-inspired dark palette (not auto-generated from seed):
+Three constant palettes: `AppPalette.light`, `.dark`, `.paper`. Roles:
 
-- Canvas: `#0B0F14`
-- Surface: `#11161C`
-- Elevated: `#151B22`
-- Outline/border: `#233042`
-- Primary: `#8AB4FF`
-- Secondary: `#7DD3FC`
+| Role | Use | Light | Dark |
+|------|-----|-------|------|
+| `canvas` | Scaffold, app bar, nav bar | `#FAF8F4` | `#0B1113` |
+| `surface` | Cards, sheets, fields | `#FFFFFF` | `#131B1E` |
+| `surfaceLow` … `surfaceHighest` | Tonal steps for nested surfaces | `#F6F3EE` … `#E9E6DF` | `#10171A` … `#212D32` |
+| `ink` / `inkMuted` | Body text / secondary text | `#1B2326` / `#55626A` | `#E6ECEA` / `#A3B0B3` |
+| `outline` / `hairline` | Control borders / card borders, dividers | `#7C878C` / `#DEDAD2` | `#6A7B80` / `#2B383C` |
+| `primary` (+ `primaryTint`) | Brand teal, selected states | `#0B4D5C` | `#7CC7D6` |
+| `accent` (+ `accentTint`) | The one gold accent | `#8A5A12` | `#E0B56A` |
+| `meccan` / `medinan` | Revelation-place labels | `#8A5A12` / `#1F6B47` | `#E0B56A` / `#7FD1A3` |
+| `error` (+ `errorTint`) | Errors | `#B3261E` | `#F2B8B5` |
 
-## Card Styling
+The `ColorScheme` is a direct mapping of these roles (`primaryContainer` = `primaryTint`, `tertiary` = `accent`, `onSurfaceVariant` = `inkMuted`, `outlineVariant` = `hairline`). `surfaceTint` is transparent: elevation never tints a surface.
 
-- Light: rounded corners (16px), elevation 1
-- Dark: no elevation, uses border instead (`#233042`)
+## Type (`AppType`)
+
+`display` 28/34, `title` 22/28, `headline` 18/24, `subtitle` 16/24, `body` 16/24, `bodyCompact` 14/21, `label` 14/20, `caption` 12/16. Nothing is smaller than 12. Every style carries the Arabic font fallback. The tokens set no font family: component themes in `app_theme.dart` add the platform family with `type(...)`, because without it Latin text falls through to the Arabic fonts. Use `Theme.of(context).textTheme` slots; do not set a raw `fontSize` in UI chrome.
+
+Arabic source text is separate: `lib/ui/widgets/arabic_text.dart` sets its own font, line height and strut and must not change.
+
+## Surfaces and components
+
+- Cards: flat, `surface` fill, 1 px `hairline` border, `AppRadius.card`, and an `AppSpacing.xs` margin so stacked cards keep a gap. Same in every appearance. `HubleeCard` has no margin and fills the slot it is given.
+- App bar, navigation bar and rail: flat, on `canvas`, no scrolled-under shadow.
+- Buttons: flat, at least 48 dp tall (`AppSpacing.minTouchTarget`).
+- Text fields and the search bar: `surface` fill, `outline` border, `primary` 1.5 px when focused, `AppRadius.input`.
+- Chips: `AppRadius.chip`, `outline` border, `primaryTint` when selected.
+- Sheets: `surface`, `AppRadius.sheetTop`, one handle (`SheetHandle`, `AppSheetHandle.size`).
+- Snackbars: floating, on `inverseSurface`.
+- Only overlays (snackbars, dialogs, menus) use `AppElevation.overlay`.
+
+## Motion (`AppMotion`)
+
+Durations `fast` 120 ms, `base` 200 ms, `slow` 320 ms; curve `easeOutCubic`. Entrance animations go through `FadeSlideIn` (`lib/ui/widgets/fade_slide_in.dart`), which shows its child immediately when the system "remove animations" setting is on. Do not animate with ad-hoc durations.
 
 ## Tajweed Colours
 
@@ -42,4 +67,4 @@ Tajweed colours are **standalone constants** in `lib/ui/widgets/tajweed.dart`, m
 
 `kNotPronouncedColor(Brightness)` is the only brightness-aware colour — returns a different grey for readability on dark vs light backgrounds.
 
-> **Legacy:** `TajweedTheme` (`lib/theme/tajweed_extension.dart`) is still registered in both light and dark `ThemeData` but is **not used** by the tajweed engine. The engine reads colours from the constants above.
+> **Legacy:** `TajweedTheme` (`lib/theme/tajweed_extension.dart`) is still registered in every `ThemeData` but is **not used** by the tajweed engine. The engine reads colours from the constants above.
