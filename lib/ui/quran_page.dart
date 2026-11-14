@@ -701,8 +701,8 @@ class _SurahCard extends StatelessWidget {
         ? AppColors.meccanCardGradient
         : AppColors.medinanCardGradient;
     final imagePath = isMeccan
-        ? 'assets/images/kaaba_makki.png'
-        : 'assets/images/masjid_nabawi_madani.png';
+        ? 'assets/images/kaaba_makki.webp'
+        : 'assets/images/masjid_nabawi_madani.webp';
     const textColor = AppColors.surahCardOnImage;
 
     final bookmarks = BookmarkScope.maybeOf(context);

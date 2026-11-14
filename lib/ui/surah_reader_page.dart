@@ -1386,8 +1386,8 @@ Widget _buildSurahInfoHeader(BuildContext context, ChapterMeta chapter) {
   const textColor = Color(0xFFF5F0E8);
 
   final imagePath = isMakki
-      ? 'assets/images/kaaba_makki.png'
-      : 'assets/images/masjid_nabawi_madani.png';
+      ? 'assets/images/kaaba_makki.webp'
+      : 'assets/images/masjid_nabawi_madani.webp';
 
   return ClipRRect(
     borderRadius: BorderRadius.circular(16),
