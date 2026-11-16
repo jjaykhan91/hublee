@@ -667,6 +667,16 @@ class RecitationService extends ChangeNotifier {
     _emitPlayback();
   }
 
+  /// Stops playback and forgets the current ayah, closing the player.
+  Future<void> close() async {
+    try {
+      await _playback.stop();
+    } catch (_) {}
+    _playing = false;
+    _current = null;
+    _emitPlayback();
+  }
+
   void _emitPlayback() {
     notifyListeners();
     playbackListenable.emit();

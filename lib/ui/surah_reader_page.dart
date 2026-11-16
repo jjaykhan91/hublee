@@ -105,6 +105,7 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   String? _lastReciterId;
   bool _followPlayback = true;
   int? _followedAyah;
+  bool _playerOpen = false;
 
   // ── In-surah search state ──────────────────────────────────
   bool _isSearching = false;
@@ -160,16 +161,28 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
   int get _prefixCount => 1 + (_showsBismillah ? 1 : 0);
 
   void _onPlaybackFollow() {
+    // Rebuild when the player opens or closes so the list's bottom
+    // padding clears the bar.
+    final open = _recitation?.current?.surahId == widget.surahId;
+    if (open != _playerOpen && mounted) setState(() => _playerOpen = open);
     _maybeFollowPlayback();
   }
 
   void _maybeFollowPlayback() {
-    if (!_followPlayback) return;
     final recitation = _recitation;
     if (recitation == null || !recitation.isPlaying) return;
     final current = recitation.current;
     if (current == null || current.surahId != widget.surahId) return;
     if (_followedAyah == current.ayah) return;
+    // A reader who scrolled but is still reading along, with the ayah
+    // that just finished (or the new one) on screen, is followed again.
+    // One who scrolled elsewhere to read is left where they are.
+    if (!_followPlayback &&
+        (_isAyahOnScreen(current.ayah) ||
+            (_followedAyah != null && _isAyahOnScreen(_followedAyah!)))) {
+      _followPlayback = true;
+    }
+    if (!_followPlayback) return;
     _followedAyah = current.ayah;
     _scrollToAyah(current.ayah);
   }
@@ -178,8 +191,27 @@ class _SurahReaderPageState extends State<SurahReaderPage> {
     if (notification is ScrollUpdateNotification &&
         notification.dragDetails != null) {
       _followPlayback = false;
+    } else if (notification is ScrollEndNotification && !_followPlayback) {
+      // Scrolling back to the playing ayah turns following back on.
+      final playing = _recitation?.current;
+      if (_recitation?.isPlaying == true &&
+          playing != null &&
+          playing.surahId == widget.surahId &&
+          _isAyahOnScreen(playing.ayah)) {
+        _followPlayback = true;
+        _followedAyah = playing.ayah;
+      }
     }
     return false;
+  }
+
+  /// Whether any part of [ayah]'s card is in the viewport.
+  bool _isAyahOnScreen(int ayah) {
+    final index = _prefixCount + (ayah - 1);
+    return _positionsListener.itemPositions.value.any(
+      (p) =>
+          p.index == index && p.itemTrailingEdge > 0 && p.itemLeadingEdge < 1,
+    );
   }
 
   /// Loads chapters, translation, and Uthmani always. Glyph, emlaey,

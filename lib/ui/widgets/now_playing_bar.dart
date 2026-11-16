@@ -12,6 +12,7 @@ import 'app_haptics.dart';
 import 'reciter_picker.dart';
 
 /// Compact play/pause + reciter + repeat/continue for the current ayah.
+/// When paused, a close button stops playback and hides the bar.
 class NowPlayingBar extends StatefulWidget {
   const NowPlayingBar({
     super.key,
@@ -201,6 +202,16 @@ class _NowPlayingBarState extends State<NowPlayingBar> {
                   widget.onJumpToAyah(current.ayah);
                 },
               ),
+              if (!playing)
+                IconButton(
+                  key: const Key('now-playing-close'),
+                  tooltip: 'Close player',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    AppHaptics.selection();
+                    unawaited(recitation.close());
+                  },
+                ),
             ],
           ),
         ),
