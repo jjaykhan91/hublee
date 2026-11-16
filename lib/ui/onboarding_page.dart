@@ -14,6 +14,7 @@ import 'widgets/app_haptics.dart';
 import 'widgets/appearance_chips.dart';
 import 'widgets/arabic_font_list.dart';
 import 'widgets/arabic_text.dart';
+import 'widgets/spot_art.dart';
 import 'widgets/tajweed.dart';
 
 const _sampleAyah =
@@ -139,6 +140,7 @@ class _LookPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final appearance = AppScope.of(context).appearance;
     return _IntroFrame(
+      art: SpotArt.look,
       title: 'Choose a look',
       subtitle:
           'Light, dark, or a warm paper theme. You can change this later '
@@ -159,6 +161,7 @@ class _FontPage extends StatelessWidget {
     final settings = SettingsScope.of(context);
 
     return _IntroFrame(
+      art: SpotArt.typeface,
       title: 'Arabic typeface',
       subtitle:
           'Uthmanic matches a printed mushaf. The other faces use standard '
@@ -198,6 +201,7 @@ class _TajweedPage extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
 
     return _IntroFrame(
+      art: SpotArt.tajweed,
       title: 'Tajweed colours',
       subtitle:
           'Letters are coloured for recitation rules, using the Madani '
@@ -274,11 +278,13 @@ class _LegendRow extends StatelessWidget {
 
 class _IntroFrame extends StatelessWidget {
   const _IntroFrame({
+    required this.art,
     required this.title,
     required this.subtitle,
     required this.child,
   });
 
+  final SpotArt art;
   final String title;
   final String subtitle;
   final Widget child;
@@ -288,19 +294,35 @@ class _IntroFrame extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       children: [
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.45,
-          ),
+        // The art sits beside the heading so it costs no height and the
+        // choices below stay on screen on small phones.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            SpotIllustration(art, size: 96),
+          ],
         ),
         const SizedBox(height: 24),
         child,

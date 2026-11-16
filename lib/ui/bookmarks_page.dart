@@ -13,6 +13,7 @@ import '../theme/app_tokens.dart';
 import 'widgets/fade_slide_in.dart';
 import 'widgets/arabic_text.dart';
 import 'widgets/note_sheet.dart';
+import 'widgets/spot_art.dart';
 
 /// Bookmarks tab: shows all saved items or an empty-state message.
 class BookmarksPage extends StatelessWidget {
@@ -48,7 +49,7 @@ class BookmarksPage extends StatelessWidget {
                 ? _empty(
                     context,
                     colorScheme,
-                    icon: Icons.menu_book_outlined,
+                    art: SpotArt.savedAyahs,
                     title: 'No saved ayahs yet',
                     subtitle:
                         'Tap the bookmark icon on any ayah to save it here',
@@ -63,7 +64,7 @@ class BookmarksPage extends StatelessWidget {
                 ? _empty(
                     context,
                     colorScheme,
-                    icon: Icons.sticky_note_2_outlined,
+                    art: SpotArt.notes,
                     title: 'No notes yet',
                     subtitle:
                         'Tap the note icon on an ayah or hadith to write one',
@@ -73,7 +74,7 @@ class BookmarksPage extends StatelessWidget {
                 ? _empty(
                     context,
                     colorScheme,
-                    icon: Icons.library_books_outlined,
+                    art: SpotArt.savedHadiths,
                     title: 'No saved hadiths yet',
                     subtitle: 'Bookmark a hadith while reading to save it here',
                   )
@@ -87,7 +88,7 @@ class BookmarksPage extends StatelessWidget {
                 ? _empty(
                     context,
                     colorScheme,
-                    icon: Icons.star_outline_rounded,
+                    art: SpotArt.savedWords,
                     title: 'No saved words yet',
                     subtitle:
                         'Turn on word-by-word, tap a word, and star it to learn it',
@@ -102,7 +103,7 @@ class BookmarksPage extends StatelessWidget {
   Widget _empty(
     BuildContext context,
     ColorScheme colorScheme, {
-    required IconData icon,
+    required SpotArt art,
     required String title,
     required String subtitle,
   }) {
@@ -110,11 +111,7 @@ class BookmarksPage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
+          SpotIllustration(art),
           const SizedBox(height: 16),
           Text(
             title,

@@ -108,8 +108,8 @@ class _SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(
-        0xFF0D3B3B,
-      ), // Dark teal to match artwork letterboxing
+        0xFF12505F,
+      ), // Matches the splash artwork's edge colour for letterboxing
       body: Semantics(
         button: true,
         label: 'Continue',
@@ -123,10 +123,7 @@ class _SplashPageState extends State<SplashPage> {
               children: [
                 // Show full image without cropping; letterboxing uses
                 // scaffold background.
-                Image.asset(
-                  'assets/images/HubleeBackground.png',
-                  fit: BoxFit.contain,
-                ),
+                Image.asset('assets/images/splash.webp', fit: BoxFit.contain),
               ],
             ),
           ),

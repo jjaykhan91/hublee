@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router_paths.dart';
+import 'widgets/spot_art.dart';
 
 /// Explains that the requested path is invalid and offers a way home.
 class RouteErrorPage extends StatelessWidget {
@@ -16,7 +17,6 @@ class RouteErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Page not found')),
@@ -26,11 +26,7 @@ class RouteErrorPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.link_off_rounded,
-                size: 48,
-                color: colorScheme.onSurface.withValues(alpha: 0.35),
-              ),
+              const SpotIllustration(SpotArt.notFound),
               const SizedBox(height: 16),
               Text(
                 message ?? "That link isn't valid.",
