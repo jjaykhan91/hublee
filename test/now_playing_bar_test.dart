@@ -99,4 +99,42 @@ void main() {
     await tester.pump();
     expect(service.repeatAyah, isTrue);
   });
+
+  testWidgets('close appears only when paused and hides the bar', (
+    tester,
+  ) async {
+    final service = RecitationService(playback: _RecordingPlayback());
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(
+      RecitationScope(
+        service: service,
+        child: MaterialApp(
+          home: Scaffold(
+            body: NowPlayingBar(
+              surahId: 1,
+              surahName: 'Al-Fatiha',
+              verseCount: 7,
+              onJumpToAyah: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await service.play(surahId: 1, ayah: 2);
+    await tester.pump();
+    expect(find.byKey(const Key('now-playing-close')), findsNothing);
+
+    await service.stop();
+    await tester.pump();
+    expect(find.text('Paused Al-Fatiha 2'), findsOneWidget);
+    expect(find.byKey(const Key('now-playing-close')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('now-playing-close')));
+    await tester.pump();
+    expect(service.current, isNull);
+    expect(service.isPlaying, isFalse);
+    expect(find.byKey(const Key('now-playing-bar')), findsNothing);
+  });
 }
